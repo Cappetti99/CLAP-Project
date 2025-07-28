@@ -1,0 +1,45 @@
+# SWAM Project - Conda Environment
+# File per ricreare l'ambiente conda SWAM con tutte le dipendenze
+
+name: SWAM
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Python base
+  - python=3.11
+
+  # Dipendenze Python core
+  - pip
+  - setuptools
+  - wheel
+
+  # Dataset e Data Processing
+  - pandas>=2.0.0
+  - numpy>=1.24.0
+
+  # Progress e UI
+  - tqdm>=4.65.0
+  - colorama>=0.4.6
+
+  # Linguaggi di programmazione per esecuzione multi-linguaggio
+  - nodejs>=18.0.0          # JavaScript e TypeScript
+  - typescript>=5.0.0       # TypeScript compiler
+  - go>=1.20.0             # Go language
+  - rust>=1.70.0           # Rust language
+  - r-base>=4.3.0          # R language
+
+  # Dipendenze via pip (non disponibili su conda)
+  - pip:
+    - datasets>=2.14.0     # Hugging Face datasets
+
+# Istruzioni per uso:
+# 1. Creare ambiente: conda env create -f environment.yml
+# 2. Attivare ambiente: conda activate SWAM
+# 3. Eseguire script: python main.py
+
+# Note:
+# - Altri linguaggi (C, C++, Java, C#, Haskell, OCaml, PHP, Julia) 
+#   devono essere installati separatamente nel sistema
+# - Vedere README.md per istruzioni complete di installazione
