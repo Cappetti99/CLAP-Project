@@ -1,0 +1,345 @@
+# SWAM Project - Multi-language Code Analysis
+# Gitignore per progetto di analisi codice multi-linguaggio
+
+# =============================================================================
+# FILE DI LOG E STATISTICHE
+# =============================================================================
+logs/
+*.log
+error_analysis.json
+success_stats.json
+execution_*.log
+
+# =============================================================================
+# FILE COMPILATI E ESEGUIBILI
+# =============================================================================
+
+# C/C++ compilati
+*.o
+*.obj
+*.exe
+*.out
+a.out
+*.so
+*.dll
+*.dylib
+*.a
+*.lib
+
+# Java compilati
+*.class
+*.jar
+*.war
+*.ear
+
+# C# compilati
+*.exe
+*.dll
+*.pdb
+bin/
+obj/
+
+# Haskell compilati
+*.hi
+*.o
+dist/
+dist-newstyle/
+
+# OCaml compilati
+*.cmo
+*.cmi
+*.cmx
+*.cmxa
+*.cma
+*.a
+*.o
+_build/
+
+# Rust compilati
+target/
+Cargo.lock
+*.rlib
+*.rmeta
+
+# Go compilati
+*.exe
+*.test
+*.prof
+go.sum
+
+# =============================================================================
+# FILE TEMPORANEI E GENERATI DALLO SCRIPT
+# =============================================================================
+
+# File sorgente generati dal dataset
+oop/
+scripting/
+imperative/
+functional/
+scientific/
+
+# File snippet generati
+snippet_*
+snippet_*.cpp
+snippet_*.c
+snippet_*.java
+snippet_*.cs
+snippet_*.py
+snippet_*.rb
+snippet_*.js
+snippet_*.ts
+snippet_*.go
+snippet_*.rs
+snippet_*.php
+snippet_*.hs
+snippet_*.ml
+snippet_*.r
+snippet_*.m
+snippet_*.jl
+
+# =============================================================================
+# DIPENDENZE E PACKAGE MANAGERS
+# =============================================================================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Node.js / JavaScript / TypeScript
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.npm
+.eslintcache
+.node_repl_history
+*.tgz
+*.tar.gz
+.yarn-integrity
+.cache/
+.parcel-cache/
+
+# Ruby
+*.gem
+*.rbc
+/.config
+/coverage/
+/InstalledFiles
+/pkg/
+/spec/reports/
+/spec/examples.txt
+/test/tmp/
+/test/version_tmp/
+/tmp/
+.bundle/
+vendor/bundle
+lib/bundler/man/
+.rvmrc
+.rbenv-version
+.ruby-version
+.ruby-gemset
+Gemfile.lock
+
+# R
+.Rhistory
+.Rapp.history
+.RData
+.Ruserdata
+*-Ex.R
+/*.tar.gz
+/*.Rcheck/
+.Rproj.user/
+
+# Julia
+.julia/
+Manifest.toml
+
+# Go modules
+go.mod
+go.sum
+
+# Rust
+Cargo.toml
+
+# =============================================================================
+# IDE E EDITOR
+# =============================================================================
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# PyCharm
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# =============================================================================
+# SISTEMA OPERATIVO
+# =============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.tmp
+*.temp
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# BACKUP E FILE TEMPORANEI
+# =============================================================================
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+*.swp
+*.tmp
+*.temp
+*~
+
+# =============================================================================
+# FILE DI CONFIGURAZIONE LOCALI
+# =============================================================================
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+config.local.*
+
+# =============================================================================
+# FILE DI TESTING
+# =============================================================================
+coverage/
+.coverage
+.pytest_cache/
+.tox/
+.nox/
+htmlcov/
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+
+# =============================================================================
+# CONDA ENVIRONMENT
+# =============================================================================
+.conda/
+conda-meta/
+pkgs/
+envs/SWAM/
+
+# =============================================================================
+# ALTRI FILE DA IGNORARE
+# =============================================================================
+
+# File compressi
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.bz2
+*.xz
+
+# Database locali
+*.db
+*.sqlite
+*.sqlite3
+
+# File di lock
+*.lock
+yarn.lock
+package-lock.json
+
+# Output di benchmark e profiling
+*.prof
+*.trace
+perf.data*
