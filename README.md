@@ -1,236 +1,186 @@
-# SWAM Project 🚀
+# 🌊 SWAM Project - Cross-Language Code Analysis System
 
-Sistema di analisi multi-linguaggio del dataset Rosetta Code per misurare le performance di esecuzione di codice sorgente in 15 linguaggi diversi.
+**Sistema di Analisi e Esecuzione Multi-Linguaggio** - Analizza ed esegue automaticamente codice in 16 linguaggi di programmazione.
 
-## 🎯 Panoramica
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
+[![Languages](https://img.shields.io/badge/Languages-16-green.svg)](#linguaggi-supportati)
+[![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)](https://github.com)
 
-Questo progetto implementa la richiesta del Professor Roberto per:
-- Analizzare il dataset Rosetta Code di Hugging Face
-- Estrarre task comuni tra tutti i linguaggi
-- Compilare ed eseguire codice in 15 linguaggi di programmazione
-- Loggare automaticamente errori e statistiche di performance
-- Supportare 5 categorie di linguaggi: OOP, Scripting, Imperative, Functional, Scientific
-
-## 📋 Linguaggi Supportati
-
-### 🔵 **OOP (Object-Oriented Programming)**
-- C++ (g++)
-- C# (csc/mono)  
-- Java (javac/java)
-
-### 🟢 **Scripting**
-- Python (conda environment)
-- Ruby (ruby)
-- JavaScript (Node.js - conda environment)
-- TypeScript (tsc - conda environment)
-
-### 🔴 **Imperative**
-- C (gcc)
-- Go (conda environment)
-- Rust (conda environment)
-- PHP (php)
-
-### 🟣 **Functional**
-- Haskell (ghc)
-- OCaml (ocamlc)
-
-### 🔵 **Scientific**
-- R (conda environment)
-- MATLAB/Octave (octave)
-- Julia (julia)
-
-## ⚙️ Setup e Installazione
-
-### 1. **Prerequisiti Sistema**
-
-Installa i compilatori/interpreti di sistema (macOS con Homebrew):
+## 🚀 Quick Start
 
 ```bash
-# Compilatori di base
-xcode-select --install          # C, C++, gcc, g++
+# 1. Test disponibilità linguaggi
+python main.py test
 
-# Java
-brew install openjdk
+# 2. Esecuzione intelligente (usa solo linguaggi disponibili)
+python main.py smart
 
-# Mono per C#
-brew install mono
+# 3. Analisi task comuni
+python main.py analyze
 
-# Linguaggi funzionali
-brew install ghc cabal-install  # Haskell
-brew install ocaml opam        # OCaml
-
-# Altri
-brew install php               # PHP
-brew install octave           # MATLAB alternative
-brew install julia            # Julia
+# 4. Stato del progetto
+python main.py status
 ```
 
-### 2. **Ambiente Python/Conda**
+## 📋 Comandi Disponibili
 
-#### Opzione A: Usa environment.yml (Raccomandato)
+| Comando | Descrizione |
+|---------|------------|
+| `test` | Testa la disponibilità di tutti i 16 linguaggi |
+| `smart` | Esegue codici solo nei linguaggi disponibili |
+| `analyze` | Analizza task comuni tra linguaggi |
+| `execute` | Esegue codici in tutti i linguaggi (può fallire) |
+| `clean` | Pulisce file temporanei e cache |
+| `status` | Mostra stato del progetto e statistiche |
+
+## 🎯 Linguaggi Supportati
+
+### ✅ Interpretati (7)
+Python • JavaScript • Ruby • PHP • R • Julia • MATLAB*
+
+### ✅ Compilati (8) 
+C • C++ • Java • Go • Rust • Haskell • OCaml • TypeScript
+
+### ✅ VM-based (1)
+C# (Mono)
+
+*\*MATLAB richiede licenza commerciale*
+
+## 📁 Struttura Progetto
+
+```
+SWAM-Project/
+├── main.py                      # 🎯 Interface principale
+├── cleanup.py                   # 🧹 Script pulizia completo
+├── install_languages.sh         # 📦 Installer linguaggi
+├── modules/                     # 📚 Moduli core
+│   ├── config.py               # ⚙️  Configurazioni
+│   ├── colors.py               # 🎨 Output colorato
+│   ├── dataset_manager.py      # 📊 Gestione dataset
+│   ├── dependency_analyzer.py  # 🔍 Analisi dipendenze
+│   └── logger.py               # 📝 Logging
+├── src/                        # 🔧 Esecutori e analyzer
+│   ├── enhanced_executor.py    # 🚀 Esecutore completo
+│   ├── smart_executor.py       # 🧠 Esecutore adattivo
+│   ├── language_tester.py      # 🧪 Test linguaggi
+│   ├── advanced_task_finder.py # 🎯 Ricerca task
+│   └── task_finder.py          # 🔍 Ricerca base
+└── results/                    # 📊 Output generati
+    ├── execution/              # Risultati esecuzione
+    ├── task_analysis/          # Analisi task
+    └── logs/                   # Log sistema
+```
+
+## 🛠️ Installazione Linguaggi
+
+### Automatica (macOS)
 ```bash
-# Crea ambiente conda con tutte le dipendenze
-conda env create -f environment.yml
-
-# Attiva ambiente
-conda activate SWAM
+./install_languages.sh
 ```
 
-#### Opzione B: Setup manuale
+### Manuale
 ```bash
-# Crea ambiente conda
-conda create -n SWAM python=3.11 -y
-conda activate SWAM
+# C/C++
+xcode-select --install
 
-# Installa linguaggi nell'ambiente
-conda install -c conda-forge nodejs typescript go rust r-base -y
+# Altri linguaggi
+brew install go rust ghc ocaml
+npm install -g typescript
 
-# Installa dipendenze Python
-pip install -r requirements.txt
+# Verifica installazione
+python main.py test
 ```
 
-### 3. **Verifica Installazione**
+## 📊 Performance Tipiche
 
-Testa che tutti i linguaggi siano disponibili:
+| Categoria | Linguaggi Disponibili | Tasso Successo Tipico |
+|-----------|----------------------|----------------------|
+| **Interpretati** | 6/7 (86%) | Python, JS, Ruby, PHP, R, Julia |
+| **Compilati** | 8/8 (100%) | Tutti se installati correttamente |
+| **VM-based** | 1/1 (100%) | C# (Mono) |
+| **Totale** | **15/16 (93.8%)** | Solo MATLAB manca |
 
+## 🎯 Esempi Risultati
+
+### Test Linguaggi
 ```bash
-# Attiva ambiente
-conda activate SWAM
+$ python main.py test
+🧪 Testing PYTHON (interpreted)...
+  ✅ Esecuzione riuscita (0.011s): Hello from Python!
 
-# Verifica linguaggi (dovrebbero tutti rispondere con versione)
-gcc --version
-g++ --version
-java -version
-javac -version
-csc --version || mono --version
-python --version
-ruby --version
-node --version
-tsc --version
-go version
-rustc --version
-php --version
-ghc --version
-ocaml -version
-Rscript --version
-octave --version
-julia --version
+📊 STATISTICHE GENERALI:
+  🎯 Totale linguaggi testati: 16
+  ✅ Linguaggi disponibili: 15
+  📊 Tasso di successo: 93.8%
 ```
 
-## 🚀 Utilizzo
-
-### Esecuzione Base
+### Smart Execution
 ```bash
-# Attiva ambiente conda
-conda activate SWAM
+$ python main.py smart
+🧠 ESECUZIONE INTELLIGENTE
+🎯 Linguaggi disponibili: 8
+🎯 Trovate 10 task comuni
 
-# Esegui analisi completa
-python main.py
-```
-
-### Configurazione
-
-Modifica le costanti nel file `main.py`:
-
-```python
-TIMEOUT_SECONDS = 30           # Timeout esecuzione singolo programma
-MAX_SNIPPETS_PER_LANGUAGE = 25 # Max snippet per linguaggio
-COMPILATION_TIMEOUT = 60       # Timeout compilazione
-```
-
-### Output e Log
-
-Il sistema genera:
-- **Log colorati** nel terminale con progress real-time
-- **File di log** in `logs/execution_YYYYMMDD_HHMMSS.log`
-- **Analisi errori** in `logs/error_analysis.json`
-- **Statistiche** in `logs/success_stats.json`
-- **Codice estratto** in cartelle organizzate per categoria
-
-```
-oop/
-├── c++/
-├── c#/
-└── java/
-scripting/
-├── python/
-├── ruby/
-├── javascript/
-└── typescript/
-imperative/
-├── c/
-├── go/
-├── rust/
-└── php/
-functional/
-├── haskell/
-└── ocaml/
-scientific/
-├── r/
-├── matlab/
-└── julia/
+🎯 Esecuzione task: Array_length
+  ✅ python: successo (0.01s)
+  ✅ javascript: successo (0.06s)
+  ✅ java: successo (0.27s)
+  
+🎉 TOTALE: 32/79 (40.5%) esecuzioni riuscite
 ```
 
 ## 🧹 Manutenzione
 
 ### Pulizia File Temporanei
 ```bash
-# Pulizia completa (raccomandato)
-python cleanup.py
-
-# Anteprima pulizia (senza eliminare)
-python cleanup.py --dry-run
-
-# Pulizie mirate
-python cleanup.py --compiled    # Solo file compilati
-python cleanup.py --generated   # Solo codice generato
-python cleanup.py --logs        # Solo log
+python cleanup.py --all              # Pulizia completa
+python cleanup.py --compiled         # Solo file compilati
+python cleanup.py --dry-run          # Simula senza cancellare
 ```
 
-## 📊 Funzionalità Avanzate
-
-### Sistema di Filtraggio Intelligente
-- **Pattern problematici**: Evita codice con input utente, loop infiniti, GUI
-- **Dipendenze automatiche**: Installa automaticamente librerie comuni
-- **Timeout management**: Gestisce programmi che si bloccano
-- **Error recovery**: Log dettagliato per debugging
-
-### Statistiche Dettagliate
-- Tasso di successo per linguaggio
-- Analisi errori per categoria (compilazione, runtime, timeout)
-- Performance comparison tra linguaggi
-- File filtrati vs eseguiti con successo
+### Monitoraggio Spazio
+```bash
+python main.py status                # Stato progetto
+python cleanup.py --all              # Libera spazio
+```
 
 ## 🔧 Troubleshooting
 
-### Errori Comuni
-
-**"Command not found" per un linguaggio:**
+### Linguaggio Non Disponibile
 ```bash
-# Verifica installazione e PATH
-which gcc python node go rustc ghc ocaml php octave julia
+# Verifica installazione
+which python node java gcc
 
-# Per linguaggi conda, assicurati di aver attivato SWAM
-conda activate SWAM
+# Installa manualmente
+brew install <linguaggio>
+
+# Testa di nuovo
+python main.py test
 ```
 
-**Errori di timeout frequenti:**
+### Errori di Compilazione
 ```bash
-# Aumenta timeout in main.py
-TIMEOUT_SECONDS = 60
-COMPILATION_TIMEOUT = 120
+# Pulisci cache
+python main.py clean
+
+# Usa solo linguaggi funzionanti
+python main.py smart
 ```
 
-## 📈 Risultati Attesi
+## 📈 Monitoraggio
 
-Il sistema dovrebbe raggiungere:
-- **70-90%** tasso di successo per linguaggi moderni (Python, JavaScript, Go)
-- **50-70%** per linguaggi con dipendenze complesse (C++, Haskell)
-- **30-50%** per linguaggi con setup specifico (C#, OCaml)
+Il sistema salva automaticamente:
+- **Risultati test**: `results/execution/language_test_results_*.json`
+- **Risultati esecuzione**: `results/execution/smart_execution_results_*.json` 
+- **Log errori**: `results/logs/`
+
+## 🤝 Contributi
+
+1. Testa il sistema: `python main.py test`
+2. Verifica funzionalità: `python main.py smart`
+3. Segnala problemi con output completo
+4. Proponi miglioramenti
 
 ---
 
-**Versione**: 1.0  
-**Autore**: Lorenzo Cappetti  
-**Corso**: SWAM Project  
-**Data**: Luglio 2025
+**SWAM Project** © 2025 - Sistema Multi-linguaggio per Analisi Codice

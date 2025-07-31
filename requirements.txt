@@ -1,17 +1,24 @@
-# SWAM Project - Requirements
-# Dipendenze Python per l'analisi multi-linguaggio del dataset Rosetta Code
+# SWAM Project - Python Dependencies
+# File requirements.txt per installazione via pip
 
-# Dataset e Data Processing
-datasets>=2.14.0          # Hugging Face datasets library per caricare rosetta-code
-pandas>=2.0.0             # Data manipulation e analisi del dataset
-numpy>=1.24.0             # Operazioni numeriche (dipendenza di pandas)
+# Dataset e Machine Learning
+datasets>=2.14.0
+huggingface-hub>=0.16.0
 
-# Progress Bars e UI
-tqdm>=4.65.0              # Progress bars per monitorare esecuzione
+# Data Processing
+pandas>=2.0.0
+numpy>=1.24.0
 
-# Utilities
-colorama>=0.4.6           # Supporto colori ANSI cross-platform (opzionale ma consigliato)
+# Progress bars e UI
+tqdm>=4.65.0
+colorama>=0.4.6
 
-# Note:
-# - subprocess, os, json, re, logging, datetime, time sono moduli built-in Python
-# - Non serve installare nulla per questi moduli
+# System utilities
+psutil>=5.9.0
+
+# Optional: per migliorare performance
+pyarrow>=12.0.0
+
+# Development e debugging (opzionali)
+# ipython>=8.12.0
+# jupyter>=1.0.0

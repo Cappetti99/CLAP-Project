@@ -1,14 +1,42 @@
-# SWAM Project - Multi-language Code Analysis
-# Gitignore per progetto di analisi codice multi-linguaggio
+# 🌊 SWAM Project - Cross-Language Code Analysis System
+# Gitignore ottimizzato per struttura pulita v4.0 (Post-cleanup)
 
 # =============================================================================
-# FILE DI LOG E STATISTICHE
+# RISULTATI E OUTPUT GENERATI
 # =============================================================================
-logs/
+
+# Directory risultati (mantiene struttura)
+results/logs/*
+!results/logs/.gitkeep
+results/stats/*
+!results/stats/.gitkeep
+results/analysis/*
+!results/analysis/.gitkeep
+results/execution/*
+!results/execution/.gitkeep
+
+# File di log e tracciamento
 *.log
 error_analysis.json
 success_stats.json
 execution_*.log
+language_test_results_*.json
+smart_execution_results_*.json
+
+# Dati generati dal dataset
+data/generated/*
+!data/generated/.gitkeep
+data/cache/*
+!data/cache/.gitkeep
+
+# Code snippets generati (mantiene struttura)
+data/generated/code_snippets/*/*
+!data/generated/code_snippets/*/.gitkeep
+
+# File temporanei di output
+Rplots.pdf
+floatArray
+yin_yang.png
 
 # =============================================================================
 # FILE COMPILATI E ESEGUIBILI
@@ -52,7 +80,6 @@ dist-newstyle/
 *.cmxa
 *.cma
 *.a
-*.o
 _build/
 
 # Rust compilati
@@ -62,46 +89,21 @@ Cargo.lock
 *.rmeta
 
 # Go compilati
-*.exe
 *.test
 *.prof
 go.sum
 
-# =============================================================================
-# FILE TEMPORANEI E GENERATI DALLO SCRIPT
-# =============================================================================
-
-# File sorgente generati dal dataset
-oop/
-scripting/
-imperative/
-functional/
-scientific/
-
-# File snippet generati
-snippet_*
-snippet_*.cpp
-snippet_*.c
-snippet_*.java
-snippet_*.cs
-snippet_*.py
-snippet_*.rb
-snippet_*.js
-snippet_*.ts
-snippet_*.go
-snippet_*.rs
-snippet_*.php
-snippet_*.hs
-snippet_*.ml
-snippet_*.r
-snippet_*.m
-snippet_*.jl
+# TypeScript/JavaScript compilati
+*.js.map
+node_modules/
+npm-debug.log*
+.npm/
 
 # =============================================================================
-# DIPENDENZE E PACKAGE MANAGERS
+# CACHE E DIPENDENZE
 # =============================================================================
 
-# Python
+# Python cache
 __pycache__/
 *.py[cod]
 *$py.class
@@ -119,12 +121,11 @@ parts/
 sdist/
 var/
 wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
+
+# Virtual environments
 .env
 .venv
 env/
@@ -133,98 +134,26 @@ ENV/
 env.bak/
 venv.bak/
 
-# Node.js / JavaScript / TypeScript
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-.npm
-.eslintcache
-.node_repl_history
-*.tgz
-*.tar.gz
-.yarn-integrity
-.cache/
-.parcel-cache/
+# Conda environments
+.conda/
+conda-meta/
+pkgs/
+envs/SWAM/
 
-# Ruby
-*.gem
-*.rbc
-/.config
-/coverage/
-/InstalledFiles
-/pkg/
-/spec/reports/
-/spec/examples.txt
-/test/tmp/
-/test/version_tmp/
-/tmp/
-.bundle/
-vendor/bundle
-lib/bundler/man/
-.rvmrc
-.rbenv-version
-.ruby-version
-.ruby-gemset
+# Package managers
+package-lock.json
+yarn.lock
 Gemfile.lock
+composer.lock
 
-# R
-.Rhistory
-.Rapp.history
-.RData
-.Ruserdata
-*-Ex.R
-/*.tar.gz
-/*.Rcheck/
-.Rproj.user/
-
-# Julia
-.julia/
-Manifest.toml
-
-# Go modules
-go.mod
-go.sum
-
-# Rust
-Cargo.toml
-
-# =============================================================================
-# IDE E EDITOR
-# =============================================================================
-
-# VS Code
-.vscode/
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# PyCharm
-.idea/
-*.iws
-*.iml
-*.ipr
-
-# Sublime Text
-*.sublime-project
-*.sublime-workspace
-
-# Vim
-*.swp
-*.swo
-*~
-
-# Emacs
-*~
-\#*\#
-/.emacs.desktop
-/.emacs.desktop.lock
-*.elc
-auto-save-list
-tramp
-.\#*
+# Cache directories
+.cache/
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+htmlcov/
+.hypothesis/
 
 # =============================================================================
 # SISTEMA OPERATIVO
@@ -243,11 +172,6 @@ Icon
 .Trashes
 .VolumeIcon.icns
 .com.apple.timemachine.donotpresent
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
 
 # Windows
 Thumbs.db
@@ -258,11 +182,6 @@ ehthumbs_vista.db
 *.temp
 Desktop.ini
 $RECYCLE.BIN/
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
 *.lnk
 
 # Linux
@@ -273,73 +192,212 @@ $RECYCLE.BIN/
 .nfs*
 
 # =============================================================================
-# BACKUP E FILE TEMPORANEI
+# IDE E EDITOR
 # =============================================================================
+
+# VS Code (mantiene configurazione progetto)
+.vscode/
+!.vscode/tasks.json
+!.vscode/settings.json
+
+# PyCharm
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim/Neovim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+
+# =============================================================================
+# FILE TEMPORANEI E BACKUP
+# =============================================================================
+
+# File backup generici
 *.bak
 *.backup
 *.old
 *.orig
 *.save
-*.swp
+*_backup.*
+*_old.*
+
+# File temporanei progetto
 *.tmp
 *.temp
-*~
+temp_*
+test_*
+diagnostic_*
+quick_*
+
+# File README backup
+README_OLD.md
+README_NEW.md
+.gitignore_new
+.gitignore_old
+README_BACKUP.md
 
 # =============================================================================
-# FILE DI CONFIGURAZIONE LOCALI
+# TESTING E SVILUPPO
 # =============================================================================
+
+# Test results
+coverage/
+.coverage
+coverage.xml
+*.cover
+.pytest_cache/
+test-results/
+
+# Profiling
+*.prof
+*.profile
+*.pyprof
+*.perf
+*.profdata
+
+# Debugging
+core.*
+*.dump
+*.mem
+
+# =============================================================================
+# LINGUAGGI SPECIFICI
+# =============================================================================
+
+# R
+.RData
+.Ruserdata
+.Rhistory
+*-Ex.R
+/*.tar.gz
+/*.Rcheck/
+.Rproj.user/
+
+# Julia
+.julia/
+Manifest.toml
+
+# MATLAB
+*.asv
+*.m~
+
+# PHP
+/vendor/
+.phpunit.result.cache
+
+# Ruby
+/.bundle/
+/vendor/bundle
+/log/*
+/tmp/*
+*.rbc
+
+# =============================================================================
+# SICUREZZA E CONFIGURAZIONI LOCALI
+# =============================================================================
+
+# Environment variables
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.secret
+
+# API keys e credenziali
+secrets.*
+api_keys.*
+*.pem
+*.key
+*.crt
+credentials.json
+
+# Configurazioni locali
 config.local.*
+settings.local.*
 
 # =============================================================================
-# FILE DI TESTING
-# =============================================================================
-coverage/
-.coverage
-.pytest_cache/
-.tox/
-.nox/
-htmlcov/
-.coverage.*
-coverage.xml
-*.cover
-.hypothesis/
-
-# =============================================================================
-# CONDA ENVIRONMENT
-# =============================================================================
-.conda/
-conda-meta/
-pkgs/
-envs/SWAM/
-
-# =============================================================================
-# ALTRI FILE DA IGNORARE
+# DATASET E CACHE HUGGING FACE
 # =============================================================================
 
-# File compressi
-*.zip
-*.rar
-*.7z
-*.tar
-*.gz
-*.bz2
-*.xz
+# Cache Hugging Face
+~/.cache/huggingface/
+.cache/huggingface/
+cached_*
+dataset_cache/
 
-# Database locali
-*.db
-*.sqlite
-*.sqlite3
+# File dataset scaricati
+*.csv
+*.parquet
+datasets/
+data/raw/*
+!data/raw/.gitkeep
 
-# File di lock
-*.lock
-yarn.lock
-package-lock.json
+# =============================================================================
+# PERFORMANCE E MONITORAGGIO
+# =============================================================================
 
-# Output di benchmark e profiling
+# Profiling files
 *.prof
 *.trace
 perf.data*
+callgrind.out.*
+
+# Benchmark results
+benchmark_*
+performance_*
+
+# Memory analysis
+*.hprof
+*.heap
+
+# =============================================================================
+# CLEANUP E MANUTENZIONE
+# =============================================================================
+
+# File stats e cleanup
+cleanup_stats.json
+installed_packages.json
+dependency_*.json
+
+# File di stato temporanei
+.state
+.status
+*.state
+
+# =============================================================================
+# ESCLUSIONI SPECIFICHE POST-CLEANUP
+# =============================================================================
+
+# File rimossi durante cleanup (evita ricreazione accidentale)
+diagnostic_test.py
+quick_test.py
+structure_analyzer.py
+test_dependencies.py
+test_executor.py
+test_package_management.py
+src/simple_executor.py
+src/code_executor.py
+src/main_modular.py
+src/cleanup_manager.py
+modules/execution_manager.py
+
+# =============================================================================
+# FINE GITIGNORE
+# =============================================================================
