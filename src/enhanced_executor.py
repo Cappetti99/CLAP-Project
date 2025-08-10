@@ -82,7 +82,7 @@ class EnhancedExecutor:
             },
             'go': {
                 'extension': '.go',
-                'compiler': ['go', 'build', '-o'],
+                'compiler': ['go', 'build'],
                 'executor': ['./'],
                 'timeout': 15,
                 'dependency_patterns': [
@@ -91,11 +91,83 @@ class EnhancedExecutor:
             },
             'rust': {
                 'extension': '.rs',
-                'compiler': ['rustc', '-o'],
+                'compiler': ['rustc'],
                 'executor': ['./'],
                 'timeout': 15,
                 'dependency_patterns': [
                     r'use\s+([a-zA-Z_][a-zA-Z0-9_:]*);'
+                ]
+            },
+            'ruby': {
+                'extension': '.rb',
+                'executor': ['ruby'],
+                'timeout': 10,
+                'dependency_patterns': [
+                    r'require\s+[\'"]([^\'"]+)[\'"]'
+                ]
+            },
+            'php': {
+                'extension': '.php',
+                'executor': ['php'],
+                'timeout': 10,
+                'dependency_patterns': [
+                    r'require_once\s+[\'"]([^\'"]+)[\'"]',
+                    r'include\s+[\'"]([^\'"]+)[\'"]'
+                ]
+            },
+            'r': {
+                'extension': '.r',
+                'executor': ['Rscript'],
+                'timeout': 10,
+                'dependency_patterns': [
+                    r'library\(([^)]+)\)',
+                    r'require\(([^)]+)\)'
+                ]
+            },
+            'julia': {
+                'extension': '.jl',
+                'executor': ['julia'],
+                'timeout': 15,
+                'dependency_patterns': [
+                    r'using\s+([a-zA-Z_][a-zA-Z0-9_]*)',
+                    r'import\s+([a-zA-Z_][a-zA-Z0-9_]*)'
+                ]
+            },
+            'haskell': {
+                'extension': '.hs',
+                'compiler': ['ghc', '-o'],
+                'executor': ['./'],
+                'timeout': 15,
+                'dependency_patterns': [
+                    r'import\s+([a-zA-Z_][a-zA-Z0-9_.]*)'
+                ]
+            },
+            'ocaml': {
+                'extension': '.ml',
+                'compiler': ['ocamlc', '-o'],
+                'executor': ['./'],
+                'timeout': 15,
+                'dependency_patterns': [
+                    r'open\s+([a-zA-Z_][a-zA-Z0-9_]*)'
+                ]
+            },
+            'typescript': {
+                'extension': '.ts',
+                'compiler': ['tsc', '--outFile'],
+                'executor': ['node'],
+                'timeout': 15,
+                'dependency_patterns': [
+                    r'import.*from\s+[\'"]([^\'"]+)[\'"]',
+                    r'require\([\'"]([^\'"]+)[\'"]\)'
+                ]
+            },
+            'csharp': {
+                'extension': '.cs',
+                'compiler': ['mcs', '-out:'],
+                'executor': ['mono'],
+                'timeout': 15,
+                'dependency_patterns': [
+                    r'using\s+([a-zA-Z_][a-zA-Z0-9_.]*);'
                 ]
             }
         }

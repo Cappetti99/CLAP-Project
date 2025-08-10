@@ -17,7 +17,7 @@ LANGUAGE_CATEGORIES = {
             "run_cmd": "./",
             "install_deps": None,
             "common_includes": ["#include <iostream>", "#include <vector>", "#include <string>", "#include <algorithm>"],
-            "folder": "../data/generated/code_snippets/oop/cpp"
+            "folder": "../data/generated/code_snippets/oop/c++"
         },
         "C#": {
             "ext": ".cs", 

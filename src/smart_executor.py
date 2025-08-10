@@ -28,7 +28,7 @@ class SmartExecutor:
         self.temp_files = []
         self.available_languages = {}
         
-        # Configurazione per linguaggi supportati
+        # Configurazione completa per tutti i linguaggi supportati
         self.language_config = {
             'python': {
                 'extension': '.py',
@@ -46,7 +46,7 @@ class SmartExecutor:
                 'extension': '.java',
                 'compiler': ['javac'],
                 'executor': ['java'],
-                'timeout': 15,
+                'timeout': 30,
                 'test_code': '''public class Test {
     public static void main(String[] args) {
         System.out.println("test");
@@ -56,44 +56,107 @@ class SmartExecutor:
             'ruby': {
                 'extension': '.rb',
                 'executor': ['ruby'],
-                'timeout': 10,
+                'timeout': 15,
                 'test_code': 'puts "test"'
             },
             'php': {
                 'extension': '.php',
                 'executor': ['php'],
-                'timeout': 10,
+                'timeout': 15,
                 'test_code': '<?php echo "test\\n"; ?>'
             },
             'r': {
                 'extension': '.r',
-                'executor': ['Rscript'],
-                'timeout': 10,
+                'executor': ['/Users/lorenzocappetti/miniconda3/envs/SWAM/bin/Rscript'],
+                'timeout': 15,
                 'test_code': 'cat("test\\n")'
             },
             'julia': {
                 'extension': '.jl',
                 'executor': ['julia'],
-                'timeout': 10,
+                'timeout': 20,
                 'test_code': 'println("test")'
             },
             'matlab': {
                 'extension': '.m',
                 'executor': ['matlab', '-batch'],
-                'timeout': 15,
+                'timeout': 30,
                 'test_code': 'fprintf("test\\n");'
             },
             'csharp': {
                 'extension': '.cs',
-                'compiler': ['mcs', '-out:test.exe'],
+                'compiler': ['csc', '-out:test.exe'],
                 'executor': ['mono', 'test.exe'],
-                'timeout': 15,
+                'timeout': 30,
                 'test_code': '''using System;
 class Test {
     static void Main() {
         Console.WriteLine("test");
     }
 }'''
+            },
+            'c': {
+                'extension': '.c',
+                'compiler': ['gcc', '-o', 'test'],
+                'executor': ['./test'],
+                'timeout': 25,
+                'test_code': '''#include <stdio.h>
+int main() {
+    printf("test\\n");
+    return 0;
+}'''
+            },
+            'cpp': {
+                'extension': '.cpp',
+                'compiler': ['g++', '-o', 'test'],
+                'executor': ['./test'],
+                'timeout': 25,
+                'test_code': '''#include <iostream>
+int main() {
+    std::cout << "test" << std::endl;
+    return 0;
+}'''
+            },
+            'go': {
+                'extension': '.go',
+                'compiler': ['go', 'build'],
+                'executor': ['./test'],
+                'timeout': 25,
+                'test_code': '''package main
+import "fmt"
+func main() {
+    fmt.Println("test")
+}'''
+            },
+            'rust': {
+                'extension': '.rs',
+                'compiler': ['rustc'],
+                'executor': ['./test'],
+                'timeout': 30,
+                'test_code': '''fn main() {
+    println!("test");
+}'''
+            },
+            'haskell': {
+                'extension': '.hs',
+                'compiler': ['ghc', '-o', 'test'],
+                'executor': ['./test'],
+                'timeout': 30,
+                'test_code': '''main = putStrLn "test"'''
+            },
+            'ocaml': {
+                'extension': '.ml',
+                'compiler': ['ocamlc', '-o', 'test'],
+                'executor': ['./test'],
+                'timeout': 25,
+                'test_code': '''print_endline "test";;'''
+            },
+            'typescript': {
+                'extension': '.ts',
+                'compiler': ['tsc', '--outFile', 'test.js'],
+                'executor': ['node', 'test.js'],
+                'timeout': 25,
+                'test_code': '''console.log("test");'''
             }
         }
         
@@ -141,7 +204,7 @@ class Test {
                     compile_result = subprocess.run(
                         compile_cmd,
                         capture_output=True,
-                        timeout=15,
+                        timeout=30,
                         cwd=temp_dir
                     )
                     if compile_result.returncode != 0:
@@ -164,7 +227,7 @@ class Test {
                 run_result = subprocess.run(
                     run_cmd,
                     capture_output=True,
-                    timeout=10,
+                    timeout=20,
                     cwd=temp_dir
                 )
                 
@@ -195,19 +258,20 @@ class Test {
         for language, config in self.language_config.items():
             print(f"  📋 Testando {language}...", end=' ')
             
-            # Verifica comandi
-            main_cmd = config['executor'][0]
-            if not self.check_command_available(main_cmd):
-                print("❌ (comando non trovato)")
-                continue
-            
+            # Per linguaggi compilati, verifica il compilatore
             if 'compiler' in config:
                 compiler_cmd = config['compiler'][0]
                 if not self.check_command_available(compiler_cmd):
-                    print("❌ (compilatore non trovato)")
+                    print("❌ (comando non trovato)")
+                    continue
+            else:
+                # Per linguaggi interpretati, verifica l'executor
+                main_cmd = config['executor'][0]
+                if not self.check_command_available(main_cmd):
+                    print("❌ (comando non trovato)")
                     continue
             
-            # Test di esecuzione
+            # Test di esecuzione rapido
             if self.test_language_execution(language, config):
                 self.available_languages[language] = config
                 print("✅")
@@ -286,12 +350,15 @@ class Test {
             safe_task = re.sub(r'[-\s/]+', '_', safe_task)
             
             if language == 'java':
-                # Per Java, cerca il nome della classe nel codice
-                class_match = re.search(r'public\s+class\s+(\w+)', code)
+                # Per Java, cerca il nome della classe nel codice (sia public che non public)
+                class_match = re.search(r'(?:public\s+)?class\s+(\w+)', code)
                 if class_match:
-                    filename = f"{class_match.group(1)}.java"
+                    class_name = class_match.group(1)
+                    filename = f"{class_name}.java"
+                    print(f"    🏗️ Creando file Java: {filename}")
                 else:
                     filename = f"Main.java"
+                    print(f"    🏗️ Nessuna classe trovata, usando: {filename}")
             else:
                 filename = f"temp_{safe_task}_{language}{extension}"
             
@@ -315,21 +382,30 @@ class Test {
         """Compila il codice se necessario"""
         try:
             temp_dir = os.path.dirname(filepath)
+            base_name = Path(filepath).stem
             
             if language == 'java':
                 cmd = config['compiler'] + [filepath]
             elif language == 'csharp':
                 cmd = config['compiler'] + [filepath]
+            elif language == 'go':
+                # Go: rinomina il file in main.go e compila
+                main_go = os.path.join(temp_dir, 'main.go')
+                os.rename(filepath, main_go)
+                cmd = config['compiler'] + ['-o', 'test', 'main.go']
+            elif language == 'rust':
+                # Rust: compila con nome specifico
+                cmd = config['compiler'] + [filepath, '-o', 'test']
             else:
-                base_name = Path(filepath).stem
-                executable_path = os.path.join(temp_dir, base_name)
-                cmd = config['compiler'] + [filepath, '-o', executable_path]
+                # Altri linguaggi compilati (C, C++, Haskell, OCaml)
+                executable_path = os.path.join(temp_dir, 'test')
+                cmd = config['compiler'] + [filepath] + ['-o', executable_path]
             
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=config.get('timeout', 30),
+                timeout=config.get('timeout', 45),
                 cwd=temp_dir
             )
             
@@ -351,15 +427,21 @@ class Test {
         try:
             if 'compiler' in config:
                 if language == 'java':
-                    # Per Java, estrae il nome della classe
-                    with open(filepath, 'r') as f:
+                    # Per Java, estrae il nome della classe dal file compilato
+                    with open(filepath, 'r', encoding='utf-8') as f:
                         code = f.read()
-                    class_match = re.search(r'public\s+class\s+(\w+)', code)
+                    
+                    # Cerca sia 'public class' che 'class' senza public
+                    class_match = re.search(r'(?:public\s+)?class\s+(\w+)', code)
                     if class_match:
                         class_name = class_match.group(1)
                         cmd = config['executor'] + [class_name]
+                        print(f"    🔍 Classe Java trovata: {class_name}")
                     else:
-                        cmd = config['executor'] + ['Main']
+                        # Fallback: cerca per nome file
+                        base_name = Path(filepath).stem
+                        cmd = config['executor'] + [base_name]
+                        print(f"    🔍 Usando nome file: {base_name}")
                 elif language == 'csharp':
                     cmd = config['executor']
                 else:
@@ -380,7 +462,7 @@ class Test {
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=config.get('timeout', 30),
+                timeout=config.get('timeout', 45),
                 cwd=temp_dir
             )
             
@@ -419,27 +501,104 @@ class Test {
             except Exception as e:
                 print(f"⚠️ Errore cleanup {filepath}: {e}")
     
+    def find_task_file(self, task_name, language):
+        """Trova il file per una task e linguaggio nella struttura gerarchica"""
+        code_base_dir = "data/generated/code_snippets"
+        
+        # Mappa linguaggi alle loro categorie principali
+        language_categories = {
+            'python': 'scripting',
+            'javascript': 'scripting', 
+            'ruby': 'scripting',
+            'typescript': 'scripting',
+            'java': 'oop',
+            'csharp': 'oop',
+            'c++': 'oop',
+            'c': 'imperative',
+            'go': 'imperative',
+            'rust': 'imperative',
+            'php': 'imperative',
+            'haskell': 'functional',
+            'ocaml': 'functional',
+            'r': 'scientific',
+            'julia': 'scientific',
+            'matlab': 'scientific'
+        }
+        
+        # Normalizza i nomi dei linguaggi
+        lang_normalized = language.lower()
+        if lang_normalized == 'cpp':
+            lang_normalized = 'c++'
+        
+        # Trova la categoria del linguaggio
+        category = language_categories.get(lang_normalized)
+        if not category:
+            return None
+        
+        # Cerca il file nella directory del linguaggio
+        language_dir = os.path.join(code_base_dir, category, lang_normalized)
+        if not os.path.exists(language_dir):
+            return None
+        
+        # Cerca il file che contiene il nome della task (pattern migliorato)
+        task_patterns = [
+            task_name.replace('-', '_'),
+            task_name.replace('_', '-'),
+            task_name.replace(' ', '_'),
+            task_name.replace(' ', '-')
+        ]
+        
+        for filename in os.listdir(language_dir):
+            filename_lower = filename.lower()
+            for pattern in task_patterns:
+                if pattern.lower() in filename_lower:
+                    return os.path.join(language_dir, filename)
+        
+        return None
+
+    def clean_code_content(self, code):
+        """Pulisce il codice da caratteri invisibili problematici"""
+        
+        # Sostituisce direttamente i caratteri problematici più comuni
+        # U+00A0 (Non-Breaking Space) e altri spazi Unicode
+        cleaned = code.replace('\u00a0', ' ')  # Non-breaking space
+        cleaned = cleaned.replace('\u2007', ' ')  # Figure space  
+        cleaned = cleaned.replace('\u202f', ' ')  # Narrow no-break space
+        cleaned = cleaned.replace('\u2060', '')   # Word joiner (invisibile)
+        cleaned = cleaned.replace('\ufeff', '')   # Byte order mark
+        
+        # Rimuove caratteri di controllo invisibili (tranne newline, tab, carriage return)
+        import re
+        cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', cleaned)
+        
+        return cleaned
+
     def execute_task_all_available_languages(self, task_name):
         """Esegue una task in tutti i linguaggi disponibili"""
         print(f"\n🎯 Esecuzione task: {task_name}")
         
         task_results = {}
-        code_snippets_dir = os.path.join(self.analysis_dir, "code_snippets", task_name)
         
-        if not os.path.exists(code_snippets_dir):
-            print(f"❌ Directory non trovata: {code_snippets_dir}")
+        # Cerca i file nella struttura reale: data/generated/code_snippets/category/language/
+        code_base_dir = "data/generated/code_snippets"
+        
+        if not os.path.exists(code_base_dir):
+            print(f"❌ Directory base non trovata: {code_base_dir}")
             return task_results
         
-        # Trova i file di codice per i linguaggi disponibili
+        # Cerca i file di codice per i linguaggi disponibili in tutte le categorie
         for language in self.available_languages.keys():
-            language_file = os.path.join(code_snippets_dir, f"{language}{self.available_languages[language]['extension']}")
+            language_file = self.find_task_file(task_name, language)
             
-            if os.path.exists(language_file):
+            if language_file and os.path.exists(language_file):
                 print(f"  🔧 Esecuzione {language}...")
                 
                 try:
                     with open(language_file, 'r', encoding='utf-8') as f:
                         code = f.read()
+                    
+                    # Pulisce il codice da caratteri invisibili
+                    code = self.clean_code_content(code)
                     
                     result = self.execute_code(code, language, task_name)
                     task_results[language] = result

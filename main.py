@@ -7,6 +7,8 @@ Sistema completo per l'analisi e esecuzione di codici multi-linguaggio
 import sys
 import os
 import argparse
+import glob
+import shutil
 from pathlib import Path
 
 # Aggiunge il path per importare i moduli SWAM
@@ -26,7 +28,7 @@ def print_banner():
 def print_help():
     """Stampa l'aiuto per l'utilizzo"""
     print("\n📋 COMANDI DISPONIBILI:")
-    print("  analyze    - Analizza le task comuni tra linguaggi")
+    print("  analyze    - Analizza le task comuni tra linguaggi (completa)")
     print("  execute    - Esegue i codici delle task comuni (tutti i linguaggi)")
     print("  smart      - Esegue i codici solo nei linguaggi disponibili")
     print("  test       - Testa la disponibilità di tutti i linguaggi")
@@ -35,9 +37,9 @@ def print_help():
     print("  help       - Mostra questo aiuto")
     print("\n📖 ESEMPI D'USO:")
     print("  python main.py test      # Prima verifica i linguaggi disponibili")
+    print("  python main.py analyze   # Analizza task comuni")
     print("  python main.py smart     # Esegue solo i linguaggi funzionanti")
-    print("  python main.py analyze")
-    print("  python main.py status")
+    print("  python main.py status    # Mostra stato progetto")
 
 def analyze_tasks():
     """Esegue l'analisi delle task comuni"""
@@ -188,6 +190,24 @@ def clean_project():
         print(f"\n✅ Pulizia completata!")
         print(f"📁 File rimossi: {cleaned_files}")
         print(f"📂 Directory rimosse: {cleaned_dirs}")
+        
+        # Pulizia duplicati CSV in results/
+        print("\n🧹 Pulizia duplicati CSV...")
+        try:
+            # Import del modulo cleanup_results se esiste
+            if os.path.exists("src/cleanup_results.py"):
+                sys.path.insert(0, 'src')
+                import cleanup_results
+                csv_removed = cleanup_results.cleanup_csv_duplicates()
+                print(f"📄 File CSV duplicati rimossi: {csv_removed}")
+            elif os.path.exists("cleanup_results.py"):
+                import cleanup_results
+                csv_removed = cleanup_results.cleanup_csv_duplicates()
+                print(f"📄 File CSV duplicati rimossi: {csv_removed}")
+            else:
+                print("ℹ️ Script cleanup_results.py non trovato")
+        except Exception as e:
+            print(f"⚠️ Errore pulizia CSV: {e}")
         
         return True
             

@@ -23,7 +23,10 @@ class AdvancedTaskFinder:
     
     def __init__(self):
         self.results_dir = "results/task_analysis"
-        self.code_snippets_dir = os.path.join(self.results_dir, "code_snippets")
+        self.code_snippets_dir = "data/generated/code_snippets"  # Path corretto ai dati
+        
+        # Crea directory results se non esiste
+        os.makedirs(self.results_dir, exist_ok=True)
         
         # Linguaggi supportati e loro estensioni
         self.supported_languages = {
@@ -73,7 +76,7 @@ class AdvancedTaskFinder:
         }
     
     def scan_available_tasks(self):
-        """Scansiona tutte le task disponibili"""
+        """Scansiona tutte le task disponibili nella struttura gerarchica"""
         print("🔍 Scansione task disponibili...")
         
         if not os.path.exists(self.code_snippets_dir):
@@ -82,17 +85,38 @@ class AdvancedTaskFinder:
         
         task_languages = defaultdict(set)
         
-        # Scansiona ogni directory task
-        for task_dir in Path(self.code_snippets_dir).iterdir():
-            if task_dir.is_dir():
-                task_name = task_dir.name
+        # Scansiona struttura: code_snippets/category/language/files
+        for category_dir in Path(self.code_snippets_dir).iterdir():
+            if category_dir.is_dir():
+                print(f"  📁 Categoria: {category_dir.name}")
                 
-                # Scansiona i file nella task
-                for code_file in task_dir.iterdir():
-                    if code_file.is_file():
-                        language = self.detect_language(code_file)
-                        if language:
-                            task_languages[task_name].add(language)
+                for language_dir in category_dir.iterdir():
+                    if language_dir.is_dir():
+                        language = language_dir.name
+                        print(f"    🔹 Linguaggio: {language}")
+                        
+                        # Scansiona i file del linguaggio
+                        for code_file in language_dir.iterdir():
+                            if code_file.is_file():
+                                # Estrai il nome della task dal filename
+                                task_name = self.extract_task_name(code_file.name)
+                                if task_name:
+                                    task_languages[task_name].add(language)
+        
+        print(f"📊 Trovate {len(task_languages)} task totali")
+        return dict(task_languages)
+    
+    def extract_task_name(self, filename):
+        """Estrae il nome della task dal filename"""
+        # Format: snippet_N_Task_Name.ext
+        if filename.startswith('snippet_'):
+            # Rimuovi l'estensione
+            name_part = filename.rsplit('.', 1)[0]
+            # Rimuovi snippet_N_
+            parts = name_part.split('_', 2)
+            if len(parts) >= 3:
+                return parts[2]  # Task_Name
+        return None
         
         print(f"📊 Trovate {len(task_languages)} task totali")
         return dict(task_languages)
