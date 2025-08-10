@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 """
 SWAM Project - Main Entry Point
-Sistema completo per l'analisi e esecuzione di codici multi-linguaggio
+Sistema completo per l'analisi e esecuzione di codici multi-linguaggio con monitoraggio CO2
+
+Version: 2.0.0
+Author: Lorenzo Cappetti
+Features: Multi-language analysis, Smart execution, CO2 tracking, Statistical benchmarking
 """
+
+__version__ = "2.0.0"
+__author__ = "Lorenzo Cappetti"
 
 import sys
 import os
@@ -19,27 +26,45 @@ sys.path.insert(0, modules_path)
 sys.path.insert(0, src_path)
 
 def print_banner():
-    """Stampa il banner del progetto"""
-    print("=" * 60)
-    print("🌊 SWAM PROJECT - Cross-Language Code Analysis System")
-    print("   Sistema per Analisi e Esecuzione Multi-Linguaggio")
-    print("=" * 60)
+    """Stampa il banner del progetto con informazioni di versione"""
+    print("=" * 65)
+    print("🌊 SWAM PROJECT v2.0.0 - Cross-Language Code Analysis System")
+    print("   Sistema per Analisi e Esecuzione Multi-Linguaggio + CO2 Tracking")
+    print("   Author: Lorenzo Cappetti | New: 🌱 CodeCarbon Integration")
+    print("=" * 65)
 
 def print_help():
-    """Stampa l'aiuto per l'utilizzo"""
+    """Stampa l'aiuto completo per l'utilizzo del sistema"""
     print("\n📋 COMANDI DISPONIBILI:")
-    print("  analyze    - Analizza le task comuni tra linguaggi (completa)")
-    print("  execute    - Esegue i codici delle task comuni (tutti i linguaggi)")
-    print("  smart      - Esegue i codici solo nei linguaggi disponibili")
-    print("  test       - Testa la disponibilità di tutti i linguaggi")
-    print("  clean      - Pulisce i file temporanei e cache")
-    print("  status     - Mostra lo stato del progetto")
-    print("  help       - Mostra questo aiuto")
+    print("  analyze    - 🔍 Analizza task comuni tra linguaggi (completa)")
+    print("  execute    - 🚀 Esegue codici task comuni (tutti i linguaggi)")
+    print("  smart      - 🧠 Esegue codici solo nei linguaggi disponibili")
+    print("  test       - 🧪 Testa disponibilità di tutti i linguaggi")
+    print("  clean      - 🧹 Pulisce file temporanei e cache")
+    print("  status     - 📊 Mostra stato dettagliato del progetto")
+    print("  carbon     - 🌱 Report impatto ambientale (CodeCarbon)")
+    print("  benchmark  - 🧪 Benchmark CO2 statistico (30 run per precisione)")
+    print("  install    - 📦 Installa dipendenze del progetto")
+    print("  help       - ❓ Mostra questo aiuto completo")
     print("\n📖 ESEMPI D'USO:")
-    print("  python main.py test      # Prima verifica i linguaggi disponibili")
-    print("  python main.py analyze   # Analizza task comuni")
-    print("  python main.py smart     # Esegue solo i linguaggi funzionanti")
-    print("  python main.py status    # Mostra stato progetto")
+    print("  python main.py test        # ✅ Prima verifica i linguaggi")
+    print("  python main.py analyze     # 🔍 Analizza task comuni")
+    print("  python main.py smart       # 🧠 Esegue solo linguaggi funzionanti")
+    print("  python main.py benchmark   # 🧪 Benchmark preciso CO2 (30 esecuzioni)")
+    print("  python main.py carbon      # 🌱 Visualizza emissioni CO2")
+    print("  python main.py install     # 📦 Installa codecarbon e deps")
+    print("  python main.py status      # 📊 Stato completo progetto")
+    print("\n🌍 NOVITÀ v2.0.0 - MONITORAGGIO AMBIENTALE:")
+    print("  ✨ Tracciamento automatico impatto energetico con CodeCarbon")
+    print("  ✨ Benchmark statistici con 30 iterazioni per precisione")
+    print("  ✨ Rilevamento automatico Apple M2 PowerMetrics")
+    print("  ✨ Filtraggio smart codici non eseguibili")
+    print("  ✨ Report JSON dettagliati e summary console")
+    print("\n💡 SUGGERIMENTI:")
+    print("  • Usa 'test' prima del primo run per verificare linguaggi")
+    print("  • 'smart' è raccomandato per esecuzioni quotidiane")
+    print("  • 'benchmark' per dati statistici accurati (più lento)")
+    print("  • 'carbon' per monitoring ambientale continuo")
 
 def analyze_tasks():
     """Esegue l'analisi delle task comuni"""
@@ -117,6 +142,53 @@ def smart_execute():
         return False
     except Exception as e:
         print(f"❌ Errore durante esecuzione intelligente: {e}")
+        return False
+    
+    return True
+
+def benchmark_carbon():
+    """Esegue benchmark CO2 con ripetizioni multiple"""
+    print("\n🧪 CARBON BENCHMARK")
+    print("-" * 40)
+    
+    try:
+        from carbon_benchmark import CarbonBenchmark
+        
+        # Chiedi all'utente il numero di iterazioni
+        print("🔧 Configurazione benchmark:")
+        print("  • Standard: 30 iterazioni (raccomandato per precisione)")
+        print("  • Veloce: 10 iterazioni (per test rapidi)")
+        print("  • Test: 5 iterazioni (per debug)")
+        print("  • Debug: 3 iterazioni (super veloce)")
+        
+        choice = input("\nScegli modalità [standard/veloce/test/debug] (default: standard): ").strip().lower()
+        
+        if choice == "debug":
+            iterations = 3
+            max_tasks = 2
+        elif choice == "veloce":
+            iterations = 10
+            max_tasks = 3
+        elif choice == "test":
+            iterations = 5
+            max_tasks = 2
+        else:
+            iterations = 30
+            max_tasks = 5
+        
+        print(f"\n🎯 Configurazione: {iterations} iterazioni, {max_tasks} task")
+        
+        benchmark = CarbonBenchmark(iterations=iterations)
+        benchmark.benchmark_common_tasks(max_tasks=max_tasks)
+        
+    except ImportError as e:
+        print(f"❌ Errore importazione modulo benchmark: {e}")
+        return False
+    except KeyboardInterrupt:
+        print("\n⚠️ Benchmark interrotto dall'utente")
+        return False
+    except Exception as e:
+        print(f"❌ Errore durante benchmark: {e}")
         return False
     
     return True
@@ -292,7 +364,7 @@ def main():
     parser.add_argument(
         'command', 
         nargs='?',
-        choices=['analyze', 'execute', 'smart', 'test', 'clean', 'status', 'help'],
+        choices=['analyze', 'execute', 'smart', 'test', 'clean', 'status', 'carbon', 'install', 'benchmark', 'help'],
         default='help',
         help='Comando da eseguire'
     )
@@ -344,6 +416,45 @@ def main():
             sys.exit(1)
     elif args.command == 'status':
         show_status()
+    elif args.command == 'carbon':
+        # Comando per visualizzare il report dell'impatto ambientale
+        try:
+            from src.carbon_tracker import print_carbon_report
+            print_carbon_report()
+        except ImportError:
+            print("❌ Carbon tracker non disponibile")
+            print("💡 Installa CodeCarbon con: pip install codecarbon")
+    elif args.command == 'benchmark':
+        # Comando per eseguire benchmark CO2 con ripetizioni multiple
+        success = benchmark_carbon()
+        if success:
+            print("\n✅ Benchmark CO2 completato!")
+            print("💡 Controlla i risultati in results/carbon_benchmark/")
+        else:
+            print("\n❌ Benchmark CO2 fallito")
+            sys.exit(1)
+    elif args.command == 'install':
+        # Comando per installare le dipendenze
+        print("\n📦 INSTALLAZIONE DIPENDENZE SWAM")
+        print("=" * 50)
+        
+        # Controlla se siamo in environment conda
+        conda_env = os.environ.get('CONDA_DEFAULT_ENV')
+        if conda_env:
+            print(f"🐍 Ambiente conda attivo: {conda_env}")
+        else:
+            print("⚠️ Nessun ambiente conda rilevato")
+            
+        # Installa requirements
+        import subprocess
+        try:
+            subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
+            print("✅ Dipendenze installate con successo")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Errore installazione: {e}")
+    else:
+        print(f"❌ Comando non riconosciuto: {args.command}")
+        print("Usa 'python main.py help' per vedere i comandi disponibili")
     
     print("\n" + "=" * 60)
 

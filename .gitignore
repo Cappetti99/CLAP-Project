@@ -382,6 +382,31 @@ dependency_*.json
 *.state
 
 # =============================================================================
+# CODECARBON - MONITORAGGIO CO2 (v2.0.0)
+# =============================================================================
+
+# CodeCarbon cache e configurazione locale
+.codecarbon/
+.codecarbon_cache/
+
+# File temporanei di tracciamento
+emissions.csv.tmp
+emissions_*.csv.tmp
+codecarbon_*.log
+
+# Output temporanei benchmark (mantieni i risultati finali)
+results/carbon/session_*.json.tmp
+results/carbon/benchmark_temp_*
+results/carbon/*.log
+
+# PowerMetrics temporanei (macOS)
+powermetrics_log_temp.txt
+powermetrics_*.tmp
+
+# Note: I file results/carbon/*.json e emissions.csv sono mantenuti 
+# per tracking storico delle emissioni CO2
+
+# =============================================================================
 # ESCLUSIONI SPECIFICHE POST-CLEANUP
 # =============================================================================
 

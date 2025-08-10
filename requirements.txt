@@ -16,6 +16,14 @@ colorama>=0.4.6
 # System utilities
 psutil>=5.9.0
 
+# Carbon footprint tracking (NOVITÀ!)
+codecarbon>=3.0.0
+
+# Statistiche per benchmark CO2 (built-in Python)
+# statistics (built-in)
+# datetime (built-in)
+# re (built-in)
+
 # Optional: per migliorare performance
 pyarrow>=12.0.0
 

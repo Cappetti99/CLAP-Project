@@ -19,6 +19,13 @@ project_root = os.path.dirname(script_dir)
 modules_path = os.path.join(project_root, 'modules')
 sys.path.insert(0, modules_path)
 
+# Importa il carbon tracker per monitorare l'impatto ambientale
+try:
+    from src.carbon_tracker import start_carbon_tracking, stop_carbon_tracking
+    CARBON_TRACKING_AVAILABLE = True
+except ImportError:
+    CARBON_TRACKING_AVAILABLE = False
+
 class SmartExecutor:
     """Esecutore intelligente che rileva automaticamente i linguaggi disponibili"""
     
@@ -284,7 +291,15 @@ func main() {
     
     def execute_code(self, code, language, task_name):
         """Esegue il codice se il linguaggio è disponibile"""
+        
+        # Avvia tracking CO2 per questa esecuzione (solo se non disabilitato)
+        should_track = CARBON_TRACKING_AVAILABLE and not getattr(self, 'disable_carbon_tracking', False)
+        if should_track:
+            start_carbon_tracking(task_name, language)
+        
         if language not in self.available_languages:
+            if should_track:
+                stop_carbon_tracking()
             return {
                 'success': False,
                 'error': f'Linguaggio {language} non disponibile su questo sistema',
@@ -300,6 +315,8 @@ func main() {
             # Crea file temporaneo
             temp_file = self.create_temp_file(code, config['extension'], task_name, language)
             if not temp_file:
+                if should_track:
+                    stop_carbon_tracking()
                 return {
                     'success': False,
                     'error': 'Impossibile creare file temporaneo',
@@ -324,14 +341,24 @@ func main() {
             exec_result = self.run_code(temp_file, config, language, temp_dir)
             execution_time = time.time() - start_time
             
-            return {
+            result = {
                 'success': exec_result['success'],
                 'error': exec_result.get('error', ''),
                 'output': exec_result.get('output', ''),
                 'execution_time': execution_time
             }
             
+            # Ferma tracking CO2
+            if should_track:
+                stop_carbon_tracking()
+                
+            return result
+            
         except Exception as e:
+            # Ferma tracking CO2 anche in caso di errore
+            if should_track:
+                stop_carbon_tracking()
+                
             return {
                 'success': False,
                 'error': f'Errore esecuzione: {str(e)}',

@@ -1,9 +1,10 @@
 # 🌊 SWAM Project - Cross-Language Code Analysis System
 
-**Sistema Modulare Avanzato per Analisi e Esecuzione Multi-Linguaggio** - Trova task comuni, esegue codice automaticamente e genera report dettagliati in 16 linguaggi di programmazione.
+**Sistema Modulare Avanzato per Analisi e Esecuzione Multi-Linguaggio** - Trova task comuni, esegue codice automaticamente e genera report dettagliati in 16 linguaggi di programmazione con **tracciamento emissioni CO2**.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
 [![Languages](https://img.shields.io/badge/Languages-16-green.svg)](#linguaggi-supportati)
+[![CodeCarbon](https://img.shields.io/badge/CodeCarbon-Enabled-green.svg)](https://codecarbon.io)
 [![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)](https://github.com)
 
 ## 🚀 Quick Start
@@ -35,6 +36,18 @@ python main.py execute
 python main.py status
 ```
 
+### 🌱 **NUOVO**: Benchmark CO2 (Analisi Emissioni)
+```bash
+# Benchmark CO2 completo (30 iterazioni per precisione)
+python main.py benchmark
+
+# Modalità veloce (10 iterazioni)
+echo "veloce" | python main.py benchmark
+
+# Modalità debug super veloce (3 iterazioni)
+echo "debug" | python main.py benchmark
+```
+
 ## 📋 Comandi Disponibili
 
 | Comando | Modalità | Descrizione |
@@ -44,6 +57,7 @@ python main.py status
 | `smart` | 🔧 Avanzata | Esegue codici solo nei linguaggi disponibili |
 | `analyze` | 🔧 Avanzata | Analisi completa task comuni con metriche |
 | `execute` | 🔧 Avanzata | Esegue codici in tutti i linguaggi (può fallire) |
+| **`benchmark`** | 🌱 **CO2** | **Benchmark emissioni CO2 con statistiche** |
 | `clean` | 🧹 | Pulisce file temporanei e cache |
 | `status` | 📊 | Mostra stato del progetto e statistiche |
 
@@ -69,6 +83,25 @@ results/
 - **Smart Executor**: Esecuzione adattiva solo linguaggi disponibili
 - **Results Monitor**: Analisi tassi successo e categorizzazione errori
 - **Cleanup Manager**: Pulizia automatica file temporanei
+
+### 🌱 **Benchmark CO2** (Novità!)
+- **Carbon Tracking**: Misura emissioni CO2 per ogni esecuzione con [CodeCarbon](https://codecarbon.io)
+- **Analisi Statistica**: 30 iterazioni per task per dati precisi
+- **Ranking Efficienza**: Classifica linguaggi per impatto ambientale
+- **Report Dettagliati**: Statistiche complete (media, mediana, deviazione standard)
+- **Modalità Multiple**: Standard (30 iter), Veloce (10 iter), Debug (3 iter)
+
+#### Output Benchmark CO2
+```
+results/carbon_benchmark/
+├── carbon_benchmark_detailed_*.json   # Dati completi 30 iterazioni
+├── carbon_benchmark_summary_*.json    # Riassunto per linguaggio
+└── session_*.json                     # Dettagli singole sessioni
+
+results/carbon/
+├── emissions.csv                      # Log emissioni CodeCarbon
+└── session_*.json                    # Tracking dettagliato per esecuzione
+```
 
 #### Output Avanzati
 ```
@@ -135,16 +168,82 @@ SWAM-Project/
 ├── src/                        # 🔧 Esecutori e analyzer
 │   ├── enhanced_executor.py    # 🚀 Esecutore completo
 │   ├── smart_executor.py       # 🧠 Esecutore adattivo
+│   ├── carbon_benchmark.py     # 🌱 Benchmark CO2 (NUOVO)
+│   ├── carbon_tracker.py       # 🌱 Tracking emissioni (NUOVO)
 │   ├── language_tester.py      # 🧪 Test linguaggi
 │   ├── advanced_task_finder.py # 🎯 Ricerca task
 │   └── task_finder.py          # 🔍 Ricerca base
 └── results/                    # 📊 Output generati
     ├── execution/              # Risultati esecuzione
     ├── task_analysis/          # Analisi task
+    ├── carbon_benchmark/       # 🌱 Report CO2 (NUOVO)
+    ├── carbon/                 # 🌱 Tracking emissioni (NUOVO)
     └── logs/                   # Log sistema
 ```
 
-## 🛠️ Installazione Linguaggi
+## 🌱 **Benchmark CO2 - Guida Completa**
+
+### � Modalità Disponibili
+
+| Modalità | Iterazioni | Task | Utilizzo | Tempo |
+|----------|------------|------|----------|-------|
+| **Standard** | 30 | 5 | Dati precisi per ricerca | ~15 min |
+| **Veloce** | 10 | 3 | Test rapidi | ~5 min |
+| **Debug** | 3 | 2 | Sviluppo/test | ~2 min |
+
+### 🎯 Esempi di Uso
+
+#### Benchmark Completo (Raccomandato)
+```bash
+python main.py benchmark
+# Scegli "standard" per 30 iterazioni precise
+```
+
+#### Test Rapido
+```bash
+echo "debug" | python main.py benchmark
+# 3 iterazioni super veloci per test
+```
+
+#### Benchmark via Script
+```bash
+# Python diretto
+python src/carbon_benchmark.py          # Standard: 30 iter, 5 task
+python src/carbon_benchmark.py quick    # Veloce: 10 iter, 3 task  
+python src/carbon_benchmark.py debug    # Debug: 3 iter, 2 task
+```
+
+### 📊 Output Benchmark
+
+#### Report Console
+```
+🏅 RANKING LINGUAGGI PER EFFICIENZA ENERGETICA:
+  1. java        : 0.00000262 kg CO2eq/run
+  2. ruby        : 0.00000299 kg CO2eq/run
+  3. php         : 0.00000324 kg CO2eq/run
+  4. python      : 0.00000442 kg CO2eq/run
+  5. javascript  : 0.00000459 kg CO2eq/run
+
+🔮 STIME IMPATTO:
+  📅 Stima giornaliera: 0.489 kg CO2eq/giorno
+  📈 Stima annuale: 178.4 kg CO2eq/anno
+```
+
+#### File JSON Generati
+- `carbon_benchmark_detailed_*.json`: Tutti i dati delle 30 iterazioni
+- `carbon_benchmark_summary_*.json`: Riassunto per linguaggio
+- `emissions.csv`: Log CodeCarbon compatibile con dashboard
+
+## �🛠️ Installazione Linguaggi
+
+### Prerequisiti per Benchmark CO2
+```bash
+# Installa CodeCarbon
+pip install codecarbon
+
+# Verifica installazione
+python -c "import codecarbon; print('CodeCarbon ready!')"
+```
 
 ### Automatica (macOS)
 ```bash
