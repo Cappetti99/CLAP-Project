@@ -1,0 +1,63 @@
+# SWAM PROJECT - Sequenza Demo Completa
+# Lista ordinata di comandi per mostrare tutte le funzionalità
+
+# ========================================
+# PREPARAZIONE AMBIENTE
+# ========================================
+conda activate SWAM # Attiva ambiente Python
+
+# ========================================
+# 1. DIAGNOSTICA INIZIALE (2-3 min)
+# ========================================
+python main.py status # Mostra stato completo del progetto
+python main.py test # Testa disponibilità dei 16 linguaggi
+
+# ========================================
+# 2. ANALISI TASK COMUNI (3-5 min)
+# ========================================
+python main.py analyze # Trova task comuni tra linguaggi
+# Output: CSV con matrici di compatibilità
+
+# ========================================
+# 3. ESECUZIONE VELOCE (2-3 min)
+# ========================================
+python main.py smart # Esecuzione intelligente (solo linguaggi disponibili)
+# Dimostra adattamento automatico del sistema
+
+# ========================================
+# 4. BENCHMARK CO2 (5-10 min)
+# ========================================
+# Modalità debug per demo veloce:
+echo "debug" | python main.py benchmark # 3 iterazioni per linguaggio
+
+# Modalità completa per ricerca seria:
+# echo "standard" | python main.py benchmark # 30 iterazioni (LENTO!)
+
+# ========================================
+# 5. VISUALIZZAZIONE RISULTATI (1-2 min)
+# ========================================
+ls -la results/ # Mostra file generati
+du -sh results/ # Dimensioni dati
+head -5 results/common_tasks_*.csv # Anteprima risultati
+
+# ========================================
+# 6. GESTIONE STORAGE (1 min)
+# ========================================
+python main.py clean # Cleanup intelligente con backup
+
+# ========================================
+# COMANDI BONUS PER DEMO AVANZATA
+# ========================================
+python main.py execute # Esecuzione completa (tutti i linguaggi)
+python main.py simple # Modalità semplificata
+
+# ========================================
+# ORDINE SUGGERITO PER PRESENTAZIONE:
+# ========================================
+# 1. status → Panoramica progetto
+# 2. test → Mostra multi-linguaggio
+# 3. analyze → Intelligenza del sistema
+# 4. smart → Esecuzione adattiva
+# 5. benchmark → Innovazione CO2
+# 6. clean → Gestione professionale
+

@@ -28,39 +28,34 @@ sys.path.insert(0, src_path)
 def print_banner():
     """Stampa il banner del progetto con informazioni di versione"""
     print("=" * 65)
-    print("🌊 SWAM PROJECT v2.0.0 - Cross-Language Code Analysis System")
+    print("SWAM PROJECT - Cross-Language Code Analysis System")
     print("   Sistema per Analisi e Esecuzione Multi-Linguaggio + CO2 Tracking")
-    print("   Author: Lorenzo Cappetti | New: 🌱 CodeCarbon Integration")
+    print("   Author: Lorenzo Cappetti | New: CodeCarbon Integration")
     print("=" * 65)
 
 def print_help():
     """Stampa l'aiuto completo per l'utilizzo del sistema"""
-    print("\n📋 COMANDI DISPONIBILI:")
-    print("  analyze    - 🔍 Analizza task comuni tra linguaggi (completa)")
-    print("  execute    - 🚀 Esegue codici task comuni (tutti i linguaggi)")
-    print("  smart      - 🧠 Esegue codici solo nei linguaggi disponibili")
-    print("  test       - 🧪 Testa disponibilità di tutti i linguaggi")
-    print("  clean      - 🧹 Pulisce file temporanei e cache")
-    print("  status     - 📊 Mostra stato dettagliato del progetto")
-    print("  carbon     - 🌱 Report impatto ambientale (CodeCarbon)")
-    print("  benchmark  - 🧪 Benchmark CO2 statistico (30 run per precisione)")
-    print("  install    - 📦 Installa dipendenze del progetto")
-    print("  help       - ❓ Mostra questo aiuto completo")
-    print("\n📖 ESEMPI D'USO:")
-    print("  python main.py test        # ✅ Prima verifica i linguaggi")
-    print("  python main.py analyze     # 🔍 Analizza task comuni")
-    print("  python main.py smart       # 🧠 Esegue solo linguaggi funzionanti")
-    print("  python main.py benchmark   # 🧪 Benchmark preciso CO2 (30 esecuzioni)")
-    print("  python main.py carbon      # 🌱 Visualizza emissioni CO2")
-    print("  python main.py install     # 📦 Installa codecarbon e deps")
-    print("  python main.py status      # 📊 Stato completo progetto")
-    print("\n🌍 NOVITÀ v2.0.0 - MONITORAGGIO AMBIENTALE:")
-    print("  ✨ Tracciamento automatico impatto energetico con CodeCarbon")
-    print("  ✨ Benchmark statistici con 30 iterazioni per precisione")
-    print("  ✨ Rilevamento automatico Apple M2 PowerMetrics")
-    print("  ✨ Filtraggio smart codici non eseguibili")
-    print("  ✨ Report JSON dettagliati e summary console")
-    print("\n💡 SUGGERIMENTI:")
+    print("\nCOMANDI DISPONIBILI:")
+    print("  analyze    - Analizza task comuni tra linguaggi (completa)")
+    print("  execute    - Esegue codici task comuni (tutti i linguaggi)")
+    print("  smart      - Esegue codici solo nei linguaggi disponibili")
+    print("  test       - Testa disponibilità di tutti i linguaggi")
+    print("  clean      - Pulisce file temporanei e cache")
+    print("  status     - Mostra stato dettagliato del progetto")
+    print("  carbon     - Report impatto ambientale (CodeCarbon)")
+    print("  benchmark  - Benchmark CO2 statistico (30 run per precisione)")
+    print("  install    - Installa dipendenze del progetto")
+    print("  help       - Mostra questo aiuto completo")
+    print("\nESEMPI D'USO:")
+    print("  python main.py test        # Prima verifica i linguaggi")
+    print("  python main.py analyze     # Analizza task comuni")
+    print("  python main.py smart       # Esegue solo linguaggi funzionanti")
+    print("  python main.py benchmark   # Benchmark preciso CO2 (30 esecuzioni)")
+    print("  python main.py carbon      # Visualizza emissioni CO2")
+    print("  python main.py install     # Installa codecarbon e deps")
+    print("  python main.py status      # Stato completo progetto")
+
+    print("\nSUGGERIMENTI:")
     print("  • Usa 'test' prima del primo run per verificare linguaggi")
     print("  • 'smart' è raccomandato per esecuzioni quotidiane")
     print("  • 'benchmark' per dati statistici accurati (più lento)")
@@ -68,7 +63,7 @@ def print_help():
 
 def analyze_tasks():
     """Esegue l'analisi delle task comuni"""
-    print("\n🔍 ANALISI TASK COMUNI")
+    print("\nANALISI TASK COMUNI")
     print("-" * 40)
     
     try:
@@ -77,24 +72,24 @@ def analyze_tasks():
         common_tasks = finder.find_common_tasks(min_languages=8)
         
         if common_tasks:
-            print(f"✅ Trovate {len(common_tasks)} task comuni")
+            print(f"Trovate {len(common_tasks)} task comuni")
             for task in common_tasks[:10]:  # Mostra prime 10
                 print(f"  • {task['name']} ({task['language_count']} linguaggi)")
         else:
-            print("❌ Nessuna task comune trovata")
+            print("Nessuna task comune trovata")
             
     except ImportError as e:
-        print(f"❌ Errore importazione modulo analisi: {e}")
+        print(f"Errore importazione modulo analisi: {e}")
         return False
     except Exception as e:
-        print(f"❌ Errore durante analisi: {e}")
+        print(f"Errore durante analisi: {e}")
         return False
     
     return True
 
 def execute_codes():
     """Esegue i codici delle task comuni"""
-    print("\n🚀 ESECUZIONE CODICI")
+    print("\nESECUZIONE CODICI")
     print("-" * 40)
     
     try:
@@ -102,17 +97,17 @@ def execute_codes():
         executor = EnhancedExecutor()
         executor.execute_all_common_tasks()
     except ImportError as e:
-        print(f"❌ Errore importazione modulo esecutore: {e}")
+        print(f"Errore importazione modulo esecutore: {e}")
         return False
     except Exception as e:
-        print(f"❌ Errore durante esecuzione: {e}")
+        print(f"Errore durante esecuzione: {e}")
         return False
     
     return True
 
 def test_languages():
     """Testa la disponibilità di tutti i linguaggi"""
-    print("\n🧪 TEST LINGUAGGI")
+    print("\nTEST LINGUAGGI")
     print("-" * 40)
     
     try:
@@ -120,17 +115,17 @@ def test_languages():
         tester = LanguageTester()
         tester.test_all_languages()
     except ImportError as e:
-        print(f"❌ Errore importazione modulo test: {e}")
+        print(f"Errore importazione modulo test: {e}")
         return False
     except Exception as e:
-        print(f"❌ Errore durante test: {e}")
+        print(f"Errore durante test: {e}")
         return False
     
     return True
 
 def smart_execute():
     """Esegue i codici usando l'esecutore intelligente"""
-    print("\n🧠 ESECUZIONE INTELLIGENTE")
+    print("\nESECUZIONE INTELLIGENTE")
     print("-" * 40)
     
     try:
@@ -138,24 +133,24 @@ def smart_execute():
         executor = SmartExecutor()
         executor.execute_all_common_tasks()
     except ImportError as e:
-        print(f"❌ Errore importazione modulo smart executor: {e}")
+        print(f"Errore importazione modulo smart executor: {e}")
         return False
     except Exception as e:
-        print(f"❌ Errore durante esecuzione intelligente: {e}")
+        print(f"Errore durante esecuzione intelligente: {e}")
         return False
     
     return True
 
 def benchmark_carbon():
     """Esegue benchmark CO2 con ripetizioni multiple"""
-    print("\n🧪 CARBON BENCHMARK")
+    print("\nCARBON BENCHMARK")
     print("-" * 40)
     
     try:
         from carbon_benchmark import CarbonBenchmark
         
         # Chiedi all'utente il numero di iterazioni
-        print("🔧 Configurazione benchmark:")
+        print("Configurazione benchmark:")
         print("  • Standard: 30 iterazioni (raccomandato per precisione)")
         print("  • Veloce: 10 iterazioni (per test rapidi)")
         print("  • Test: 5 iterazioni (per debug)")
@@ -176,26 +171,26 @@ def benchmark_carbon():
             iterations = 30
             max_tasks = 5
         
-        print(f"\n🎯 Configurazione: {iterations} iterazioni, {max_tasks} task")
+        print(f"\nConfigurazione: {iterations} iterazioni, {max_tasks} task")
         
         benchmark = CarbonBenchmark(iterations=iterations)
         benchmark.benchmark_common_tasks(max_tasks=max_tasks)
         
     except ImportError as e:
-        print(f"❌ Errore importazione modulo benchmark: {e}")
+        print(f"Errore importazione modulo benchmark: {e}")
         return False
     except KeyboardInterrupt:
-        print("\n⚠️ Benchmark interrotto dall'utente")
+        print("\nBenchmark interrotto dall'utente")
         return False
     except Exception as e:
-        print(f"❌ Errore durante benchmark: {e}")
+        print(f"Errore durante benchmark: {e}")
         return False
     
     return True
 
 def clean_project():
     """Pulisce file temporanei e cache del progetto"""
-    print("\n🧹 PULIZIA PROGETTO")
+    print("\nPULIZIA PROGETTO")
     print("-" * 40)
     
     try:
@@ -223,7 +218,7 @@ def clean_project():
             "**/*.cmi"
         ]
         
-        print("🗑️ Rimozione file temporanei...")
+        print("Rimozione file temporanei...")
         
         for pattern in temp_patterns:
             files = glob.glob(pattern, recursive=True)
@@ -232,13 +227,13 @@ def clean_project():
                     if os.path.isfile(file_path):
                         os.remove(file_path)
                         cleaned_files += 1
-                        print(f"  ✅ Rimosso: {file_path}")
+                        print(f"  Rimosso: {file_path}")
                     elif os.path.isdir(file_path):
                         shutil.rmtree(file_path)
                         cleaned_dirs += 1
-                        print(f"  ✅ Rimossa directory: {file_path}")
+                        print(f"  Rimossa directory: {file_path}")
                 except Exception as e:
-                    print(f"  ⚠️ Errore rimozione {file_path}: {e}")
+                    print(f"  Errore rimozione {file_path}: {e}")
         
         # Pulizia cache specifiche
         cache_dirs = [
@@ -249,47 +244,47 @@ def clean_project():
             "_build"   # OCaml
         ]
         
-        print("\n🧹 Pulizia cache...")
+        print("\nPulizia cache...")
         for cache_dir in cache_dirs:
             if os.path.exists(cache_dir):
                 try:
                     shutil.rmtree(cache_dir)
                     cleaned_dirs += 1
-                    print(f"  ✅ Rimossa cache: {cache_dir}")
+                    print(f"  Rimossa cache: {cache_dir}")
                 except Exception as e:
-                    print(f"  ⚠️ Errore rimozione cache {cache_dir}: {e}")
+                    print(f"  Errore rimozione cache {cache_dir}: {e}")
         
-        print(f"\n✅ Pulizia completata!")
-        print(f"📁 File rimossi: {cleaned_files}")
+        print(f"\nPulizia completata!")
+        print(f"File rimossi: {cleaned_files}")
         print(f"📂 Directory rimosse: {cleaned_dirs}")
         
         # Pulizia duplicati CSV in results/
-        print("\n🧹 Pulizia duplicati CSV...")
+        print("\nPulizia duplicati CSV...")
         try:
             # Import del modulo cleanup_results se esiste
             if os.path.exists("src/cleanup_results.py"):
                 sys.path.insert(0, 'src')
                 import cleanup_results
                 csv_removed = cleanup_results.cleanup_csv_duplicates()
-                print(f"📄 File CSV duplicati rimossi: {csv_removed}")
+                print(f"File CSV duplicati rimossi: {csv_removed}")
             elif os.path.exists("cleanup_results.py"):
                 import cleanup_results
                 csv_removed = cleanup_results.cleanup_csv_duplicates()
-                print(f"📄 File CSV duplicati rimossi: {csv_removed}")
+                print(f"File CSV duplicati rimossi: {csv_removed}")
             else:
-                print("ℹ️ Script cleanup_results.py non trovato")
+                print("Script cleanup_results.py non trovato")
         except Exception as e:
-            print(f"⚠️ Errore pulizia CSV: {e}")
+            print(f"Errore pulizia CSV: {e}")
         
         return True
             
     except Exception as e:
-        print(f"❌ Errore durante pulizia: {e}")
+        print(f"Errore durante pulizia: {e}")
         return False
 
 def show_status():
     """Mostra lo stato del progetto"""
-    print("\n📊 STATO PROGETTO")
+    print("\nSTATO PROGETTO")
     print("-" * 40)
     
     # Verifica directory principali
@@ -301,17 +296,17 @@ def show_status():
         "src"
     ]
     
-    print("📁 Directory:")
+    print("Directory:")
     for directory in directories:
         path = Path(directory)
         if path.exists():
             if path.is_dir():
                 file_count = len(list(path.rglob("*")))
-                print(f"  ✅ {directory} ({file_count} file)")
+                print(f"  {directory} ({file_count} file)")
             else:
-                print(f"  ⚠️  {directory} (non è una directory)")
+                print(f"   {directory} (non è una directory)")
         else:
-            print(f"  ❌ {directory} (non trovata)")
+            print(f"  {directory} (non trovata)")
     
     # Verifica file di analisi
     analysis_files = [
@@ -319,20 +314,20 @@ def show_status():
         "results/task_analysis/dependency_analysis.json"
     ]
     
-    print("\n📄 File di Analisi:")
+    print("\nFile di Analisi:")
     for file_path in analysis_files:
         path = Path(file_path)
         if path.exists():
             size = path.stat().st_size
-            print(f"  ✅ {file_path} ({size} byte)")
+            print(f"  {file_path} ({size} byte)")
         else:
-            print(f"  ❌ {file_path} (non trovato)")
+            print(f"  {file_path} (non trovato)")
     
     # Conta task disponibili
     task_dir = Path("results/task_analysis/code_snippets")
     if task_dir.exists():
         task_count = len([d for d in task_dir.iterdir() if d.is_dir()])
-        print(f"\n🎯 Task Analizzate: {task_count}")
+        print(f"\nTask Analizzate: {task_count}")
         
         # Mostra prime 5 task
         tasks = sorted([d.name for d in task_dir.iterdir() if d.is_dir()])[:5]
@@ -341,18 +336,18 @@ def show_status():
         if len(tasks) == 5 and task_count > 5:
             print(f"  ... e altre {task_count - 5} task")
     else:
-        print("\n🎯 Task Analizzate: 0 (esegui 'analyze' prima)")
+        print("\nTask Analizzate: 0 (esegui 'analyze' prima)")
     
     # Verifica risultati esecuzione
     exec_dir = Path("results/execution")
     if exec_dir.exists():
         exec_files = list(exec_dir.glob("execution_results_*.json"))
-        print(f"\n🏃 Esecuzioni Completate: {len(exec_files)}")
+        print(f"\nEsecuzioni Completate: {len(exec_files)}")
         if exec_files:
             latest = max(exec_files, key=lambda x: x.stat().st_mtime)
-            print(f"  📅 Ultima esecuzione: {latest.name}")
+            print(f"  Ultima esecuzione: {latest.name}")
     else:
-        print("\n🏃 Esecuzioni Completate: 0 (esegui 'execute' prima)")
+        print("\nEsecuzioni Completate: 0 (esegui 'execute' prima)")
 
 def main():
     """Funzione principale"""
@@ -378,41 +373,41 @@ def main():
     elif args.command == 'analyze':
         success = analyze_tasks()
         if success:
-            print("\n✅ Analisi completata con successo!")
-            print("💡 Ora puoi eseguire 'python main.py execute' per testare i codici")
+            print("\nAnalisi completata con successo!")
+            print("Ora puoi eseguire 'python main.py execute' per testare i codici")
         else:
-            print("\n❌ Analisi fallita")
+            print("\nAnalisi fallita")
             sys.exit(1)
     elif args.command == 'execute':
         success = execute_codes()
         if success:
-            print("\n✅ Esecuzione completata!")
-            print("💡 Controlla i risultati in results/execution/")
+            print("\nEsecuzione completata!")
+            print("Controlla i risultati in results/execution/")
         else:
-            print("\n❌ Esecuzione fallita")
+            print("\nEsecuzione fallita")
             sys.exit(1)
     elif args.command == 'smart':
         success = smart_execute()
         if success:
-            print("\n✅ Esecuzione intelligente completata!")
-            print("💡 Controlla i risultati in results/execution/")
+            print("\nEsecuzione intelligente completata!")
+            print("Controlla i risultati in results/execution/")
         else:
-            print("\n❌ Esecuzione intelligente fallita")
+            print("\nEsecuzione intelligente fallita")
             sys.exit(1)
     elif args.command == 'test':
         success = test_languages()
         if success:
-            print("\n✅ Test linguaggi completato!")
-            print("💡 Controlla i risultati per vedere quali linguaggi sono disponibili")
+            print("\nTest linguaggi completato!")
+            print("Controlla i risultati per vedere quali linguaggi sono disponibili")
         else:
-            print("\n❌ Test linguaggi fallito")
+            print("\nTest linguaggi fallito")
             sys.exit(1)
     elif args.command == 'clean':
         success = clean_project()
         if success:
-            print("\n✅ Pulizia completata!")
+            print("\nPulizia completata!")
         else:
-            print("\n❌ Pulizia fallita")
+            print("\nPulizia fallita")
             sys.exit(1)
     elif args.command == 'status':
         show_status()
@@ -422,38 +417,38 @@ def main():
             from src.carbon_tracker import print_carbon_report
             print_carbon_report()
         except ImportError:
-            print("❌ Carbon tracker non disponibile")
-            print("💡 Installa CodeCarbon con: pip install codecarbon")
+            print("Carbon tracker non disponibile")
+            print("Installa CodeCarbon con: pip install codecarbon")
     elif args.command == 'benchmark':
         # Comando per eseguire benchmark CO2 con ripetizioni multiple
         success = benchmark_carbon()
         if success:
-            print("\n✅ Benchmark CO2 completato!")
-            print("💡 Controlla i risultati in results/carbon_benchmark/")
+            print("\nBenchmark CO2 completato!")
+            print("Controlla i risultati in results/carbon_benchmark/")
         else:
-            print("\n❌ Benchmark CO2 fallito")
+            print("\nBenchmark CO2 fallito")
             sys.exit(1)
     elif args.command == 'install':
         # Comando per installare le dipendenze
-        print("\n📦 INSTALLAZIONE DIPENDENZE SWAM")
+        print("\nINSTALLAZIONE DIPENDENZE SWAM")
         print("=" * 50)
         
         # Controlla se siamo in environment conda
         conda_env = os.environ.get('CONDA_DEFAULT_ENV')
         if conda_env:
-            print(f"🐍 Ambiente conda attivo: {conda_env}")
+            print(f"Ambiente conda attivo: {conda_env}")
         else:
-            print("⚠️ Nessun ambiente conda rilevato")
+            print("Nessun ambiente conda rilevato")
             
         # Installa requirements
         import subprocess
         try:
             subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
-            print("✅ Dipendenze installate con successo")
+            print("Dipendenze installate con successo")
         except subprocess.CalledProcessError as e:
-            print(f"❌ Errore installazione: {e}")
+            print(f"Errore installazione: {e}")
     else:
-        print(f"❌ Comando non riconosciuto: {args.command}")
+        print(f"Comando non riconosciuto: {args.command}")
         print("Usa 'python main.py help' per vedere i comandi disponibili")
     
     print("\n" + "=" * 60)

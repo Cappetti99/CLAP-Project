@@ -1,134 +1,160 @@
 #!/usr/bin/env python3
 """
-SWAM Results Cleanup - Mantiene solo i file più recenti
-Rimuove automaticamente file CSV duplicati con timestamp diversi
+Script di pulizia intelligente per cartella results/
+Mantiene solo i dati più recenti e importanti
 """
 
 import os
 import glob
+import shutil
+from datetime import datetime, timedelta
 from pathlib import Path
 
-def cleanup_csv_duplicates(results_dir="results"):
-    """Mantiene solo il file più recente per ogni tipo di CSV"""
-    print("🧹 PULIZIA FILE CSV DUPLICATI")
-    print("-" * 40)
-    
-    # Pattern di file da pulire
-    patterns = [
-        "common_tasks_*.csv",
-        "task_statistics_*.csv", 
-        "task_language_matrix_*.csv"
-    ]
-    
-    total_removed = 0
-    
-    for pattern in patterns:
-        pattern_path = os.path.join(results_dir, pattern)
-        files = sorted(glob.glob(pattern_path), key=os.path.getmtime, reverse=True)
-        
-        if len(files) > 1:
-            # Mantieni solo il più recente (primo nella lista ordinata)
-            files_to_remove = files[1:]
-            
-            print(f"\n📄 Pattern: {pattern}")
-            print(f"  📁 Trovati: {len(files)} file")
-            print(f"  ✅ Mantieni: {os.path.basename(files[0])}")
-            
-            for file_to_remove in files_to_remove:
-                try:
-                    os.remove(file_to_remove)
-                    print(f"  🗑️ Rimosso: {os.path.basename(file_to_remove)}")
-                    total_removed += 1
-                except OSError as e:
-                    print(f"  ❌ Errore rimozione {file_to_remove}: {e}")
-        else:
-            print(f"\n📄 Pattern: {pattern}")
-            if files:
-                print(f"  ✅ Solo 1 file trovato: {os.path.basename(files[0])}")
-            else:
-                print(f"  ℹ️ Nessun file trovato")
-    
-    print(f"\n✅ Pulizia completata!")
-    print(f"🗑️ File rimossi: {total_removed}")
-    
-    return total_removed
+def cleanup_results():
+ """Pulizia intelligente della cartella results"""
+ results_dir = "results"
 
-def cleanup_old_execution_results(results_dir="results", keep_recent=3):
-    """Mantiene solo gli ultimi N risultati di esecuzione"""
-    exec_dir = os.path.join(results_dir, "execution")
-    if not os.path.exists(exec_dir):
-        return 0
-    
-    print(f"\n🧹 PULIZIA RISULTATI ESECUZIONE")
-    print("-" * 40)
-    
-    # Pattern di file esecuzione
-    patterns = [
-        "language_test_results_*.json",
-        "execution_results_*.json",
-        "smart_execution_results_*.json"
-    ]
-    
-    total_removed = 0
-    
-    for pattern in patterns:
-        pattern_path = os.path.join(exec_dir, pattern)
-        files = sorted(glob.glob(pattern_path), key=os.path.getmtime, reverse=True)
-        
-        if len(files) > keep_recent:
-            files_to_remove = files[keep_recent:]
-            
-            print(f"\n📄 Pattern: {pattern}")
-            print(f"  📁 Trovati: {len(files)} file")
-            print(f"  ✅ Mantieni: {keep_recent} più recenti")
-            
-            for file_to_remove in files_to_remove:
-                try:
-                    os.remove(file_to_remove)
-                    print(f"  🗑️ Rimosso: {os.path.basename(file_to_remove)}")
-                    total_removed += 1
-                except OSError as e:
-                    print(f"  ❌ Errore rimozione {file_to_remove}: {e}")
-    
-    return total_removed
+ print(" PULIZIA INTELLIGENTE CARTELLA RESULTS")
+ print("=" * 50)
 
-def main():
-    """Funzione principale di pulizia"""
-    print("🌊 SWAM RESULTS CLEANUP")
-    print("=" * 50)
-    
-    # Verifica che la directory results esista
-    if not os.path.exists("results"):
-        print("❌ Cartella 'results' non trovata")
-        print("💡 Esegui prima: python main.py simple")
-        return
-    
-    # Pulizia CSV duplicati
-    csv_removed = cleanup_csv_duplicates()
-    
-    # Pulizia risultati esecuzione vecchi  
-    exec_removed = cleanup_old_execution_results()
-    
-    # Riassunto finale
-    total_removed = csv_removed + exec_removed
-    print(f"\n🎉 PULIZIA COMPLETATA")
-    print("=" * 50)
-    print(f"🗑️ Totale file rimossi: {total_removed}")
-    
-    if total_removed == 0:
-        print("✨ Cartella results già pulita!")
-    else:
-        print("✅ Spazio liberato e duplicati rimossi")
-    
-    # Mostra struttura finale
-    print(f"\n📁 STRUTTURA FINALE:")
-    for root, dirs, files in os.walk("results"):
-        level = root.replace("results", "").count(os.sep)
-        indent = " " * 2 * level
-        print(f"{indent}{os.path.basename(root)}/")
-        subindent = " " * 2 * (level + 1)
-        for file in files:
-            print(f"{subindent}{file}")
+ # 1. Backup cartella importante
+ backup_essential_data()
+
+ # 2. Pulizia carbon/ (mantieni solo ultimi 30 giorni)
+ cleanup_carbon_sessions()
+
+ # 3. Pulizia carbon_benchmark/ (mantieni solo 3 più recenti)
+ cleanup_carbon_benchmarks()
+
+ # 4. Pulizia execution/ (rimuovi file temporanei)
+ cleanup_execution_temp()
+
+ # 5. Report finale
+ show_cleanup_report()
+
+def backup_essential_data():
+ """Backup dei dati essenziali"""
+ print("\n BACKUP DATI ESSENZIALI")
+
+ backup_dir = "results_backup_essential"
+ os.makedirs(backup_dir, exist_ok=True)
+
+ # Backup CSV principali
+ csv_files = glob.glob("results/*.csv")
+ for csv_file in csv_files:
+ shutil.copy2(csv_file, backup_dir)
+ print(f" Backup: {os.path.basename(csv_file)}")
+
+ # Backup summary più recenti
+ summary_files = glob.glob("results/carbon_benchmark/*summary*.json")
+ summary_files.sort(key=os.path.getmtime, reverse=True)
+
+ for i, summary in enumerate(summary_files[:3]): # Ultimi 3
+ dest = os.path.join(backup_dir, f"summary_{i+1}_{os.path.basename(summary)}")
+ shutil.copy2(summary, dest)
+ print(f" Backup: {os.path.basename(summary)}")
+
+def cleanup_carbon_sessions():
+ """Rimuovi sessioni carbon vecchie (mantieni ultimi 30 giorni)"""
+ print("\n PULIZIA SESSIONI CARBON")
+
+ carbon_dir = "results/carbon"
+ if not os.path.exists(carbon_dir):
+ return
+
+ # Data limite (30 giorni fa)
+ cutoff_date = datetime.now() - timedelta(days=30)
+
+ session_files = glob.glob(f"{carbon_dir}/session_*.json")
+ removed_count = 0
+
+ for session_file in session_files:
+ file_time = datetime.fromtimestamp(os.path.getmtime(session_file))
+ if file_time < cutoff_date:
+ os.remove(session_file)
+ removed_count += 1
+
+ print(f" Rimosse {removed_count} sessioni vecchie (>30 giorni)")
+ print(f" Mantenute {len(session_files) - removed_count} sessioni recenti")
+
+def cleanup_carbon_benchmarks():
+ """Mantieni solo l'ultimo file detailed (più pesante)"""
+ print("\n PULIZIA BENCHMARK CARBON")
+
+ benchmark_dir = "results/carbon_benchmark"
+ if not os.path.exists(benchmark_dir):
+ return
+
+ # Trova file detailed (i più grandi)
+ detailed_files = glob.glob(f"{benchmark_dir}/carbon_benchmark_detailed_*.json")
+ detailed_files.sort(key=os.path.getmtime, reverse=True)
+
+ # Mantieni solo il più recente
+ files_to_keep = detailed_files[:1]
+ files_to_remove = detailed_files[1:]
+
+ removed_size = 0
+ for file_to_remove in files_to_remove:
+ file_size = os.path.getsize(file_to_remove)
+ removed_size += file_size
+ os.remove(file_to_remove)
+ print(f" Rimosso: {os.path.basename(file_to_remove)} ({file_size//1024//1024} MB)")
+
+ print(f" 💾 Spazio liberato: {removed_size//1024//1024} MB")
+ print(f" Mantenuti {len(files_to_keep)} benchmark recenti")
+
+def cleanup_execution_temp():
+ """Rimuovi file temporanei da execution/"""
+ print("\n PULIZIA FILE TEMPORANEI")
+
+ execution_dir = "results/execution"
+ if not os.path.exists(execution_dir):
+ return
+
+ # Pattern file temporanei
+ temp_patterns = [
+ "temp_*.hi", "temp_*.o", "temp_*.cmi", "temp_*.cmo",
+ "*.dat", "test.txt", "filename.txt"
+ ]
+
+ removed_count = 0
+ for pattern in temp_patterns:
+ temp_files = glob.glob(f"{execution_dir}/{pattern}")
+ for temp_file in temp_files:
+ os.remove(temp_file)
+ removed_count += 1
+
+ print(f" Rimossi {removed_count} file temporanei")
+
+def show_cleanup_report():
+ """Mostra report post-pulizia"""
+ print("\n REPORT POST-PULIZIA")
+ print("=" * 30)
+
+ # Dimensioni attuali
+ import subprocess
+
+ try:
+ result = subprocess.run(['du', '-sh', 'results'],
+ capture_output=True, text=True)
+ if result.returncode == 0:
+ size = result.stdout.strip().split()[0]
+ print(f" Dimensione results/: {size}")
+
+ # Dettaglio sottocartelle
+ result = subprocess.run(['du', '-sh', 'results/*'],
+ shell=True, capture_output=True, text=True)
+ if result.returncode == 0:
+ print(" Dettaglio cartelle:")
+ for line in result.stdout.strip().split('\n'):
+ if line.strip():
+ print(f" {line}")
+
+ except Exception as e:
+ print(f" Errore calcolo dimensioni: {e}")
+
+ print("\n PULIZIA COMPLETATA!")
+ print(" I dati essenziali sono salvati in 'results_backup_essential/'")
 
 if __name__ == "__main__":
-    main()
+ cleanup_results()

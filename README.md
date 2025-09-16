@@ -1,4 +1,4 @@
-# 🌊 SWAM Project - Cross-Language Code Analysis System
+# SWAM Project - Cross-Language Code Analysis System
 
 **Sistema Modulare Avanzato per Analisi e Esecuzione Multi-Linguaggio** - Trova task comuni, esegue codice automaticamente e genera report dettagliati in 16 linguaggi di programmazione con **tracciamento emissioni CO2**.
 
@@ -7,9 +7,9 @@
 [![CodeCarbon](https://img.shields.io/badge/CodeCarbon-Enabled-green.svg)](https://codecarbon.io)
 [![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)](https://github.com)
 
-## 🚀 Quick Start
+## Quick Start
 
-### 🎯 Modalità Semplice (Raccomandato per iniziare)
+### Modalità Semplice (Raccomandato per iniziare)
 ```bash
 # Analisi semplificata - genera CSV puliti
 python main.py simple
@@ -21,7 +21,7 @@ python main.py test
 python main.py clean
 ```
 
-### 🔧 Modalità Avanzata (Sistema Completo)
+### Modalità Avanzata (Sistema Completo)
 ```bash
 # Esecuzione intelligente (usa solo linguaggi disponibili)
 python main.py smart
@@ -36,7 +36,7 @@ python main.py execute
 python main.py status
 ```
 
-### 🌱 **NUOVO**: Benchmark CO2 (Analisi Emissioni)
+### **NUOVO**: Benchmark CO2 (Analisi Emissioni)
 ```bash
 # Benchmark CO2 completo (30 iterazioni per precisione)
 python main.py benchmark
@@ -48,22 +48,22 @@ echo "veloce" | python main.py benchmark
 echo "debug" | python main.py benchmark
 ```
 
-## 📋 Comandi Disponibili
+## Comandi Disponibili
 
 | Comando | Modalità | Descrizione |
 |---------|----------|------------|
-| `simple` | 🎯 Base | Genera CSV delle task comuni (veloce) |
-| `test` | 🔧 | Testa la disponibilità di tutti i 16 linguaggi |
-| `smart` | 🔧 Avanzata | Esegue codici solo nei linguaggi disponibili |
-| `analyze` | 🔧 Avanzata | Analisi completa task comuni con metriche |
-| `execute` | 🔧 Avanzata | Esegue codici in tutti i linguaggi (può fallire) |
-| **`benchmark`** | 🌱 **CO2** | **Benchmark emissioni CO2 con statistiche** |
-| `clean` | 🧹 | Pulisce file temporanei e cache |
-| `status` | 📊 | Mostra stato del progetto e statistiche |
+| `simple` | Base | Genera CSV delle task comuni (veloce) |
+| `test` | | Testa la disponibilità di tutti i 16 linguaggi |
+| `smart` | Avanzata | Esegue codici solo nei linguaggi disponibili |
+| `analyze` | Avanzata | Analisi completa task comuni con metriche |
+| `execute` | Avanzata | Esegue codici in tutti i linguaggi (può fallire) |
+| **`benchmark`** | **CO2** | **Benchmark emissioni CO2 con statistiche** |
+| `clean` | | Pulisce file temporanei e cache |
+| `status` | | Mostra stato del progetto e statistiche |
 
-## 🎯 Funzionalità del Sistema
+## Funzionalità del Sistema
 
-### 🎯 Modalità Semplice 
+### Modalità Semplice
 - **Focus**: Task comuni a tutti i 16 linguaggi
 - **Output**: CSV puliti e utilizzabili
 - **Veloce**: Analisi rapida senza complessità
@@ -72,19 +72,19 @@ echo "debug" | python main.py benchmark
 #### Output CSV Generati
 ```
 results/
-├── common_tasks_[timestamp].csv       # Lista task comuni
-├── task_statistics_[timestamp].csv    # Statistiche dettagliate
+├── common_tasks_[timestamp].csv # Lista task comuni
+├── task_statistics_[timestamp].csv # Statistiche dettagliate
 └── task_language_matrix_[timestamp].csv # Matrice presenza linguaggi
 ```
 
-### 🔧 Modalità Avanzata
+### Modalità Avanzata
 - **Advanced Task Finder**: Ricerca flessibile con soglia personalizzabile
 - **Enhanced Executor**: Supporto multi-linguaggio con gestione dipendenze
 - **Smart Executor**: Esecuzione adattiva solo linguaggi disponibili
 - **Results Monitor**: Analisi tassi successo e categorizzazione errori
 - **Cleanup Manager**: Pulizia automatica file temporanei
 
-### 🌱 **Benchmark CO2** (Novità!)
+### **Benchmark CO2** (Novità!)
 - **Carbon Tracking**: Misura emissioni CO2 per ogni esecuzione con [CodeCarbon](https://codecarbon.io)
 - **Analisi Statistica**: 30 iterazioni per task per dati precisi
 - **Ranking Efficienza**: Classifica linguaggi per impatto ambientale
@@ -94,94 +94,94 @@ results/
 #### Output Benchmark CO2
 ```
 results/carbon_benchmark/
-├── carbon_benchmark_detailed_*.json   # Dati completi 30 iterazioni
-├── carbon_benchmark_summary_*.json    # Riassunto per linguaggio
-└── session_*.json                     # Dettagli singole sessioni
+├── carbon_benchmark_detailed_*.json # Dati completi 30 iterazioni
+├── carbon_benchmark_summary_*.json # Riassunto per linguaggio
+└── session_*.json # Dettagli singole sessioni
 
 results/carbon/
-├── emissions.csv                      # Log emissioni CodeCarbon
-└── session_*.json                    # Tracking dettagliato per esecuzione
+├── emissions.csv # Log emissioni CodeCarbon
+└── session_*.json # Tracking dettagliato per esecuzione
 ```
 
 #### Output Avanzati
 ```
 results/
 ├── task_analysis/
-│   ├── common_tasks.json              # Lista task comuni
-│   ├── detailed_analysis_*.json       # Analisi qualitativa dettagliata
-│   └── code_snippets/                 # Codice per ogni task/linguaggio
+│ ├── common_tasks.json # Lista task comuni
+│ ├── detailed_analysis_*.json # Analisi qualitativa dettagliata
+│ └── code_snippets/ # Codice per ogni task/linguaggio
 ├── execution/
-│   └── execution_results_*.json       # Risultati esecuzioni
+│ └── execution_results_*.json # Risultati esecuzioni
 ├── reports/
-│   └── comprehensive_report_*.json    # Report completi
+│ └── comprehensive_report_*.json # Report completi
 └── logs/
-    └── *.json                         # Log errori e statistiche
+ └── *.json # Log errori e statistiche
 ```
 
-## 💡 Caratteristiche Avanzate
+## Caratteristiche Avanzate
 
-### 🔍 Analisi Qualitativa
+### Analisi Qualitativa
 - **Leggibilità del codice** (0-100)
 - **Densità di commenti**
 - **Complessità ciclomatica**
 - **Gestione errori**
 - **Modularità (funzioni)**
 
-### 📦 Gestione Dipendenze
+### Gestione Dipendenze
 - **Rilevamento automatico** import/require
 - **Installazione temporanea** con pip/npm
 - **Cleanup automatico** alla fine
 - **Verifica disponibilità** prima dell'uso
 
-### 🛡️ Sicurezza e Robustezza
+### Sicurezza e Robustezza
 - **Timeout** per evitare hang
 - **Sandboxing** con file temporanei
 - **Gestione errori** completa
 - **Cleanup garantito** anche in caso di crash
 
-## 🎯 Linguaggi Supportati
+## Linguaggi Supportati
 
-### ✅ Interpretati (7)
+### Interpretati (7)
 Python • JavaScript • Ruby • PHP • R • Julia • MATLAB*
 
-### ✅ Compilati (8) 
+### Compilati (8)
 C • C++ • Java • Go • Rust • Haskell • OCaml • TypeScript
 
-### ✅ VM-based (1)
+### VM-based (1)
 C# (Mono)
 
 *\*MATLAB richiede licenza commerciale*
 
-## 📁 Struttura Progetto
+## Struttura Progetto
 
 ```
 SWAM-Project/
-├── main.py                      # 🎯 Interface principale
-├── cleanup.py                   # 🧹 Script pulizia completo
-├── install_languages.sh         # 📦 Installer linguaggi
-├── modules/                     # 📚 Moduli core
-│   ├── config.py               # ⚙️  Configurazioni
-│   ├── colors.py               # 🎨 Output colorato
-│   ├── dataset_manager.py      # 📊 Gestione dataset
-│   ├── dependency_analyzer.py  # 🔍 Analisi dipendenze
-│   └── logger.py               # 📝 Logging
-├── src/                        # 🔧 Esecutori e analyzer
-│   ├── enhanced_executor.py    # 🚀 Esecutore completo
-│   ├── smart_executor.py       # 🧠 Esecutore adattivo
-│   ├── carbon_benchmark.py     # 🌱 Benchmark CO2 (NUOVO)
-│   ├── carbon_tracker.py       # 🌱 Tracking emissioni (NUOVO)
-│   ├── language_tester.py      # 🧪 Test linguaggi
-│   ├── advanced_task_finder.py # 🎯 Ricerca task
-│   └── task_finder.py          # 🔍 Ricerca base
-└── results/                    # 📊 Output generati
-    ├── execution/              # Risultati esecuzione
-    ├── task_analysis/          # Analisi task
-    ├── carbon_benchmark/       # 🌱 Report CO2 (NUOVO)
-    ├── carbon/                 # 🌱 Tracking emissioni (NUOVO)
-    └── logs/                   # Log sistema
+├── main.py # Interface principale
+├── cleanup.py # Script pulizia completo
+├── install_languages.sh # Installer linguaggi
+├── modules/ # 📚 Moduli core
+│ ├── config.py # Configurazioni
+│ ├── colors.py # 🎨 Output colorato
+│ ├── dataset_manager.py # Gestione dataset
+│ ├── dependency_analyzer.py # Analisi dipendenze
+│ └── logger.py # 📝 Logging
+├── src/ # Esecutori e analyzer
+│ ├── enhanced_executor.py # Esecutore completo
+│ ├── smart_executor.py # Esecutore adattivo
+│ ├── carbon_benchmark.py # Benchmark CO2 (NUOVO)
+│ ├── carbon_tracker.py # Tracking emissioni (NUOVO)
+│ ├── language_tester.py # Test linguaggi
+│ ├── advanced_task_finder.py # Ricerca task
+│ └── task_finder.py # Ricerca base
+└── results/ # Output generati
+ ├── execution/ # Risultati esecuzione
+ ├── task_analysis/ # Analisi task
+ ├── carbon_benchmark/ # Report CO2 (NUOVO)
+ ├── carbon/ # Tracking emissioni (NUOVO)
+ └── logs/ # Log sistema
 ```
 
-## 🌱 **Benchmark CO2 - Guida Completa**
+## **Benchmark CO2 - Guida Completa**
 
 ### � Modalità Disponibili
 
@@ -191,7 +191,7 @@ SWAM-Project/
 | **Veloce** | 10 | 3 | Test rapidi | ~5 min |
 | **Debug** | 3 | 2 | Sviluppo/test | ~2 min |
 
-### 🎯 Esempi di Uso
+### Esempi di Uso
 
 #### Benchmark Completo (Raccomandato)
 ```bash
@@ -208,25 +208,25 @@ echo "debug" | python main.py benchmark
 #### Benchmark via Script
 ```bash
 # Python diretto
-python src/carbon_benchmark.py          # Standard: 30 iter, 5 task
-python src/carbon_benchmark.py quick    # Veloce: 10 iter, 3 task  
-python src/carbon_benchmark.py debug    # Debug: 3 iter, 2 task
+python src/carbon_benchmark.py # Standard: 30 iter, 5 task
+python src/carbon_benchmark.py quick # Veloce: 10 iter, 3 task
+python src/carbon_benchmark.py debug # Debug: 3 iter, 2 task
 ```
 
-### 📊 Output Benchmark
+### Output Benchmark
 
 #### Report Console
 ```
 🏅 RANKING LINGUAGGI PER EFFICIENZA ENERGETICA:
-  1. java        : 0.00000262 kg CO2eq/run
-  2. ruby        : 0.00000299 kg CO2eq/run
-  3. php         : 0.00000324 kg CO2eq/run
-  4. python      : 0.00000442 kg CO2eq/run
-  5. javascript  : 0.00000459 kg CO2eq/run
+ 1. java : 0.00000262 kg CO2eq/run
+ 2. ruby : 0.00000299 kg CO2eq/run
+ 3. php : 0.00000324 kg CO2eq/run
+ 4. python : 0.00000442 kg CO2eq/run
+ 5. javascript : 0.00000459 kg CO2eq/run
 
 🔮 STIME IMPATTO:
-  📅 Stima giornaliera: 0.489 kg CO2eq/giorno
-  📈 Stima annuale: 178.4 kg CO2eq/anno
+ Stima giornaliera: 0.489 kg CO2eq/giorno
+ Stima annuale: 178.4 kg CO2eq/anno
 ```
 
 #### File JSON Generati
@@ -234,7 +234,7 @@ python src/carbon_benchmark.py debug    # Debug: 3 iter, 2 task
 - `carbon_benchmark_summary_*.json`: Riassunto per linguaggio
 - `emissions.csv`: Log CodeCarbon compatibile con dashboard
 
-## �🛠️ Installazione Linguaggi
+## � Installazione Linguaggi
 
 ### Prerequisiti per Benchmark CO2
 ```bash
@@ -263,7 +263,7 @@ npm install -g typescript
 python main.py test
 ```
 
-## 📊 Performance Tipiche
+## Performance Tipiche
 
 | Categoria | Linguaggi Disponibili | Tasso Successo Tipico |
 |-----------|----------------------|----------------------|
@@ -272,87 +272,87 @@ python main.py test
 | **VM-based** | 1/1 (100%) | C# (Mono) |
 | **Totale** | **15/16 (93.8%)** | Solo MATLAB manca |
 
-## 🎯 Esempi Risultati
+## Esempi Risultati
 
 ### Test Linguaggi
 ```bash
 $ python main.py test
-🧪 Testing PYTHON (interpreted)...
-  ✅ Esecuzione riuscita (0.011s): Hello from Python!
+ Testing PYTHON (interpreted)...
+ Esecuzione riuscita (0.011s): Hello from Python!
 
-📊 STATISTICHE GENERALI:
-  🎯 Totale linguaggi testati: 16
-  ✅ Linguaggi disponibili: 15
-  📊 Tasso di successo: 93.8%
+ STATISTICHE GENERALI:
+ Totale linguaggi testati: 16
+ Linguaggi disponibili: 15
+ Tasso di successo: 93.8%
 ```
 
 ### Smart Execution
 ```bash
 $ python main.py smart
-🧠 ESECUZIONE INTELLIGENTE
-🎯 Linguaggi disponibili: 8
-🎯 Trovate 10 task comuni
+ ESECUZIONE INTELLIGENTE
+ Linguaggi disponibili: 8
+ Trovate 10 task comuni
 
-🎯 Esecuzione task: Array_length
-  ✅ python: successo (0.01s)
-  ✅ javascript: successo (0.06s)
-  ✅ java: successo (0.27s)
-  
+ Esecuzione task: Array_length
+ python: successo (0.01s)
+ javascript: successo (0.06s)
+ java: successo (0.27s)
+
 🎉 TOTALE: 32/79 (40.5%) esecuzioni riuscite
 ```
 
-## 📊 Esempi Risultati
+## Esempi Risultati
 
 ### Test Linguaggi
 ```bash
 $ python main.py test
-🧪 Testing PYTHON (interpreted)...
-  ✅ Esecuzione riuscita (0.011s): Hello from Python!
+ Testing PYTHON (interpreted)...
+ Esecuzione riuscita (0.011s): Hello from Python!
 
-📊 STATISTICHE GENERALI:
-  🎯 Totale linguaggi testati: 16
-  📊 Tasso di successo: 93.8%
+ STATISTICHE GENERALI:
+ Totale linguaggi testati: 16
+ Tasso di successo: 93.8%
 ```
 
 ### Smart Execution
 ```bash
 $ python main.py smart
-🧠 ESECUZIONE INTELLIGENTE
-🎯 Linguaggi disponibili: 8
-🎯 Trovate 10 task comuni
+ ESECUZIONE INTELLIGENTE
+ Linguaggi disponibili: 8
+ Trovate 10 task comuni
 
-🎯 Esecuzione task: Array_length
-  ✅ python: successo (0.01s)
-  ✅ java: successo (0.27s)
-  
+ Esecuzione task: Array_length
+ python: successo (0.01s)
+ java: successo (0.27s)
+
 🎉 TOTALE: 32/79 (40.5%) esecuzioni riuscite
 ```
 
 ### Modalità Semplice CSV
 ```bash
 $ python main.py simple
-📊 ANALISI SEMPLIFICATA
-🎯 Task comuni trovate: 7
+ ANALISI SEMPLIFICATA
+ Task comuni trovate: 7
 
-📄 File generati:
-  ✅ common_tasks_20250809_143022.csv
-  ✅ task_statistics_20250809_143022.csv
-  ✅ task_language_matrix_20250809_143022.csv
+ File generati:
+ common_tasks_20250809_143022.csv
+ task_statistics_20250809_143022.csv
+ task_language_matrix_20250809_143022.csv
 ```
 
-## 🎯 Task Disponibili (dal dataset)
+## Task Disponibili (dal dataset)
 
 Le task più comuni presenti in tutti i 16 linguaggi:
 
 1. **Ethiopian multiplication** - 16 linguaggi
-2. **Greatest common divisor** - 16 linguaggi  
+2. **Greatest common divisor** - 16 linguaggi
 3. **Sorting algorithms/Quicksort** - 16 linguaggi
 4. **N'th** - 16 linguaggi
 5. **Palindrome detection** - 16 linguaggi
 6. **Gray code** - 16 linguaggi
 7. **Averages/Arithmetic mean** - 16 linguaggi
 
-## 📈 Performance Tipiche
+## Performance Tipiche
 
 | Categoria | Linguaggi Disponibili | Tasso Successo Tipico |
 |-----------|----------------------|----------------------|
@@ -361,11 +361,11 @@ Le task più comuni presenti in tutti i 16 linguaggi:
 | **VM-based** | 1/1 (100%) | C# (Mono) |
 | **Totale** | **15/16 (93.8%)** | Solo MATLAB manca |
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Se l'esecuzione fallisce:
 1. **Verifica ambiente**: `python main.py test`
-2. **Test semplice**: `python main.py simple` 
+2. **Test semplice**: `python main.py simple`
 3. **Check dipendenze**: Installa compilatori mancanti
 4. **Usa versione adattiva**: `python main.py smart`
 
@@ -383,7 +383,7 @@ python main.py clean
 python -c "from src.cleanup_manager import CleanupManager; CleanupManager().emergency_cleanup()"
 ```
 
-## 🧹 Manutenzione
+## Manutenzione
 
 ### Pulizia File Temporanei
 ```bash
@@ -399,11 +399,11 @@ find . -name "*.o" -o -name "*.class" -o -name "*.exe" | xargs rm -f
 
 ### Monitoraggio Spazio
 ```bash
-python main.py status                # Stato progetto
-python cleanup.py --all              # Libera spazio
+python main.py status # Stato progetto
+python cleanup.py --all # Libera spazio
 ```
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Linguaggio Non Disponibile
 ```bash
@@ -426,26 +426,26 @@ python main.py clean
 python main.py smart
 ```
 
-## 📈 Monitoraggio
+## Monitoraggio
 
 Il sistema salva automaticamente:
 - **Risultati test**: `results/execution/language_test_results_*.json`
-- **Risultati esecuzione**: `results/execution/smart_execution_results_*.json` 
+- **Risultati esecuzione**: `results/execution/smart_execution_results_*.json`
 - **Log errori**: `results/logs/`
 
 ## 🎉 Risultati Ottenuti
 
 Hai ora un sistema completo che può:
-- ✅ Analizzare automaticamente dataset di codice
-- ✅ Identificare task comuni tra linguaggi
-- ✅ Eseguire e testare codice in 16 linguaggi
-- ✅ Gestire dipendenze temporaneamente
-- ✅ Generare report analitici dettagliati
-- ✅ Pulire automaticamente l'ambiente
+- Analizzare automaticamente dataset di codice
+- Identificare task comuni tra linguaggi
+- Eseguire e testare codice in 16 linguaggi
+- Gestire dipendenze temporaneamente
+- Generare report analitici dettagliati
+- Pulire automaticamente l'ambiente
 
-**🎯 Perfetto per ricerca, benchmark, e analisi comparativa di algoritmi!**
+** Perfetto per ricerca, benchmark, e analisi comparativa di algoritmi!**
 
-## 🛠️ Installazione Completa
+## Installazione Completa
 
 ```bash
 # 1. Clone repository
