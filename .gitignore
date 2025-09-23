@@ -7,6 +7,11 @@
 
 # Directory risultati completa (esclusa dal versioning)
 results/
+# Ma include i CSV dei benchmark (dati importanti)
+!results/csv/
+!results/csv/*.csv
+!results/carbon/
+!results/carbon/*.csv
 
 # File di log e tracciamento
 *.log
