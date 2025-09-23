@@ -24,13 +24,13 @@ sys.path.insert(0, modules_path)
 
 try:
     from src.carbon_tracker import start_carbon_tracking, stop_carbon_tracking, CODECARBON_AVAILABLE
-    from src.smart_executor import SmartExecutor
+    from src.executor import EnhancedExecutor
     CARBON_TRACKING_AVAILABLE = True
 except ImportError:
     try:
         # Fallback per import diretto
         from carbon_tracker import start_carbon_tracking, stop_carbon_tracking, CODECARBON_AVAILABLE
-        from smart_executor import SmartExecutor
+        from executor import EnhancedExecutor
         CARBON_TRACKING_AVAILABLE = True
     except ImportError:
         CARBON_TRACKING_AVAILABLE = False
@@ -43,7 +43,7 @@ class CarbonBenchmark:
         self.iterations = iterations
         self.results_dir = "results/carbon_benchmark"
         self.code_base_path = "data/generated/code_snippets"
-        self.executor = SmartExecutor()
+        self.executor = EnhancedExecutor()
         
         # Crea un logger semplice
         self.logger = logging.getLogger(__name__)
@@ -122,7 +122,11 @@ class CarbonBenchmark:
 
     def determine_category(self, task_name, language):
         """Determina la categoria di un task cercando in tutte le sottodirectory."""
-        categories = ['functional', 'imperative', 'oop', 'scientific', 'scripting']
+        # Ottieni tutte le categorie disponibili dal filesystem
+        categories = []
+        if os.path.exists(self.code_base_path):
+            categories = [d for d in os.listdir(self.code_base_path) 
+                         if os.path.isdir(os.path.join(self.code_base_path, d))]
         
         for category in categories:
             category_path = os.path.join(self.code_base_path, category, language)
@@ -152,516 +156,49 @@ class CarbonBenchmark:
                         return category
         
         # Default alla prima categoria se non trovato
-        return 'scripting'
+        return categories[0] if categories else 'misc'
     
     def load_task_code(self, task_name, language, category_subdir):
-        """Carica il codice per un task specifico dal dataset SWAM."""
+        """Carica il codice per un task specifico."""
         try:
-            # Cerca in tutte le categorie del dataset SWAM
-            categories = ['algorithms', 'basic', 'io', 'mathematics', 'misc', 'strings']
+            base_path = os.path.join(self.code_base_path, category_subdir, language)
             
-            # Mappa i nomi dei linguaggi al formato usato nel dataset
-            language_mapping = {
-                'python': 'python',
-                'javascript': 'javascript', 
-                'java': 'java',
-                'cpp': 'cplusplus',
-                'c': 'c',
-                'ruby': 'ruby',
-                'php': 'php',
-                'r': 'r',
-                'julia': 'julia',
-                'csharp': 'c#',
-                'go': 'go',
-                'rust': 'rust',
-                'haskell': 'haskell',
-                'ocaml': 'ocaml',
-                'typescript': 'typescript'
-            }
+            # Prima prova: cerca per nome esatto nel file
+            files = glob.glob(os.path.join(base_path, "snippet_*.py" if language == "python" else f"snippet_*.{self.get_file_extension(language)}"))
             
-            dataset_language = language_mapping.get(language, language)
-            normalized_task_name = task_name.replace(" ", "_")
-            
-            # Cerca in tutte le categorie
-            for category in categories:
-                base_path = os.path.join(self.code_base_path, category, dataset_language)
+            for file_path in files:
+                # Estrai il nome del task dal nome del file
+                filename = os.path.basename(file_path)
+                # Rimuovi prefisso e estensione
+                name_part = filename.replace("snippet_", "").rsplit(".", 1)[0]
                 
-                if not os.path.exists(base_path):
-                    continue
+                # Rimuovi il numero iniziale se presente (es: "0_Array_sum" -> "Array_sum")
+                if "_" in name_part:
+                    parts = name_part.split("_", 1)
+                    if parts[0].isdigit():
+                        task_in_filename = parts[1]
+                    else:
+                        task_in_filename = name_part
+                else:
+                    task_in_filename = name_part
+                
+                # Confronta con il nome del task (sostituendo spazi con underscore)
+                normalized_task_name = task_name.replace(" ", "_")
+                
+                # Prova diversi match
+                if (task_in_filename.lower() == normalized_task_name.lower() or 
+                    normalized_task_name.lower() in task_in_filename.lower() or
+                    task_in_filename.lower() in normalized_task_name.lower()):
                     
-                # Pattern per trovare file che contengono il nome del task
-                pattern = f"snippet_*_{normalized_task_name}.*"
-                files = glob.glob(os.path.join(base_path, pattern))
-                
-                for file_path in files:
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            content = f.read()
-                            self.logger.debug(f"Trovato codice per '{task_name}' in {file_path}")
-                            return content
-                    except Exception as e:
-                        self.logger.warning(f"Errore lettura file {file_path}: {e}")
-                        continue
-            
-            # Se non trovato con il pattern esatto, prova pattern più flessibile
-            for category in categories:
-                base_path = os.path.join(self.code_base_path, category, dataset_language)
-                
-                if not os.path.exists(base_path):
-                    continue
-                    
-                files = glob.glob(os.path.join(base_path, "snippet_*.*"))
-                
-                for file_path in files:
-                    filename = os.path.basename(file_path)
-                    # Controlla se il nome del task è contenuto nel nome del file
-                    if normalized_task_name.lower() in filename.lower():
-                        try:
-                            with open(file_path, 'r', encoding='utf-8') as f:
-                                content = f.read()
-                                self.logger.debug(f"Trovato codice per '{task_name}' in {file_path} (match flessibile)")
-                                return content
-                        except Exception as e:
-                            self.logger.warning(f"Errore lettura file {file_path}: {e}")
-                            continue
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        self.logger.debug(f"Trovato codice per '{task_name}' in {file_path}")
+                        return f.read()
             
             self.logger.debug(f"Nessun file trovato per task '{task_name}' in {language}")
             return None
                 
         except Exception as e:
             self.logger.error(f"Errore nel caricamento del codice per {task_name}: {e}")
-            return None
-
-    def generate_missing_code(self, task_name, target_language, source_language=None):
-        """
-        Genera automaticamente il codice per un task mancante in un linguaggio target.
-        Cerca prima un'implementazione di riferimento in un altro linguaggio.
-        """
-        try:
-            # Se non specificato, cerca un linguaggio sorgente disponibile
-            if not source_language:
-                reference_languages = ['python', 'javascript', 'java', 'cpp', 'c']
-                for ref_lang in reference_languages:
-                    category = self.determine_category(task_name, ref_lang)
-                    if category:
-                        source_code = self.load_task_code(task_name, ref_lang, category)
-                        if source_code:
-                            source_language = ref_lang
-                            break
-                
-                if not source_language:
-                    self.logger.warning(f"Nessun codice di riferimento trovato per '{task_name}'")
-                    return None
-
-            # Carica il codice sorgente
-            source_category = self.determine_category(task_name, source_language)
-            source_code = self.load_task_code(task_name, source_language, source_category)
-            
-            if not source_code:
-                self.logger.warning(f"Codice sorgente non trovato per '{task_name}' in {source_language}")
-                return None
-
-            # Genera il codice convertito usando dei template base
-            converted_code = self.convert_code_to_language(source_code, source_language, target_language, task_name)
-            
-            if converted_code:
-                # Salva il codice generato
-                self.save_generated_code(task_name, target_language, converted_code)
-                self.logger.info(f"Codice generato per '{task_name}' in {target_language}")
-                return converted_code
-            
-            return None
-            
-        except Exception as e:
-            self.logger.error(f"Errore nella generazione del codice per {task_name} in {target_language}: {e}")
-            return None
-
-    def convert_code_to_language(self, source_code, source_lang, target_lang, task_name):
-        """
-        Converte il codice da un linguaggio a un altro usando template e pattern.
-        Questa è una versione semplificata - in futuro si potrebbe integrare con AI.
-        """
-        try:
-            # Template base per diversi linguaggi
-            if target_lang == 'python':
-                return self.convert_to_python(source_code, source_lang, task_name)
-            elif target_lang == 'javascript':
-                return self.convert_to_javascript(source_code, source_lang, task_name)
-            elif target_lang == 'java':
-                return self.convert_to_java(source_code, source_lang, task_name)
-            elif target_lang == 'cpp':
-                return self.convert_to_cpp(source_code, source_lang, task_name)
-            elif target_lang == 'c':
-                return self.convert_to_c(source_code, source_lang, task_name)
-            elif target_lang == 'php':
-                return self.convert_to_php(source_code, source_lang, task_name)
-            elif target_lang == 'ruby':
-                return self.convert_to_ruby(source_code, source_lang, task_name)
-            elif target_lang == 'r':
-                return self.convert_to_r(source_code, source_lang, task_name)
-            elif target_lang == 'julia':
-                return self.convert_to_julia(source_code, source_lang, task_name)
-            elif target_lang == 'haskell':
-                return self.convert_to_haskell(source_code, source_lang, task_name)
-            elif target_lang == 'ocaml':
-                return self.convert_to_ocaml(source_code, source_lang, task_name)
-            elif target_lang == 'go':
-                return self.convert_to_go(source_code, source_lang, task_name)
-            elif target_lang == 'rust':
-                return self.convert_to_rust(source_code, source_lang, task_name)
-            elif target_lang == 'typescript':
-                return self.convert_to_typescript(source_code, source_lang, task_name)
-            elif target_lang == 'csharp':
-                return self.convert_to_csharp(source_code, source_lang, task_name)
-            else:
-                # Fallback: crea un template generico
-                return self.create_generic_template(target_lang, task_name)
-                
-        except Exception as e:
-            self.logger.error(f"Errore nella conversione da {source_lang} a {target_lang}: {e}")
-            return None
-
-    def convert_to_python(self, source_code, source_lang, task_name):
-        """Converte codice in Python"""
-        # Template Python base
-        template = f'''#!/usr/bin/env python3
-"""
-{task_name} implementation
-Auto-generated from {source_lang}
-"""
-
-def {task_name.lower().replace(' ', '_')}():
-    """
-    Implementation of {task_name}
-    """
-    # TODO: Implement the logic
-    print("Executing {task_name}")
-    return True
-
-if __name__ == "__main__":
-    result = {task_name.lower().replace(' ', '_')}()
-    print(f"Result: {{result}}")
-'''
-        return template
-
-    def convert_to_javascript(self, source_code, source_lang, task_name):
-        """Converte codice in JavaScript"""
-        func_name = task_name.lower().replace(' ', '_').replace('-', '_')
-        template = f'''/**
- * {task_name} implementation
- * Auto-generated from {source_lang}
- */
-
-function {func_name}() {{
-    // TODO: Implement the logic
-    console.log("Executing {task_name}");
-    return true;
-}}
-
-// Execute the function
-const result = {func_name}();
-console.log(`Result: ${{result}}`);
-'''
-        return template
-
-    def convert_to_java(self, source_code, source_lang, task_name):
-        """Converte codice in Java"""
-        class_name = ''.join(word.capitalize() for word in task_name.replace('-', ' ').split())
-        template = f'''/**
- * {task_name} implementation
- * Auto-generated from {source_lang}
- */
-public class {class_name} {{
-    
-    public static void main(String[] args) {{
-        {class_name} instance = new {class_name}();
-        boolean result = instance.execute();
-        System.out.println("Result: " + result);
-    }}
-    
-    public boolean execute() {{
-        // TODO: Implement the logic
-        System.out.println("Executing {task_name}");
-        return true;
-    }}
-}}
-'''
-        return template
-
-    def convert_to_cpp(self, source_code, source_lang, task_name):
-        """Converte codice in C++"""
-        template = f'''/**
- * {task_name} implementation
- * Auto-generated from {source_lang}
- */
-#include <iostream>
-
-bool {task_name.lower().replace(' ', '_').replace('-', '_')}() {{
-    // TODO: Implement the logic
-    std::cout << "Executing {task_name}" << std::endl;
-    return true;
-}}
-
-int main() {{
-    bool result = {task_name.lower().replace(' ', '_').replace('-', '_')}();
-    std::cout << "Result: " << result << std::endl;
-    return 0;
-}}
-'''
-        return template
-
-    def convert_to_c(self, source_code, source_lang, task_name):
-        """Converte codice in C"""
-        template = f'''/**
- * {task_name} implementation
- * Auto-generated from {source_lang}
- */
-#include <stdio.h>
-#include <stdbool.h>
-
-bool {task_name.lower().replace(' ', '_').replace('-', '_')}() {{
-    // TODO: Implement the logic
-    printf("Executing {task_name}\\n");
-    return true;
-}}
-
-int main() {{
-    bool result = {task_name.lower().replace(' ', '_').replace('-', '_')}();
-    printf("Result: %s\\n", result ? "true" : "false");
-    return 0;
-}}
-'''
-        return template
-
-    def convert_to_php(self, source_code, source_lang, task_name):
-        """Converte codice in PHP"""
-        template = f'''<?php
-/**
- * {task_name} implementation
- * Auto-generated from {source_lang}
- */
-
-function {task_name.lower().replace(' ', '_').replace('-', '_')}() {{
-    // TODO: Implement the logic
-    echo "Executing {task_name}\\n";
-    return true;
-}}
-
-$result = {task_name.lower().replace(' ', '_').replace('-', '_')}();
-echo "Result: " . ($result ? 'true' : 'false') . "\\n";
-?>
-'''
-        return template
-
-    def convert_to_ruby(self, source_code, source_lang, task_name):
-        """Converte codice in Ruby"""
-        template = f'''#!/usr/bin/env ruby
-# {task_name} implementation
-# Auto-generated from {source_lang}
-
-def {task_name.lower().replace(' ', '_').replace('-', '_')}
-  # TODO: Implement the logic
-  puts "Executing {task_name}"
-  true
-end
-
-result = {task_name.lower().replace(' ', '_').replace('-', '_')}
-puts "Result: #{{result}}"
-'''
-        return template
-
-    def convert_to_r(self, source_code, source_lang, task_name):
-        """Converte codice in R"""
-        template = f'''# {task_name} implementation
-# Auto-generated from {source_lang}
-
-{task_name.lower().replace(' ', '_').replace('-', '_')} <- function() {{
-  # TODO: Implement the logic
-  cat("Executing {task_name}\\n")
-  return(TRUE)
-}}
-
-result <- {task_name.lower().replace(' ', '_').replace('-', '_')}()
-cat("Result:", result, "\\n")
-'''
-        return template
-
-    def convert_to_julia(self, source_code, source_lang, task_name):
-        """Converte codice in Julia"""
-        func_name = task_name.lower().replace(' ', '_').replace('-', '_')
-        template = f'''# {task_name} implementation
-# Auto-generated from {source_lang}
-
-function {func_name}()
-    # TODO: Implement the logic
-    println("Executing {task_name}")
-    return true
-end
-
-result = {func_name}()
-println("Result: $result")
-'''
-        return template
-
-    def convert_to_haskell(self, source_code, source_lang, task_name):
-        """Converte codice in Haskell"""
-        func_name = task_name.lower().replace(' ', '_').replace('-', '_')
-        template = f'''-- {task_name} implementation
--- Auto-generated from {source_lang}
-
-{func_name} :: IO Bool
-{func_name} = do
-    -- TODO: Implement the logic
-    putStrLn "Executing {task_name}"
-    return True
-
-main :: IO ()
-main = do
-    result <- {func_name}
-    putStrLn $ "Result: " ++ show result
-'''
-        return template
-
-    def convert_to_ocaml(self, source_code, source_lang, task_name):
-        """Converte codice in OCaml"""
-        func_name = task_name.lower().replace(' ', '_').replace('-', '_')
-        template = f'''(* {task_name} implementation *)
-(* Auto-generated from {source_lang} *)
-
-let {func_name} () =
-  (* TODO: Implement the logic *)
-  print_endline "Executing {task_name}";
-  true
-
-let () =
-  let result = {func_name} () in
-  Printf.printf "Result: %b\\n" result
-'''
-        return template
-
-    def convert_to_go(self, source_code, source_lang, task_name):
-        """Converte codice in Go"""
-        func_name = task_name.lower().replace(' ', '_').replace('-', '_')
-        template = f'''// {task_name} implementation
-// Auto-generated from {source_lang}
-package main
-
-import "fmt"
-
-func {func_name}() bool {{
-    // TODO: Implement the logic
-    fmt.Println("Executing {task_name}")
-    return true
-}}
-
-func main() {{
-    result := {func_name}()
-    fmt.Printf("Result: %t\\n", result)
-}}
-'''
-        return template
-
-    def convert_to_rust(self, source_code, source_lang, task_name):
-        """Converte codice in Rust"""
-        func_name = task_name.lower().replace(' ', '_').replace('-', '_')
-        template = f'''// {task_name} implementation
-// Auto-generated from {source_lang}
-
-fn {func_name}() -> bool {{
-    // TODO: Implement the logic
-    println!("Executing {task_name}");
-    true
-}}
-
-fn main() {{
-    let result = {func_name}();
-    println!("Result: {{}}", result);
-}}
-'''
-        return template
-
-    def convert_to_typescript(self, source_code, source_lang, task_name):
-        """Converte codice in TypeScript"""
-        func_name = task_name.lower().replace(' ', '_').replace('-', '_')
-        template = f'''/**
- * {task_name} implementation
- * Auto-generated from {source_lang}
- */
-
-function {func_name}(): boolean {{
-    // TODO: Implement the logic
-    console.log("Executing {task_name}");
-    return true;
-}}
-
-const result: boolean = {func_name}();
-console.log(`Result: ${{result}}`);
-'''
-        return template
-
-    def convert_to_csharp(self, source_code, source_lang, task_name):
-        """Converte codice in C#"""
-        class_name = ''.join(word.capitalize() for word in task_name.replace('-', ' ').split())
-        template = f'''/**
- * {task_name} implementation
- * Auto-generated from {source_lang}
- */
-using System;
-
-class {class_name}
-{{
-    static void Main()
-    {{
-        {class_name} instance = new {class_name}();
-        bool result = instance.Execute();
-        Console.WriteLine($"Result: {{result}}");
-    }}
-
-    public bool Execute()
-    {{
-        // TODO: Implement the logic
-        Console.WriteLine("Executing {task_name}");
-        return true;
-    }}
-}}
-'''
-        return template
-
-    def create_generic_template(self, language, task_name):
-        """Crea un template generico per linguaggi non supportati"""
-        template = f'''# {task_name} implementation
-# Auto-generated template for {language}
-# TODO: Implement {task_name} in {language}
-
-# This is a placeholder implementation
-print("Executing {task_name} in {language}")
-'''
-        return template
-
-    def save_generated_code(self, task_name, language, code):
-        """Salva il codice generato nella struttura appropriata"""
-        try:
-            # Determina la categoria (usa 'generated' come fallback)
-            category = self.determine_category(task_name, language) or 'generated'
-            
-            # Crea il percorso per il file generato
-            lang_dir = os.path.join(self.code_base_path, category, language)
-            os.makedirs(lang_dir, exist_ok=True)
-            
-            # Nome del file
-            extension = self.get_file_extension(language)
-            filename = f"generated_{task_name.replace(' ', '_')}.{extension}"
-            file_path = os.path.join(lang_dir, filename)
-            
-            # Salva il file
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(code)
-            
-            self.logger.info(f"Codice salvato in: {file_path}")
-            return file_path
-            
-        except Exception as e:
-            self.logger.error(f"Errore nel salvataggio del codice generato: {e}")
             return None
             
     def get_file_extension(self, language):
@@ -682,11 +219,7 @@ print("Executing {task_name} in {language}")
             'typescript': 'ts',
             'scala': 'scala',
             'perl': 'pl',
-            'lua': 'lua',
-            'r': 'R',
-            'haskell': 'hs',
-            'ocaml': 'ml',
-            'julia': 'jl'
+            'lua': 'lua'
         }
         return extensions.get(language, language)
 
@@ -842,9 +375,34 @@ print("Executing {task_name} in {language}")
         common_tasks_files = glob.glob("results/task_analysis/common_tasks.json")
         if not common_tasks_files:
             print(" File task comuni non trovato.")
-            print(" Per generare il file common_tasks.json, esegui prima il comando:")
-            print(" python main.py analyze")
-            return {}
+            print(" Eseguendo analisi automatica...")
+            
+            # Esegue automaticamente l'analisi se non è stata fatta
+            try:
+                # Import dinamico per evitare dipendenze circolari
+                sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                from src.finder import UnifiedTaskFinder
+                
+                print(" Avvio Unified Task Finder...")
+                finder = UnifiedTaskFinder()
+                
+                print(" Analizzando dataset per task comuni...")
+                common_tasks = finder.find_common_tasks(min_languages=16)  # Task presenti in tutti i 16 linguaggi
+                
+                # Salva i risultati per compatibilità con il resto del codice
+                finder.save_analysis_results(common_tasks, "carbon_benchmark_auto")
+                
+                print(" Analisi completata! Proseguendo con il benchmark...")
+                
+                # Ricarica il percorso del file
+                common_tasks_files = glob.glob("results/task_analysis/common_tasks*.json")
+                
+            except ImportError as e:
+                print(f" Errore importazione UnifiedTaskFinder: {e}")
+                return {}
+            except Exception as e:
+                print(f" Errore durante analisi automatica: {e}")
+                return {}
         
         # Ora procede con la logica esistente
         if not common_tasks_files:
@@ -864,7 +422,7 @@ print("Executing {task_name} in {language}")
         available_languages = list(self.executor.available_languages.keys())
 
         print(f" Linguaggi disponibili: {len(available_languages)}")
-        print(f" Linguaggi: {', '.join(available_languages)}")
+        print(f"📝 Linguaggi: {', '.join(available_languages)}")
 
         if not available_languages:
             print(" Nessun linguaggio disponibile per il benchmark")
@@ -915,14 +473,7 @@ print("Executing {task_name} in {language}")
                 code = self.load_task_code(task_name, language, category_subdir)
 
                 if not code:
-                    print(f" ⚠️  File non trovato per {task_name} in {language} - saltato")
-                    # Salta questo task/linguaggio se non è disponibile nel dataset
-                    benchmark_data[task_name][language] = {
-                        'total_iterations': self.iterations,
-                        'successful_runs': 0,
-                        'success_rate': 0.0,
-                        'error': 'File non disponibile nel dataset'
-                    }
+                    print(f" File non trovato per {task_name} in {language}")
                     continue
 
                 print(f"\n Benchmark: {task_name} in {language}")
@@ -1061,6 +612,6 @@ if __name__ == "__main__":
         benchmark = CarbonBenchmark(iterations=10)
         benchmark.benchmark_common_tasks(max_tasks=3)
     else:
-        # Default: Top10 (5 iterazioni, 10 task)
-        benchmark = CarbonBenchmark(iterations=5)
+        # Default: Top10 (30 iterazioni, 10 task)
+        benchmark = CarbonBenchmark(iterations=30)
         benchmark.benchmark_common_tasks(max_tasks=10)

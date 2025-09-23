@@ -171,8 +171,8 @@ SWAM-Project/
 │ ├── carbon_benchmark.py # Benchmark CO2 (NUOVO)
 │ ├── carbon_tracker.py # Tracking emissioni (NUOVO)
 │ ├── language_tester.py # Test linguaggi
-│ ├── advanced_task_finder.py # Ricerca task
-│ └── task_finder.py # Ricerca base
+│ ├── unified_task_finder.py # Ricerca task unificata
+│ └── enhanced_executor.py # Esecutore avanzato
 └── results/ # Output generati
  ├── execution/ # Risultati esecuzione
  ├── task_analysis/ # Analisi task

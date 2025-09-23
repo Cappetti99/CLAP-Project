@@ -86,7 +86,7 @@ class SmartExecutor:
             },
             'r': {
                 'extension': '.r',
-                'executor': ['/Users/lorenzocappetti/miniconda3/envs/SWAM/bin/Rscript'],
+                'executor': ['Rscript'],  # Usa il comando standard nel PATH
                 'timeout': 30,
                 'test_code': 'cat("test\\n")'
             },
@@ -104,7 +104,7 @@ class SmartExecutor:
             },
             'csharp': {
                 'extension': '.cs',
-                'compiler': ['csc', '-out:test.exe'],
+                'compiler': ['mcs', '-out:test.exe'],  # Usa mcs invece di csc su Linux
                 'executor': ['mono', 'test.exe'],
                 'timeout': 30,
                 'test_code': '''using System;
@@ -176,22 +176,6 @@ func main() {
                 'executor': ['node', 'test.js'],
                 'timeout': 30,
                 'test_code': '''console.log("test");'''
-            },
-            'swift': {
-                'extension': '.swift',
-                'compiler': ['swiftc', '-o', 'test'],
-                'executor': ['./test'],
-                'timeout': 30,
-                'test_code': '''print("test")'''
-            },
-            'kotlin': {
-                'extension': '.kt',
-                'compiler': ['kotlinc', '-include-runtime', '-d', 'test.jar'],
-                'executor': ['java', '-jar', 'test.jar'],
-                'timeout': 30,
-                'test_code': '''fun main() {
-    println("test")
-}'''
             }
         }
 
@@ -607,54 +591,33 @@ func main() {
         """Trova il file per una task e linguaggio nella struttura gerarchica"""
         code_base_dir = "data/generated/code_snippets"
 
-        # Mappa linguaggi alle loro categorie principali
-        language_categories = {
-            'python': 'scripting',
-            'javascript': 'scripting',
-            'ruby': 'scripting',
-            'typescript': 'scripting',
-            'java': 'oop',
-            'csharp': 'oop',
-            'c++': 'oop',
-            'c': 'imperative',
-            'go': 'imperative',
-            'rust': 'imperative',
-            'php': 'imperative',
-            'haskell': 'functional',
-            'ocaml': 'functional',
-            'r': 'scientific',
-            'julia': 'scientific',
-            'matlab': 'scientific'
-        }
-
         # Normalizza i nomi dei linguaggi
         lang_normalized = language.lower()
         if lang_normalized == 'cpp':
             lang_normalized = 'c++'
 
-        # Trova la categoria del linguaggio
-        category = language_categories.get(lang_normalized)
-        if not category:
-            return None
+        # Lista delle categorie presenti nel dataset
+        categories = ['algorithms', 'strings', 'mathematics', 'io', 'basic', 'misc']
 
-        # Cerca il file nella directory del linguaggio
-        language_dir = os.path.join(code_base_dir, category, lang_normalized)
-        if not os.path.exists(language_dir):
-            return None
+        # Cerca il file in tutte le categorie
+        for category in categories:
+            language_dir = os.path.join(code_base_dir, category, lang_normalized)
+            if not os.path.exists(language_dir):
+                continue
 
-        # Cerca il file che contiene il nome della task (pattern migliorato)
-        task_patterns = [
-            task_name.replace('-', '_'),
-            task_name.replace('_', '-'),
-            task_name.replace(' ', '_'),
-            task_name.replace(' ', '-')
-        ]
+            # Cerca il file che contiene il nome della task (pattern migliorato)
+            task_patterns = [
+                task_name.replace('-', '_'),
+                task_name.replace('_', '-'),
+                task_name.replace(' ', '_'),
+                task_name.replace(' ', '-')
+            ]
 
-        for filename in os.listdir(language_dir):
-            filename_lower = filename.lower()
-            for pattern in task_patterns:
-                if pattern.lower() in filename_lower:
-                    return os.path.join(language_dir, filename)
+            for filename in os.listdir(language_dir):
+                filename_lower = filename.lower()
+                for pattern in task_patterns:
+                    if pattern.lower() in filename_lower:
+                        return os.path.join(language_dir, filename)
 
         return None
 
@@ -741,13 +704,17 @@ func main() {
         with open(common_tasks_file, 'r') as f:
             data = json.load(f)
 
-        tasks = data.get('tasks', [])
+        common_tasks_data = data.get('common_tasks', [])
 
-        if not tasks:
+        if not common_tasks_data:
             print(" Nessuna task comune trovata")
             return
 
-        print(f" Trovate {len(tasks)} task comuni")
+        # Estrae solo i nomi delle task (primi 10 per test)
+        tasks = [task['name'] for task in common_tasks_data[:10]]
+
+        print(f" Trovate {len(common_tasks_data)} task comuni totali")
+        print(f" Eseguendo le prime {len(tasks)} task...")
 
         # Crea directory risultati
         os.makedirs(self.results_dir, exist_ok=True)

@@ -55,15 +55,65 @@ def analyze_tasks():
     print("\nANALISI TASK COMUNI")
     print("-" * 40)
     
+    # Prima controlla se ci sono risultati di test recenti
+    available_languages = []
+    test_results_dir = Path("results/execution")
+    
+    if test_results_dir.exists():
+        # Cerca il file di test più recente
+        test_files = list(test_results_dir.glob("language_test_results_*.json"))
+        if test_files:
+            latest_test = max(test_files, key=lambda x: x.stat().st_mtime)
+            try:
+                import json
+                with open(latest_test, 'r') as f:
+                    test_data = json.load(f)
+                    for lang, result in test_data['results'].items():
+                        if result['available']:
+                            available_languages.append(lang)
+                
+                print(f"Utilizzando risultati test da: {latest_test.name}")
+                print(f"Linguaggi disponibili rilevati: {len(available_languages)}")
+                print(f"Linguaggi: {', '.join(sorted(available_languages))}")
+                print()
+            except Exception as e:
+                print(f"Errore lettura risultati test: {e}")
+                available_languages = []
+    
+    if not available_languages:
+        print("Nessun risultato di test trovato.")
+        print("Esegui prima 'python main.py test' per rilevare i linguaggi disponibili.")
+        print("Procedo con analisi standard su tutti i linguaggi...")
+        print()
+    
     try:
-        from advanced_task_finder import AdvancedTaskFinder
-        finder = AdvancedTaskFinder()
-        common_tasks = finder.find_common_tasks(min_languages=8)
+        from src.finder import UnifiedTaskFinder
+        finder = UnifiedTaskFinder()
+        
+        # Se abbiamo i linguaggi disponibili, usa la nuova logica TOP 10
+        if available_languages:
+            print(f"Cercando le TOP 10 task con più linguaggi tra quelli disponibili...")
+            print(f"Linguaggi disponibili: {len(available_languages)}")
+            
+            # Usa la nuova logica per TOP 10 task
+            common_tasks = finder.find_common_tasks(min_languages=1, available_languages=available_languages)
+        else:
+            # Logica originale per compatibilità
+            min_languages_threshold = 8  # Default originale
+            print(f"Analisi standard con soglia: {min_languages_threshold} linguaggi")
+            common_tasks = finder.find_common_tasks(min_languages=min_languages_threshold)
         
         if common_tasks:
-            print(f"Trovate {len(common_tasks)} task comuni")
-            for task in common_tasks[:10]:  # Mostra prime 10
-                print(f"  • {task['name']} ({task['language_count']} linguaggi)")
+            if available_languages:
+                print(f"TOP 10 task trovate (con più linguaggi disponibili):")
+            else:
+                print(f"Trovate {len(common_tasks)} task comuni:")
+                
+            for i, task in enumerate(common_tasks[:10], 1):  # Mostra prime 10
+                lang_info = f"{task['language_count']} linguaggi"
+                if available_languages:
+                    lang_info += f" (tra {len(available_languages)} disponibili)"
+                print(f"  {i:2d}. {task['name']} - {lang_info}")
             
             # Salva i risultati su file
             import json
@@ -71,11 +121,15 @@ def analyze_tasks():
             os.makedirs("results/task_analysis", exist_ok=True)
             
             result_data = {
+                "analysis_type": "top_10_available_languages" if available_languages else "threshold_based",
                 "total_tasks": len(common_tasks),
-                "languages_count": len(finder.supported_languages),
+                "available_languages_count": len(available_languages) if available_languages else None,
+                "all_languages_count": len(finder.supported_languages),
                 "languages": list(finder.supported_languages),
+                "available_languages": available_languages,
                 "common_tasks": common_tasks,
-                "min_languages_filter": 8
+                "min_languages_filter": 1 if available_languages else 8,  # Fix: valore condizionale
+                "search_strategy": "top_10_by_coverage" if available_languages else "threshold_filter"
             }
             
             with open("results/task_analysis/common_tasks.json", 'w') as f:
@@ -120,6 +174,56 @@ def test_languages():
         from language_tester import LanguageTester
         tester = LanguageTester()
         tester.test_all_languages()
+        
+        # Mostra risultati dettagliati
+        print("\n" + "="*60)
+        print(" RISULTATI DETTAGLIATI DEL TEST")
+        print("="*60)
+        
+        working = []
+        not_working = []
+        
+        for language, result in tester.test_results.items():
+            if result['available']:
+                working.append(language)
+            else:
+                not_working.append(language)
+        
+        # Linguaggi funzionanti
+        if working:
+            print(f"\n[OK] LINGUAGGI FUNZIONANTI ({len(working)}/{len(tester.test_results)}):")
+            for lang in sorted(working):
+                print(f"   [OK] {lang.upper()}")
+        
+        # Linguaggi non funzionanti  
+        if not_working:
+            print(f"\n[FAIL] LINGUAGGI NON FUNZIONANTI ({len(not_working)}/{len(tester.test_results)}):")
+            for lang in sorted(not_working):
+                result = tester.test_results[lang]
+                error_msg = result.get('error', 'Errore sconosciuto')[:60]
+                print(f"   [FAIL] {lang.upper()}: {error_msg}")
+        
+        # Statistiche finali
+        success_rate = len(working) / len(tester.test_results) * 100
+        print(f"\n STATISTICHE:")
+        print(f"   - Totale testati: {len(tester.test_results)}")
+        print(f"   - Funzionanti: {len(working)}")
+        print(f"   - Non funzionanti: {len(not_working)}")
+        print(f"   - Tasso successo: {success_rate:.1f}%")
+        
+        if not_working:
+            print(f"\n SUGGERIMENTI:")
+            print(f"   Per installare i linguaggi mancanti:")
+            for lang in sorted(not_working):
+                if lang == 'matlab':
+                    print(f"   - {lang}: Licenza commerciale richiesta")
+                elif lang == 'csharp':
+                    print(f"   - {lang}: brew install mono")
+                else:
+                    print(f"   - {lang}: brew install {lang}")
+        
+        print("\n" + "="*60)
+        
     except ImportError as e:
         print(f"Errore importazione modulo test: {e}")
         return False
@@ -183,15 +287,15 @@ def simple_execute():
                         total_count += 1
                         if result.get('success', False):
                             success_count += 1
-                            print(f"✅ {lang}: successo")
+                            print(f"[OK] {lang}: successo")
                         else:
-                            print(f"❌ {lang}: {result.get('error', 'fallito')}")
+                            print(f"[FAIL] {lang}: {result.get('error', 'fallito')}")
                 else:
-                    print(f"❌ Task {task}: nessun file trovato")
+                    print(f"[FAIL] Task {task}: nessun file trovato")
             except Exception as e:
-                print(f"❌ Task {task}: errore - {str(e)[:50]}...")
+                print(f"[FAIL] Task {task}: errore - {str(e)[:50]}...")
         
-        print(f"\n🎉 Esecuzione semplice completata!")
+        print(f"\n Esecuzione semplice completata!")
         print(f"Risultati: {success_count}/{total_count} esecuzioni riuscite ({(success_count/total_count*100):.1f}%)" if total_count > 0 else "Nessuna esecuzione")
         print("Per analisi più approfondite usa: python main.py smart")
         
@@ -210,13 +314,13 @@ def benchmark_carbon(mode=None):
     print("-" * 40)
     
     try:
-        from carbon_benchmark import CarbonBenchmark
+        from src.carbon_benchmark import CarbonBenchmark
         
         # Configurazione modalità (rimosse modalità standard, top10 diventa default)
         print("Configurazione benchmark:")
-        print("  • Top10: 30 iterazioni, 10 task più frequenti (default, ~30-40 min)")
-        print("  • Veloce: 5 iterazioni, 3 task (demo rapida, ~5 min)")
-        print("  • Completo: 30 iterazioni, TUTTE le task comuni (accuratissimo, ~45-60 min)")
+        print("  - Top10: 5 iterazioni, 10 task più frequenti (default, ~10-15 min)")
+        print("  - Veloce: 5 iterazioni, 3 task (demo rapida, ~5 min)")
+        print("  - Completo: 30 iterazioni, TUTTE le task comuni (accuratissimo, ~45-60 min)")
         
         # Accetta modalità da parametro o chiedi input
         if mode is None:
@@ -233,7 +337,7 @@ def benchmark_carbon(mode=None):
             max_tasks = None  # Tutte le task disponibili
         else:
             # Default: top10
-            iterations = 30
+            iterations = 5
             max_tasks = 10
         
         print(f"\nConfigurazione: {iterations} iterazioni, {'TUTTE le task' if max_tasks is None else f'{max_tasks} task'}")
@@ -326,18 +430,18 @@ def clean_project():
         # Pulizia duplicati CSV in results/
         print("\nPulizia duplicati CSV...")
         try:
-            # Import del modulo cleanup_results se esiste
-            if os.path.exists("src/cleanup_results.py"):
+            # Import del modulo cleaner se esiste
+            if os.path.exists("src/cleaner.py"):
                 sys.path.insert(0, 'src')
-                import cleanup_results
-                csv_removed = cleanup_results.cleanup_csv_duplicates()
+                import cleaner
+                csv_removed = cleaner.cleanup_csv_duplicates()
                 print(f"File CSV duplicati rimossi: {csv_removed}")
-            elif os.path.exists("cleanup_results.py"):
-                import cleanup_results
-                csv_removed = cleanup_results.cleanup_csv_duplicates()
+            elif os.path.exists("cleaner.py"):
+                import cleaner
+                csv_removed = cleaner.cleanup_csv_duplicates()
                 print(f"File CSV duplicati rimossi: {csv_removed}")
             else:
-                print("Script cleanup_results.py non trovato")
+                print("Script cleaner.py non trovato")
         except Exception as e:
             print(f"Errore pulizia CSV: {e}")
         
