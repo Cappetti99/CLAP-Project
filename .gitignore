@@ -5,15 +5,8 @@
 # RISULTATI E OUTPUT GENERATI
 # =============================================================================
 
-# Directory risultati (mantiene struttura)
-results/logs/*
-!results/logs/.gitkeep
-results/stats/*
-!results/stats/.gitkeep
-results/analysis/*
-!results/analysis/.gitkeep
-results/execution/*
-!results/execution/.gitkeep
+# Directory risultati completa (esclusa dal versioning)
+results/
 
 # File di log e tracciamento
 *.log

@@ -2,14 +2,7 @@
 """
 SWAM Project - Main Entry Point
 Sistema completo per l'analisi e esecuzione di codici multi-linguaggio con monitoraggio CO2
-
-Version: 2.0.0
-Author: Lorenzo Cappetti
-Features: Multi-language analysis, Smart execution, CO2 tracking, Statistical benchmarking
 """
-
-__version__ = "2.0.0"
-__author__ = "Lorenzo Cappetti"
 
 import sys
 import os
@@ -27,11 +20,10 @@ sys.path.insert(0, src_path)
 
 def print_banner():
     """Stampa il banner del progetto con informazioni di versione"""
-    print("=" * 65)
-    print("SWAM PROJECT - Cross-Language Code Analysis System")
-    print("   Sistema per Analisi e Esecuzione Multi-Linguaggio + CO2 Tracking")
-    print("   Author: Lorenzo Cappetti | New: CodeCarbon Integration")
-    print("=" * 65)
+    print("=" * 40)
+    print("SWAM PROJECT")
+    print("Author: Lorenzo Cappetti")
+    print("=" * 40)
 
 def print_help():
     """Stampa l'aiuto completo per l'utilizzo del sistema"""
@@ -39,27 +31,24 @@ def print_help():
     print("  analyze    - Analizza task comuni tra linguaggi (completa)")
     print("  execute    - Esegue codici task comuni (tutti i linguaggi)")
     print("  smart      - Esegue codici solo nei linguaggi disponibili")
+    print("  simple     - Esecuzione semplificata (3 task base, 5 linguaggi)")
     print("  test       - Testa disponibilità di tutti i linguaggi")
     print("  clean      - Pulisce file temporanei e cache")
     print("  status     - Mostra stato dettagliato del progetto")
     print("  carbon     - Report impatto ambientale (CodeCarbon)")
-    print("  benchmark  - Benchmark CO2 statistico (30 run per precisione)")
+    print("  benchmark  - Benchmark CO2 (default: top10, 30 run, 10 task)")
     print("  install    - Installa dipendenze del progetto")
     print("  help       - Mostra questo aiuto completo")
     print("\nESEMPI D'USO:")
     print("  python main.py test        # Prima verifica i linguaggi")
     print("  python main.py analyze     # Analizza task comuni")
     print("  python main.py smart       # Esegue solo linguaggi funzionanti")
-    print("  python main.py benchmark   # Benchmark preciso CO2 (30 esecuzioni)")
+    print("  python main.py benchmark   # Benchmark top10 task (default)")
+    print("  python main.py benchmark --mode completo  # Benchmark completo")
+    print("  python main.py benchmark --mode veloce    # Benchmark veloce")
     print("  python main.py carbon      # Visualizza emissioni CO2")
     print("  python main.py install     # Installa codecarbon e deps")
     print("  python main.py status      # Stato completo progetto")
-
-    print("\nSUGGERIMENTI:")
-    print("  • Usa 'test' prima del primo run per verificare linguaggi")
-    print("  • 'smart' è raccomandato per esecuzioni quotidiane")
-    print("  • 'benchmark' per dati statistici accurati (più lento)")
-    print("  • 'carbon' per monitoring ambientale continuo")
 
 def analyze_tasks():
     """Esegue l'analisi delle task comuni"""
@@ -75,6 +64,23 @@ def analyze_tasks():
             print(f"Trovate {len(common_tasks)} task comuni")
             for task in common_tasks[:10]:  # Mostra prime 10
                 print(f"  • {task['name']} ({task['language_count']} linguaggi)")
+            
+            # Salva i risultati su file
+            import json
+            import os
+            os.makedirs("results/task_analysis", exist_ok=True)
+            
+            result_data = {
+                "total_tasks": len(common_tasks),
+                "languages_count": len(finder.supported_languages),
+                "languages": list(finder.supported_languages),
+                "common_tasks": common_tasks,
+                "min_languages_filter": 8
+            }
+            
+            with open("results/task_analysis/common_tasks.json", 'w') as f:
+                json.dump(result_data, f, indent=2)
+                
         else:
             print("Nessuna task comune trovata")
             
@@ -93,8 +99,8 @@ def execute_codes():
     print("-" * 40)
     
     try:
-        from enhanced_executor import EnhancedExecutor
-        executor = EnhancedExecutor()
+        from smart_executor import SmartExecutor
+        executor = SmartExecutor()
         executor.execute_all_common_tasks()
     except ImportError as e:
         print(f"Errore importazione modulo esecutore: {e}")
@@ -129,7 +135,7 @@ def smart_execute():
     print("-" * 40)
     
     try:
-        from smart_executor import SmartExecutor
+        from src.smart_executor import SmartExecutor
         executor = SmartExecutor()
         executor.execute_all_common_tasks()
     except ImportError as e:
@@ -141,7 +147,64 @@ def smart_execute():
     
     return True
 
-def benchmark_carbon():
+def simple_execute():
+    """Esegue una versione semplificata del sistema - solo task di base"""
+    print("\nESECUZIONE SEMPLIFICATA")
+    print("-" * 40)
+    print("Modalità semplice: esegue solo 3 task di base nei linguaggi disponibili")
+    
+    try:
+        from src.smart_executor import SmartExecutor
+        executor = SmartExecutor()
+        
+        # Task semplici e universali
+        simple_tasks = [
+            "100_doors",
+            "Array_length", 
+            "Arithmetic-geometric_mean"
+        ]
+        
+        print(f"Task selezionate: {', '.join(simple_tasks)}")
+        print()
+        
+        # Rileva linguaggi disponibili
+        executor.detect_available_languages()
+        
+        success_count = 0
+        total_count = 0
+        
+        # Esegui solo le task specificate
+        for task in simple_tasks:
+            print(f"\n=== TASK: {task} ===")
+            try:
+                results = executor.execute_task_all_available_languages(task)
+                if results:
+                    for lang, result in results.items():
+                        total_count += 1
+                        if result.get('success', False):
+                            success_count += 1
+                            print(f"✅ {lang}: successo")
+                        else:
+                            print(f"❌ {lang}: {result.get('error', 'fallito')}")
+                else:
+                    print(f"❌ Task {task}: nessun file trovato")
+            except Exception as e:
+                print(f"❌ Task {task}: errore - {str(e)[:50]}...")
+        
+        print(f"\n🎉 Esecuzione semplice completata!")
+        print(f"Risultati: {success_count}/{total_count} esecuzioni riuscite ({(success_count/total_count*100):.1f}%)" if total_count > 0 else "Nessuna esecuzione")
+        print("Per analisi più approfondite usa: python main.py smart")
+        
+    except ImportError as e:
+        print(f"Errore importazione modulo smart executor: {e}")
+        return False
+    except Exception as e:
+        print(f"Errore durante esecuzione semplice: {e}")
+        return False
+    
+    return True
+
+def benchmark_carbon(mode=None):
     """Esegue benchmark CO2 con ripetizioni multiple"""
     print("\nCARBON BENCHMARK")
     print("-" * 40)
@@ -149,29 +212,31 @@ def benchmark_carbon():
     try:
         from carbon_benchmark import CarbonBenchmark
         
-        # Chiedi all'utente il numero di iterazioni
+        # Configurazione modalità (rimosse modalità standard, top10 diventa default)
         print("Configurazione benchmark:")
-        print("  • Standard: 30 iterazioni (raccomandato per precisione)")
-        print("  • Veloce: 10 iterazioni (per test rapidi)")
-        print("  • Test: 5 iterazioni (per debug)")
-        print("  • Debug: 3 iterazioni (super veloce)")
+        print("  • Top10: 30 iterazioni, 10 task più frequenti (default, ~30-40 min)")
+        print("  • Veloce: 5 iterazioni, 3 task (demo rapida, ~5 min)")
+        print("  • Completo: 30 iterazioni, TUTTE le task comuni (accuratissimo, ~45-60 min)")
         
-        choice = input("\nScegli modalità [standard/veloce/test/debug] (default: standard): ").strip().lower()
-        
-        if choice == "debug":
-            iterations = 3
-            max_tasks = 2
-        elif choice == "veloce":
-            iterations = 10
-            max_tasks = 3
-        elif choice == "test":
-            iterations = 5
-            max_tasks = 2
+        # Accetta modalità da parametro o chiedi input
+        if mode is None:
+            choice = input("\nScegli modalità [top10/veloce/completo] (default: top10): ").strip().lower()
         else:
-            iterations = 30
-            max_tasks = 5
+            choice = mode.lower()
+            print(f"\nModalità selezionata: {choice}")
         
-        print(f"\nConfigurazione: {iterations} iterazioni, {max_tasks} task")
+        if choice == "veloce":
+            iterations = 5
+            max_tasks = 3
+        elif choice == "completo":
+            iterations = 30
+            max_tasks = None  # Tutte le task disponibili
+        else:
+            # Default: top10
+            iterations = 30
+            max_tasks = 10
+        
+        print(f"\nConfigurazione: {iterations} iterazioni, {'TUTTE le task' if max_tasks is None else f'{max_tasks} task'}")
         
         benchmark = CarbonBenchmark(iterations=iterations)
         benchmark.benchmark_common_tasks(max_tasks=max_tasks)
@@ -256,7 +321,7 @@ def clean_project():
         
         print(f"\nPulizia completata!")
         print(f"File rimossi: {cleaned_files}")
-        print(f"📂 Directory rimosse: {cleaned_dirs}")
+        print(f" Directory rimosse: {cleaned_dirs}")
         
         # Pulizia duplicati CSV in results/
         print("\nPulizia duplicati CSV...")
@@ -324,19 +389,18 @@ def show_status():
             print(f"  {file_path} (non trovato)")
     
     # Conta task disponibili
-    task_dir = Path("results/task_analysis/code_snippets")
-    if task_dir.exists():
-        task_count = len([d for d in task_dir.iterdir() if d.is_dir()])
-        print(f"\nTask Analizzate: {task_count}")
-        
-        # Mostra prime 5 task
-        tasks = sorted([d.name for d in task_dir.iterdir() if d.is_dir()])[:5]
-        for task in tasks:
-            print(f"  • {task}")
-        if len(tasks) == 5 and task_count > 5:
-            print(f"  ... e altre {task_count - 5} task")
-    else:
-        print("\nTask Analizzate: 0 (esegui 'analyze' prima)")
+    task_count = 0
+    common_tasks_file = Path("results/task_analysis/common_tasks.json")
+    if common_tasks_file.exists():
+        try:
+            import json
+            with open(common_tasks_file, 'r') as f:
+                data = json.load(f)
+                task_count = data.get('total_tasks', 0)
+        except:
+            pass
+    
+    print(f"\nTask Analizzate: {task_count} (esegui 'analyze' prima)")
     
     # Verifica risultati esecuzione
     exec_dir = Path("results/execution")
@@ -352,16 +416,21 @@ def show_status():
 def main():
     """Funzione principale"""
     parser = argparse.ArgumentParser(
-        description="SWAM Project - Sistema per Analisi e Esecuzione Multi-Linguaggio",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     
     parser.add_argument(
         'command', 
         nargs='?',
-        choices=['analyze', 'execute', 'smart', 'test', 'clean', 'status', 'carbon', 'install', 'benchmark', 'help'],
+        choices=['analyze', 'execute', 'smart', 'test', 'clean', 'status', 'carbon', 'install', 'benchmark', 'simple', 'help'],
         default='help',
         help='Comando da eseguire'
+    )
+    
+    parser.add_argument(
+        '--mode',
+        choices=['veloce', 'top10', 'completo'],
+        help='Modalità per il comando benchmark (veloce/top10/completo)'
     )
     
     args = parser.parse_args()
@@ -394,6 +463,14 @@ def main():
         else:
             print("\nEsecuzione intelligente fallita")
             sys.exit(1)
+    elif args.command == 'simple':
+        success = simple_execute()
+        if success:
+            print("\nEsecuzione semplice completata!")
+            print("Per analisi più approfondite prova: python main.py smart")
+        else:
+            print("\nEsecuzione semplice fallita")
+            sys.exit(1)
     elif args.command == 'test':
         success = test_languages()
         if success:
@@ -421,7 +498,7 @@ def main():
             print("Installa CodeCarbon con: pip install codecarbon")
     elif args.command == 'benchmark':
         # Comando per eseguire benchmark CO2 con ripetizioni multiple
-        success = benchmark_carbon()
+        success = benchmark_carbon(mode=args.mode)
         if success:
             print("\nBenchmark CO2 completato!")
             print("Controlla i risultati in results/carbon_benchmark/")

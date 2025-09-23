@@ -1,0 +1,72 @@
+{
+  "Arbitrary-precision_integers_included": {
+    "java": {
+      "success_rate": 100.0,
+      "mean_emissions": 3.044610293280265e-07,
+      "mean_execution_time": 0.45816540718078613,
+      "total_emissions": 9.133830879840795e-07
+    },
+    "ruby": {
+      "success_rate": 100.0,
+      "mean_emissions": 7.398908944765403e-07,
+      "mean_execution_time": 0.29054101308186847,
+      "total_emissions": 2.219672683429621e-06
+    },
+    "php": {
+      "success_rate": 100.0,
+      "mean_emissions": 1.0637733974150197e-06,
+      "mean_execution_time": 0.1545871098836263,
+      "total_emissions": 3.191320192245059e-06
+    }
+  },
+  "100_doors": {
+    "python": {
+      "success_rate": 100.0,
+      "mean_emissions": 4.479720055097055e-06,
+      "mean_execution_time": 0.023836930592854817,
+      "total_emissions": 1.3439160165291164e-05
+    },
+    "javascript": {
+      "success_rate": 100.0,
+      "mean_emissions": 4.667415795105464e-06,
+      "mean_execution_time": 0.0913698673248291,
+      "total_emissions": 1.4002247385316394e-05
+    },
+    "java": {
+      "success_rate": 100.0,
+      "mean_emissions": 5.034095294232157e-06,
+      "mean_execution_time": 0.3634623686472575,
+      "total_emissions": 1.5102285882696472e-05
+    },
+    "ruby": {
+      "success_rate": 100.0,
+      "mean_emissions": 5.286581584073293e-06,
+      "mean_execution_time": 0.06569933891296387,
+      "total_emissions": 1.585974475221988e-05
+    },
+    "php": {
+      "success_rate": 100.0,
+      "mean_emissions": 5.4932152939346616e-06,
+      "mean_execution_time": 0.0885149637858073,
+      "total_emissions": 1.6479645881803982e-05
+    },
+    "r": {
+      "success_rate": 100.0,
+      "mean_emissions": 5.8741627292241785e-06,
+      "mean_execution_time": 0.392847220102946,
+      "total_emissions": 1.7622488187672533e-05
+    },
+    "julia": {
+      "success_rate": 100.0,
+      "mean_emissions": 6.303176784200346e-06,
+      "mean_execution_time": 0.284969965616862,
+      "total_emissions": 1.8909530352601037e-05
+    },
+    "csharp": {
+      "success_rate": 100.0,
+      "mean_emissions": 6.6709189139917225e-06,
+      "mean_execution_time": 0.31171369552612305,
+      "total_emissions": 2.001275674197517e-05
+    }
+  }
+}

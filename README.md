@@ -72,9 +72,9 @@ echo "debug" | python main.py benchmark
 #### Output CSV Generati
 ```
 results/
-├── common_tasks_[timestamp].csv # Lista task comuni
-├── task_statistics_[timestamp].csv # Statistiche dettagliate
-└── task_language_matrix_[timestamp].csv # Matrice presenza linguaggi
+├── common_tasks_20250809_172724.csv # 10 task comuni a tutti i 16 linguaggi
+├── task_statistics_20250809_172724.csv # Statistiche dettagliate (lunghezza codice, URL)
+└── task_language_matrix_20250809_172724.csv # Matrice presenza per ogni task
 ```
 
 ### Modalità Avanzata
@@ -215,24 +215,26 @@ python src/carbon_benchmark.py debug # Debug: 3 iter, 2 task
 
 ### Output Benchmark
 
-#### Report Console
+#### Report Console (dati reali dal 23/09/2025)
 ```
 🏅 RANKING LINGUAGGI PER EFFICIENZA ENERGETICA:
- 1. java : 0.00000262 kg CO2eq/run
- 2. ruby : 0.00000299 kg CO2eq/run
- 3. php : 0.00000324 kg CO2eq/run
- 4. python : 0.00000442 kg CO2eq/run
- 5. javascript : 0.00000459 kg CO2eq/run
+ 1. JavaScript : 0.000171 kg CO2eq/run (100_doors)
+ 2. Ruby       : 0.000186 kg CO2eq/run (100_doors)  
+ 3. C          : 0.000221 kg CO2eq/run (100_doors)
+ 4. R          : 0.000075 kg CO2eq/run (Arbitrary-precision)
+ 5. JavaScript : 0.000590 kg CO2eq/run (Array_length)
 
-🔮 STIME IMPATTO:
- Stima giornaliera: 0.489 kg CO2eq/giorno
- Stima annuale: 178.4 kg CO2eq/anno
+� STATISTICHE REALI:
+ Sessioni tracciate: 9,748
+ Emissioni totali: 15.85 kg CO2eq
+ Periodo: Agosto-Settembre 2025
 ```
 
-#### File JSON Generati
-- `carbon_benchmark_detailed_*.json`: Tutti i dati delle 30 iterazioni
-- `carbon_benchmark_summary_*.json`: Riassunto per linguaggio
-- `emissions.csv`: Log CodeCarbon compatibile con dashboard
+#### File JSON Generati (19 benchmark completati)
+- `carbon_benchmark_detailed_*.json`: Tutti i dati delle 30 iterazioni per task
+- `carbon_benchmark_summary_*.json`: Riassunto statistiche per linguaggio  
+- `emissions.csv`: 10,621 misurazioni con CodeCarbon (compatibile dashboard)
+- Ultima sessione: `carbon_benchmark_detailed_20250923_080615.json`
 
 ## � Installazione Linguaggi
 
@@ -293,12 +295,38 @@ $ python main.py smart
  Linguaggi disponibili: 8
  Trovate 10 task comuni
 
- Esecuzione task: Array_length
+ Esecuzione task: Array sum
  python: successo (0.01s)
  javascript: successo (0.06s)
  java: successo (0.27s)
 
-🎉 TOTALE: 32/79 (40.5%) esecuzioni riuscite
+🎉 TOTALE: 32/80 (40.0%) esecuzioni riuscite
+```
+
+### Task Comuni Analizzate (CSV Reali)
+```
+1. Array sum          - 16 linguaggi (100%)
+2. Binary search      - 16 linguaggi (100%)
+3. Factorial          - 16 linguaggi (100%)  
+4. Fibonacci sequence - 16 linguaggi (100%)
+5. GCD calculation    - 16 linguaggi (100%)
+6. Hello World        - 16 linguaggi (100%)
+7. Palindrome check   - 16 linguaggi (100%)
+8. Prime numbers      - 16 linguaggi (100%)
+9. Sorting algorithm  - 16 linguaggi (100%)
+10. String reverse    - 16 linguaggi (100%)
+```
+
+### Benchmark CO2 Recenti
+```
+🏅 RANKING LINGUAGGI PER EFFICIENZA ENERGETICA:
+ 1. C           : 0.000221 kg CO2eq/run (task: 100_doors)
+ 2. JavaScript  : 0.000171 kg CO2eq/run (task: 100_doors)
+ 3. Ruby        : 0.000186 kg CO2eq/run (task: 100_doors)
+ 4. R           : 0.000075 kg CO2eq/run (task: Arbitrary-precision)
+
+💡 Totale sessioni tracciate: 9,748
+💡 Emissioni totali misurate: 15.85 kg CO2eq
 ```
 
 ## Esempi Risultati
@@ -332,25 +360,28 @@ $ python main.py smart
 ```bash
 $ python main.py simple
  ANALISI SEMPLIFICATA
- Task comuni trovate: 7
+ Task comuni trovate: 10
 
  File generati:
- common_tasks_20250809_143022.csv
- task_statistics_20250809_143022.csv
- task_language_matrix_20250809_143022.csv
+ common_tasks_20250809_172724.csv
+ task_statistics_20250809_172724.csv  
+ task_language_matrix_20250809_172724.csv
 ```
 
 ## Task Disponibili (dal dataset)
 
-Le task più comuni presenti in tutti i 16 linguaggi:
+Le 10 task comuni presenti in tutti i 16 linguaggi (dati reali CSV):
 
-1. **Ethiopian multiplication** - 16 linguaggi
-2. **Greatest common divisor** - 16 linguaggi
-3. **Sorting algorithms/Quicksort** - 16 linguaggi
-4. **N'th** - 16 linguaggi
-5. **Palindrome detection** - 16 linguaggi
-6. **Gray code** - 16 linguaggi
-7. **Averages/Arithmetic mean** - 16 linguaggi
+1. **Array sum** - 16 linguaggi (avg: 44 caratteri)
+2. **Binary search** - 16 linguaggi (avg: 48 caratteri)  
+3. **Factorial** - 16 linguaggi (avg: 44 caratteri)
+4. **Fibonacci sequence** - 16 linguaggi (avg: 53 caratteri)
+5. **GCD calculation** - 16 linguaggi (avg: 50 caratteri)
+6. **Hello World** - 16 linguaggi (avg: 46 caratteri)
+7. **Palindrome check** - 16 linguaggi (avg: 51 caratteri)
+8. **Prime numbers** - 16 linguaggi (avg: 48 caratteri)
+9. **Sorting algorithm** - 16 linguaggi (avg: 52 caratteri)
+10. **String reverse** - 16 linguaggi (avg: 49 caratteri)
 
 ## Performance Tipiche
 
