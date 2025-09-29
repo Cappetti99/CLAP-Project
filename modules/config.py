@@ -5,7 +5,7 @@ Contiene tutte le impostazioni e configurazioni per i linguaggi di programmazion
 
 # Configurazioni di timeout e limiti
 TIMEOUT_SECONDS = 30 # Timeout per l'esecuzione dei programmi
-MAX_SNIPPETS_PER_LANGUAGE = 50 # Numero massimo di snippet per linguaggio
+MAX_SNIPPETS_PER_LANGUAGE = 500 # Numero massimo di snippet per linguaggio
 COMPILATION_TIMEOUT = 60 # Timeout per la compilazione
 
 # Definizione dei linguaggi organizzati per categorie

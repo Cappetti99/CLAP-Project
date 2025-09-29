@@ -31,12 +31,12 @@ class SWAMCarbonTracker:
         os.makedirs(self.results_dir, exist_ok=True)
 
         if CODECARBON_AVAILABLE:
-            # Configurazione tracker
+            # Configurazione tracker - DISABILITIAMO IL SALVATAGGIO CSV PER EVITARE ERRORI
             self.tracker = EmissionsTracker(
                 project_name=project_name,
                 output_dir=self.results_dir,
-                log_level="INFO",
-                save_to_file=True,
+                log_level="ERROR",  # Riduciamo i log
+                save_to_file=False,  # DISABILITATO per evitare errore CSV
                 save_to_api=False,  # Disabilitato per privacy 
                 experiment_id=f"swam_session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             )
@@ -66,7 +66,15 @@ class SWAMCarbonTracker:
         if not CODECARBON_AVAILABLE or not self.tracker:
             return None
 
-        emissions = self.tracker.stop()
+        try:
+            emissions = self.tracker.stop()
+            
+            # Gestisci il caso in cui emissions sia None
+            if emissions is None:
+                emissions = 0.0
+        except Exception as e:
+            print(f"⚠️  Errore durante misurazione CO2: {e}")
+            emissions = 0.0
 
         if self.current_session:
             self.current_session["end_time"] = datetime.now().isoformat()
@@ -77,7 +85,9 @@ class SWAMCarbonTracker:
             with open(session_file, 'w') as f:
                 json.dump(self.current_session, f, indent=2)
 
-            print(f" Tracking CO2 completato: {emissions:.6f} kg CO2eq")
+            # Converti in mg per leggibilità (1 kg = 1,000,000 mg)
+            emissions_mg = emissions * 1_000_000
+            print(f" Tracking CO2 completato: {emissions_mg:.3f} mg CO2eq")
             print(f" Dettagli salvati in: {session_file}")
 
         return emissions
@@ -159,7 +169,9 @@ class SWAMCarbonTracker:
 
         print(f" Sessioni tracciate: {summary['total_sessions']}")
         print(f" File emissioni: {summary['total_carbon_files']}")
-        print(f" Emissioni totali stimate: {summary['total_estimated_emissions']:.6f} kg CO2eq")
+        # Converti in mg per leggibilità
+        emissions_mg = summary['total_estimated_emissions'] * 1_000_000
+        print(f" Emissioni totali stimate: {emissions_mg:.3f} mg CO2eq")
 
         if summary['sessions_by_language']:
             print(f"\n Sessioni per linguaggio:")

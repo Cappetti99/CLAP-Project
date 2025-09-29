@@ -28,26 +28,29 @@ def print_banner():
 def print_help():
     """Stampa l'aiuto completo per l'utilizzo del sistema"""
     print("\nCOMANDI DISPONIBILI:")
-    print("  analyze    - Analizza task comuni tra linguaggi (completa)")
-    print("  execute    - Esegue codici task comuni (tutti i linguaggi)")
-    print("  smart      - Esegue codici solo nei linguaggi disponibili")
-    print("  simple     - Esecuzione semplificata (3 task base, 5 linguaggi)")
-    print("  test       - Testa disponibilità di tutti i linguaggi")
-    print("  clean      - Pulisce file temporanei e cache")
-    print("  status     - Mostra stato dettagliato del progetto")
-    print("  carbon     - Report impatto ambientale (CodeCarbon)")
-    print("  benchmark  - Benchmark CO2 (default: top10, 30 run, 10 task)")
-    print("  install    - Installa dipendenze del progetto")
-    print("  help       - Mostra questo aiuto completo")
-    print("\nESEMPI D'USO:")
-    print("  python main.py test        # Prima verifica i linguaggi")
-    print("  python main.py analyze     # Analizza task comuni")
-    print("  python main.py smart       # Esegue solo linguaggi funzionanti")
-    print("  python main.py benchmark   # Benchmark top10 task (default)")
-    print("  python main.py benchmark --mode completo  # Benchmark completo")
-    print("  python main.py benchmark --mode veloce    # Benchmark veloce")
-    print("  python main.py carbon      # Visualizza emissioni CO2")
-    print("  python main.py install     # Installa codecarbon e deps")
+    print("  test       - Verifica disponibilità compilatori/interpreti")
+    print("  analyze    - Trova task comuni eseguibili in più linguaggi")
+    print("  smart      - Esegue 10 task nei linguaggi testati (RACCOMANDATO)")
+    print("  execute    - Esegue task in TUTTI i linguaggi (anche non testati)")
+    print("  simple     - Esecuzione veloce (solo 3 task base)")
+    print("  benchmark  - Misurazione CO2 con modalità interattive (top10/veloce/completo)")
+    print("  carbon     - Visualizza report emissioni CO2 delle esecuzioni")
+    print("  clean      - Rimuove file temporanei/cache")
+    print("  status     - Stato progetto e statistiche")
+    print("  install    - Installa dipendenze Python (codecarbon)")
+    print("  help       - Mostra questo aiuto dettagliato")
+    
+    print("\n FLUSSO CONSIGLIATO:")
+    print("  1. python main.py test      # Verifica linguaggi disponibili")
+    print("  2. python main.py analyze   # Trova task comuni")
+    print("  3. python main.py smart     # Esegue in modo intelligente")
+    print("  4. python main.py carbon    # Visualizza impatto CO2")
+
+    print("\n DESCRIZIONI DETTAGLIATE:")
+    print("  • test: Controlla C, C++, Java, Python, JavaScript, Go, Rust, ecc.")
+    print("  • smart: Usa solo linguaggi funzionanti, gestisce errori automaticamente")
+    print("  • execute: Forza esecuzione anche su linguaggi non testati")
+    print("  • benchmark: Misura CO2 con 3 modalità (veloce→top10→completo)")
     print("  python main.py status      # Stato completo progetto")
 
 def analyze_tasks():
@@ -153,7 +156,7 @@ def execute_codes():
     print("-" * 40)
     
     try:
-        from smart_executor import SmartExecutor
+        from src.smart_executor import SmartExecutor
         executor = SmartExecutor()
         executor.execute_all_common_tasks()
     except ImportError as e:
@@ -309,41 +312,93 @@ def simple_execute():
     return True
 
 def benchmark_carbon(mode=None):
-    """Esegue benchmark CO2 con ripetizioni multiple"""
-    print("\nCARBON BENCHMARK")
-    print("-" * 40)
+    """Esegue benchmark CO2 con ripetizioni multiple con input interattivo"""
+    print("\n CARBON BENCHMARK - Sistema di Misurazione CO2")
+    print("=" * 55)
     
     try:
         from src.carbon_benchmark import CarbonBenchmark
         
-        # Configurazione modalità (rimosse modalità standard, top10 diventa default)
-        print("Configurazione benchmark:")
-        print("  - Top10: 5 iterazioni, 10 task più frequenti (default, ~10-15 min)")
-        print("  - Veloce: 5 iterazioni, 3 task (demo rapida, ~5 min)")
-        print("  - Completo: 30 iterazioni, TUTTE le task comuni (accuratissimo, ~45-60 min)")
+        # Mostra opzioni disponibili
+        print("Modalità benchmark disponibili:")
+        print()
+        print("  TOP10 - Analisi Task Principali")
+        print("   • Solo le top 10 task più frequenti")
+        print("   • 30 ripetizioni per task per calcolare la media")
+        print("   • Tempo stimato: ~45-60 minuti")
+        print("   • Ideale per analisi regolari")
+        print()
+        print("  VELOCE - Test Funzionalità")
+        print("   • Solo 3 task di esempio")
+        print("   • 3 ripetizioni per task")
+        print("   • Tempo stimato: ~3-5 minuti")
+        print("   • Perfetto per verificare che tutto funzioni")
+        print()
+        print("  COMPLETO - Analisi Esaustiva")
+        print("   • TUTTE le task del dataset (1000+ task)")
+        print("   • 3 ripetizioni per task")
+        print("   • Tempo stimato: ~6-8 ore")
+        print("   • Copertura completa per ricerca scientifica")
+        print()
         
-        # Accetta modalità da parametro o chiedi input
+        # Gestione input
         if mode is None:
-            choice = input("\nScegli modalità [top10/veloce/completo] (default: top10): ").strip().lower()
+            print("Seleziona modalità:")
+            choice = input("Inserisci [1/top10] [2/veloce] [3/completo] (default: top10): ").strip().lower()
         else:
             choice = mode.lower()
-            print(f"\nModalità selezionata: {choice}")
+            print(f"Modalità selezionata da parametro: {choice}")
         
-        if choice == "veloce":
-            iterations = 5
+        # Configurazione modalità
+        if choice in ["2", "veloce", "speed", "fast"]:
+            iterations = 3
             max_tasks = 3
-        elif choice == "completo":
-            iterations = 30
+            mode_name = "VELOCE"
+            description = "Test funzionalità - 3 task, 3 ripetizioni"
+        elif choice in ["3", "completo", "full", "complete", "tutto"]:
+            iterations = 3
             max_tasks = None  # Tutte le task disponibili
+            mode_name = "COMPLETO"
+            description = "Analisi esaustiva - tutte le task, 3 ripetizioni"
         else:
             # Default: top10
-            iterations = 5
+            iterations = 30
             max_tasks = 10
+            mode_name = "TOP10"
+            description = "Analisi task principali - 10 task, 30 ripetizioni"
         
-        print(f"\nConfigurazione: {iterations} iterazioni, {'TUTTE le task' if max_tasks is None else f'{max_tasks} task'}")
+        # Conferma configurazione
+        print(f"\n MODALITÀ SELEZIONATA: {mode_name}")
+        print(f" {description}")
+        print(f" Configurazione: {iterations} iterazioni per task")
+        print(f" Task da testare: {'TUTTE le disponibili' if max_tasks is None else f'Prime {max_tasks} task'}")
         
+        # Conferma dall'utente
+        if mode is None:  # Solo se interattivo
+            print()
+            try:
+                confirm = input("Procedere con il benchmark? [s/N]: ").strip().lower()
+                if confirm not in ['s', 'si', 'sì', 'y', 'yes']:
+                    print("❌ Benchmark annullato dall'utente")
+                    return False
+            except EOFError:
+                # Input non interattivo, procedi automaticamente
+                print(" Modalità non-interattiva rilevata, procedo automaticamente...")
+                pass
+        
+        print(f"\n Avvio benchmark in modalità {mode_name}...")
+        print(" Usa Ctrl+C per interrompere in qualsiasi momento")
+        
+        # Avvia benchmark
         benchmark = CarbonBenchmark(iterations=iterations)
-        benchmark.benchmark_common_tasks(max_tasks=max_tasks)
+        
+        # Seleziona il metodo di benchmark in base alla modalità
+        if max_tasks is None:  # Modalità COMPLETO
+            print(" Modalità COMPLETO: utilizzando TUTTE le task del dataset")
+            benchmark.benchmark_all_tasks()
+        else:  # Modalità TOP10 o VELOCE
+            print(f" Modalità {mode_name}: utilizzando task comuni")
+            benchmark.benchmark_common_tasks(max_tasks=max_tasks)
         
     except ImportError as e:
         print(f"Errore importazione modulo benchmark: {e}")

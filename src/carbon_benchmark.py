@@ -15,6 +15,7 @@ import re
 import statistics
 from datetime import datetime
 from pathlib import Path
+from tqdm import tqdm
 
 # Aggiunge il path per importare i moduli SWAM
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -56,6 +57,9 @@ class CarbonBenchmark:
             self.logger.addHandler(handler)
             
         self.benchmark_results = {}
+        
+        # Statistiche sui fallimenti per linguaggio
+        self.language_failures = {}
 
         # Crea directory per i risultati
         os.makedirs(self.results_dir, exist_ok=True)
@@ -67,6 +71,25 @@ class CarbonBenchmark:
         if not CARBON_TRACKING_AVAILABLE:
             print(" Carbon tracking non disponibile")
             return
+    
+    def format_co2_value(self, kg_value, unit='mg'):
+        """Converte e formatta i valori CO2 da kg a unità più leggibili."""
+        if unit == 'mg':
+            # Converte da kg a mg (1 kg = 1,000,000 mg)
+            mg_value = kg_value * 1_000_000
+            if mg_value < 0.001:
+                return f"{mg_value:.6f} mg CO2eq"
+            elif mg_value < 1:
+                return f"{mg_value:.3f} mg CO2eq"
+            else:
+                return f"{mg_value:.2f} mg CO2eq"
+        elif unit == 'g':
+            # Converte da kg a g (1 kg = 1,000 g)
+            g_value = kg_value * 1_000
+            return f"{g_value:.6f} g CO2eq"
+        else:
+            # Mantiene in kg
+            return f"{kg_value:.8f} kg CO2eq"
 
     def benchmark_single_execution(self, code, language, task_name, iteration):
         """Esegue un singolo benchmark di un codice"""
@@ -197,6 +220,8 @@ class CarbonBenchmark:
                     try:
                         with open(file_path, 'r', encoding='utf-8') as f:
                             content = f.read()
+                            # Applica pulizia caratteri invisibili
+                            content = self.executor.clean_code_content(content)
                             self.logger.debug(f"Trovato codice per '{task_name}' in {file_path}")
                             return content
                     except Exception as e:
@@ -219,6 +244,8 @@ class CarbonBenchmark:
                         try:
                             with open(file_path, 'r', encoding='utf-8') as f:
                                 content = f.read()
+                                # Applica pulizia caratteri invisibili
+                                content = self.executor.clean_code_content(content)
                                 self.logger.debug(f"Trovato codice per '{task_name}' in {file_path} (match flessibile)")
                                 return content
                         except Exception as e:
@@ -747,29 +774,57 @@ print("Executing {task_name} in {language}")
         return True, "OK"
 
     def benchmark_task_language(self, task_name, language, code):
-        print(f"\n Benchmark: {task_name} in {language}")
-        print(f" Eseguendo {self.iterations} iterazioni...")
+        print(f"\n📊 Benchmark: {task_name} in {language}")
 
         iteration_results = []
         successful_runs = 0
 
-        for i in range(1, self.iterations + 1):
-            print(f" Iterazione {i:2d}/{self.iterations}", end=" ")
+        # Usa tqdm per la barra di progresso delle iterazioni
+        desc = f"{language:>12}"
+        with tqdm(total=self.iterations, desc=desc, unit="iter", 
+                  bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]") as pbar:
+            
+            for i in range(1, self.iterations + 1):
+                result = self.benchmark_single_execution(code, language, task_name, i)
+                iteration_results.append(result)
 
-            result = self.benchmark_single_execution(code, language, task_name, i)
-            iteration_results.append(result)
+                if result['success']:
+                    successful_runs += 1
+                    pbar.set_postfix({
+                        'Status': '✅',
+                        'Time': f"{result['execution_time']:.3f}s",
+                        'CO2': self.format_co2_value(result['emissions'])[:8]
+                    })
+                else:
+                    pbar.set_postfix({
+                        'Status': '❌', 
+                        'Error': result['error'][:20] + "..." if len(result['error']) > 20 else result['error']
+                    })
 
-            if result['success']:
-                successful_runs += 1
-                print(f" {result['execution_time']:.3f}s - {result['emissions']:.8f} kg CO2eq")
-            else:
-                print(f" Errore: {result['error'][:50]}...")
-
-            # Piccola pausa tra iterazioni per stabilizzare le misurazioni
-            time.sleep(0.1)
+                pbar.update(1)
+                # Piccola pausa tra iterazioni per stabilizzare le misurazioni
+                time.sleep(0.1)
 
         # Calcola statistiche
         success_rate = (successful_runs / self.iterations) * 100
+        
+        # Traccia i fallimenti per linguaggio
+        if successful_runs == 0:
+            if language not in self.language_failures:
+                self.language_failures[language] = {
+                    'failed_tasks': [],
+                    'total_failures': 0,
+                    'sample_errors': set()
+                }
+            
+            self.language_failures[language]['failed_tasks'].append(task_name)
+            self.language_failures[language]['total_failures'] += 1
+            
+            # Raccoglie esempi di errori (max 3 per linguaggio)
+            failed_results = [r for r in iteration_results if not r['success']]
+            if failed_results and len(self.language_failures[language]['sample_errors']) < 3:
+                sample_error = failed_results[0]['error'][:100] + "..." if len(failed_results[0]['error']) > 100 else failed_results[0]['error']
+                self.language_failures[language]['sample_errors'].add(sample_error)
 
         # Filtra solo le esecuzioni riuscite per le statistiche
         successful_results = [r for r in iteration_results if r['success']]
@@ -819,12 +874,12 @@ print("Executing {task_name} in {language}")
 
         if stats['emissions_stats']:
             em = stats['emissions_stats']
-            print(f"🌍 EMISSIONI CO2:")
-            print(f" • Media: {em['mean']:.8f} kg CO2eq")
-            print(f" • Mediana: {em['median']:.8f} kg CO2eq")
-            print(f" • Min-Max: {em['min']:.8f} - {em['max']:.8f} kg CO2eq")
-            print(f" • Deviazione std: {em['std_dev']:.8f} kg CO2eq")
-            print(f" • Totale {self.iterations} esecuzioni: {em['total']:.8f} kg CO2eq")
+            print(f" EMISSIONI CO2:")
+            print(f" • Media: {self.format_co2_value(em['mean'])}")
+            print(f" • Mediana: {self.format_co2_value(em['median'])}")
+            print(f" • Min-Max: {self.format_co2_value(em['min'])} - {self.format_co2_value(em['max'])}")
+            print(f" • Deviazione std: {self.format_co2_value(em['std_dev'])}")
+            print(f" • Totale {self.iterations} esecuzioni: {self.format_co2_value(em['total'])}")
 
             et = stats['execution_time_stats']
             print(f" TEMPI ESECUZIONE:")
@@ -834,6 +889,180 @@ print("Executing {task_name} in {language}")
             print(f" • Deviazione std: {et['std_dev']:.3f}s")
         else:
             print(" Nessuna esecuzione riuscita - impossibile calcolare statistiche")
+
+    def benchmark_all_tasks(self):
+        """Esegue benchmark su TUTTE le task disponibili nel dataset (modalità COMPLETO)"""
+        
+        print(f"\n AVVIO CARBON BENCHMARK SYSTEM - MODALITÀ COMPLETA")
+        print("=" * 60)
+
+        if not CARBON_TRACKING_AVAILABLE:
+            print(" Carbon tracking non disponibile - uscita")
+            return {}
+
+        # Rileva linguaggi disponibili dall'executor
+        available_languages = list(self.executor.available_languages.keys())
+
+        print(f" Linguaggi disponibili: {len(available_languages)}")
+        print(f" Linguaggi: {', '.join(available_languages)}")
+
+        if not available_languages:
+            print(" Nessun linguaggio disponibile per il benchmark")
+            return {}
+
+        # Scansiona direttamente il dataset per trovare TUTTE le task
+        print(" Scansionando dataset completo per trovare tutte le task...")
+        all_tasks = set()
+        
+        # Scansiona tutte le categorie
+        categories = ['algorithms', 'basic', 'io', 'mathematics', 'misc', 'strings']
+        
+        for category in categories:
+            category_path = os.path.join(self.code_base_path, category)
+            if os.path.exists(category_path):
+                # Per ogni linguaggio nella categoria
+                for lang_dir in os.listdir(category_path):
+                    lang_path = os.path.join(category_path, lang_dir)
+                    if os.path.isdir(lang_path):
+                        # Trova tutti i file snippet
+                        for file_name in os.listdir(lang_path):
+                            if file_name.startswith('snippet_') and '_' in file_name:
+                                # Estrae il nome della task dal filename
+                                task_name = self.extract_task_name_from_filename(file_name)
+                                if task_name:
+                                    all_tasks.add(task_name)
+
+        # Filtra solo le task che hanno almeno 2 linguaggi disponibili
+        valid_tasks = []
+        print(" Verificando disponibilità task per linguaggi disponibili...")
+        
+        for task_name in sorted(all_tasks):
+            available_count = 0
+            for language in available_languages:
+                if self.task_exists_for_language(task_name, language):
+                    available_count += 1
+            
+            # Includi task che hanno almeno 2 linguaggi disponibili
+            if available_count >= 2:
+                valid_tasks.append({
+                    'name': task_name,
+                    'available_languages': available_count
+                })
+
+        # Ordina per numero di linguaggi disponibili (discendente)
+        valid_tasks.sort(key=lambda x: x['available_languages'], reverse=True)
+        selected_tasks = [task['name'] for task in valid_tasks]
+
+        print(f" Task totali trovate nel dataset: {len(all_tasks)}")
+        print(f" Task valide (≥2 linguaggi disponibili): {len(selected_tasks)}")
+        print(f" Tempo stimato: ~{len(selected_tasks) * len(available_languages) * self.iterations * 0.5 / 3600:.1f} ore")
+        
+        if not selected_tasks:
+            print(" Nessuna task valida trovata")
+            return {}
+
+        # Conferma dall'utente per benchmark molto grandi
+        if len(selected_tasks) > 100:
+            print(f"\n⚠️  ATTENZIONE: Benchmark molto esteso!")
+            print(f"   • {len(selected_tasks)} task")
+            print(f"   • {len(available_languages)} linguaggi") 
+            print(f"   • {self.iterations} iterazioni per combinazione")
+            print(f"   • {len(selected_tasks) * len(available_languages) * self.iterations:,} esecuzioni totali")
+            
+            try:
+                confirm = input("Procedere comunque? [s/N]: ").strip().lower()
+                if confirm not in ['s', 'si', 'sì', 'y', 'yes']:
+                    print("❌ Benchmark annullato dall'utente")
+                    return {}
+            except (EOFError, KeyboardInterrupt):
+                print("\n❌ Benchmark annullato")
+                return {}
+
+        # Esegui benchmark per ogni task/linguaggio
+        benchmark_data = {}
+        total_combinations = len(selected_tasks) * len(available_languages)
+        
+        print(f"\n🚀 Avvio benchmark completo: {len(selected_tasks)} task × {len(available_languages)} linguaggi")
+        print(f"📊 Totale combinazioni: {total_combinations:,}")
+        print("=" * 60)
+
+        # Usa tqdm per il progresso generale
+        with tqdm(total=total_combinations, desc="🔬 Benchmark Progress", unit="combo",
+                  bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]") as main_pbar:
+            
+            for task_name in selected_tasks:
+                benchmark_data[task_name] = {}
+                main_pbar.set_description(f"🔬 Task: {task_name[:25]}")
+
+                for language in available_languages:
+                    # Verifica se la task esiste per questo linguaggio
+                    if not self.task_exists_for_language(task_name, language):
+                        benchmark_data[task_name][language] = {
+                            'total_iterations': self.iterations,
+                            'successful_runs': 0,
+                            'success_rate': 0.0,
+                            'error': 'Task non disponibile per questo linguaggio'
+                        }
+                        main_pbar.set_postfix({'Lang': language, 'Status': '⚠️ Skip'})
+                        main_pbar.update(1)
+                        continue
+
+                    # Carica il codice per questa task/linguaggio
+                    category_subdir = self.determine_category(task_name, language)
+                    code = self.load_task_code(task_name, language, category_subdir)
+
+                    if not code:
+                        benchmark_data[task_name][language] = {
+                            'total_iterations': self.iterations,
+                            'successful_runs': 0,
+                            'success_rate': 0.0,
+                            'error': 'Codice non trovato nel dataset'
+                        }
+                        main_pbar.set_postfix({'Lang': language, 'Status': '⚠️ No Code'})
+                        main_pbar.update(1)
+                        continue
+
+                    # Aggiorna postfix con info corrente
+                    main_pbar.set_postfix({'Lang': language, 'Status': '🔄 Running'})
+                    
+                    # Esegui benchmark per questo linguaggio
+                    stats = self.benchmark_task_language(task_name, language, code)
+                    benchmark_data[task_name][language] = stats
+                    
+                    # Aggiorna con risultato
+                    success_rate = stats.get('success_rate', 0)
+                    status = '✅' if success_rate > 50 else '❌' if success_rate == 0 else '⚠️'
+                    main_pbar.set_postfix({'Lang': language, 'Status': f'{status} {success_rate:.0f}%'})
+                    main_pbar.update(1)
+
+        # Salva risultati
+        self.save_benchmark_results(benchmark_data)
+        self.generate_benchmark_report(benchmark_data)
+
+        return benchmark_data
+
+    def extract_task_name_from_filename(self, filename):
+        """Estrae il nome della task dal nome del file"""
+        try:
+            # Formato tipico: snippet_123_Task_name.ext
+            if filename.startswith('snippet_') and '_' in filename:
+                parts = filename.split('_', 2)  # Divide in max 3 parti
+                if len(parts) >= 3:
+                    # Rimuove l'estensione dal nome della task
+                    task_name = parts[2].rsplit('.', 1)[0]
+                    return task_name
+            return None
+        except:
+            return None
+
+    def task_exists_for_language(self, task_name, language):
+        """Verifica se una task esiste per un determinato linguaggio"""
+        try:
+            category_subdir = self.determine_category(task_name, language)
+            code = self.load_task_code(task_name, language, category_subdir)
+            return code is not None
+        except:
+            return False
 
     def benchmark_common_tasks(self, max_tasks=10):
         """Esegue benchmark su task comuni tra linguaggi"""
@@ -1002,28 +1231,108 @@ print("Executing {task_name} in {language}")
                 language_stats[language]['avg_emissions_per_execution'] = \
                     language_stats[language]['total_emissions'] / language_stats[language]['total_executions']
 
+        # Lista completa dei linguaggi supportati
+        all_languages = [
+            'python', 'javascript', 'java', 'cpp', 'c', 'ruby', 'php', 'r', 'julia', 
+            'csharp', 'go', 'rust', 'haskell', 'ocaml', 'typescript'
+        ]
+        
+        # Calcola statistiche sui linguaggi
+        working_languages = set(language_stats.keys())
+        failed_languages = set(all_languages) - working_languages
+        
         print(f" STATISTICHE GENERALI:")
         print(f" Task benchmarked: {total_tasks}")
-        print(f" Linguaggi testati: {len(language_stats)}")
+        print(f" Linguaggi supportati: {len(all_languages)}")
+        print(f" Linguaggi funzionanti: {len(working_languages)}/{len(all_languages)} ({len(working_languages)/len(all_languages)*100:.1f}%)")
         print(f" Esecuzioni totali riuscite: {total_executions}")
-        print(f" 🌍 Emissioni totali: {total_emissions:.8f} kg CO2eq")
-        print(f" Media per esecuzione: {total_emissions/total_executions:.8f} kg CO2eq" if total_executions > 0 else " Media per esecuzione: N/A")
+        print(f" Emissioni totali: {self.format_co2_value(total_emissions)}")
+        print(f" Media per esecuzione: {self.format_co2_value(total_emissions/total_executions)}" if total_executions > 0 else " Media per esecuzione: N/A")
 
-        print(f"\n🏅 RANKING LINGUAGGI PER EFFICIENZA ENERGETICA:")
-        sorted_languages = sorted(language_stats.items(),
-                                  key=lambda x: x[1]['avg_emissions_per_execution'])
-
-        for i, (language, stats) in enumerate(sorted_languages, 1):
-            print(f" {i:2d}. {language:12s}: {stats['avg_emissions_per_execution']:.8f} kg CO2eq/run "
-                  f"({stats['total_executions']} runs)")
+        print(f"\n✅ LINGUAGGI FUNZIONANTI ({len(working_languages)}):")
+        if working_languages:
+            sorted_languages = sorted(language_stats.items(),
+                                      key=lambda x: x[1]['avg_emissions_per_execution'])
+            for i, (language, stats) in enumerate(sorted_languages, 1):
+                print(f" {i:2d}. {language:12s}: {self.format_co2_value(stats['avg_emissions_per_execution'])}/run "
+                      f"({stats['total_executions']} runs)")
+        else:
+            print("   Nessun linguaggio ha completato con successo il benchmark")
+            
+        print(f"\n❌ LINGUAGGI CON PROBLEMI ({len(failed_languages)}):")
+        if failed_languages:
+            for language in sorted(failed_languages):
+                if language in self.language_failures:
+                    failure_info = self.language_failures[language]
+                    failed_tasks = len(failure_info['failed_tasks'])
+                    print(f"   • {language:12s}: {failed_tasks} task falliti")
+                    
+                    # Mostra alcuni esempi di errori
+                    if failure_info['sample_errors']:
+                        sample_error = list(failure_info['sample_errors'])[0]
+                        if 'Errore compilazione:' in sample_error:
+                            error_type = "Errori di compilazione"
+                        elif 'libtinfo' in sample_error.lower():
+                            error_type = "Problemi libreria libtinfo"
+                        elif 'no input files' in sample_error.lower():
+                            error_type = "Problemi configurazione compilatore"
+                        elif 'unknown start of token' in sample_error.lower():
+                            error_type = "Errori di sintassi nel codice"
+                        elif 'traceback' in sample_error.lower():
+                            error_type = "Errori runtime Python"
+                        elif 'error:' in sample_error.lower():
+                            error_type = "Errori di compilazione"
+                        else:
+                            error_type = "Vari errori"
+                        print(f"     → {error_type}")
+                else:
+                    print(f"   • {language:12s}: Non testato")
+        else:
+            print("   Tutti i linguaggi funzionano correttamente!")
+            
+        # Statistiche riassuntive dei problemi
+        if self.language_failures:
+            print(f"\n DETTAGLIO PROBLEMI:")
+            total_failed_tasks = sum(len(info['failed_tasks']) for info in self.language_failures.values())
+            print(f"   Task totali falliti: {total_failed_tasks}")
+            
+            # Categorizza i tipi di errori
+            error_categories = {
+                'Compilazione': 0,
+                'Librerie/Dipendenze': 0, 
+                'Sintassi': 0,
+                'Runtime': 0,
+                'Configurazione': 0,
+                'Altri': 0
+            }
+            
+            for failure_info in self.language_failures.values():
+                for error in failure_info['sample_errors']:
+                    error_lower = error.lower()
+                    if 'compilazione' in error_lower or 'compile' in error_lower:
+                        error_categories['Compilazione'] += 1
+                    elif 'libtinfo' in error_lower or 'library' in error_lower:
+                        error_categories['Librerie/Dipendenze'] += 1
+                    elif 'syntax' in error_lower or 'token' in error_lower:
+                        error_categories['Sintassi'] += 1
+                    elif 'traceback' in error_lower or 'runtime' in error_lower:
+                        error_categories['Runtime'] += 1
+                    elif 'no input files' in error_lower or 'command not found' in error_lower:
+                        error_categories['Configurazione'] += 1
+                    else:
+                        error_categories['Altri'] += 1
+            
+            for category, count in error_categories.items():
+                if count > 0:
+                    print(f"   {category}: {count} linguaggi")
 
         # Stima impatto annuale
         if total_emissions > 0:
             daily_estimate = total_emissions * (86400 / (self.iterations * len(language_stats)))  # 24h estimate
             yearly_estimate = daily_estimate * 365
             print(f"\n🔮 STIME IMPATTO:")
-            print(f" Stima giornaliera (uso continuo): {daily_estimate:.6f} kg CO2eq/giorno")
-            print(f" Stima annuale (uso continuo): {yearly_estimate:.3f} kg CO2eq/anno")
+            print(f" Stima giornaliera (uso continuo): {self.format_co2_value(daily_estimate, 'g')}/giorno")
+            print(f" Stima annuale (uso continuo): {self.format_co2_value(yearly_estimate, 'g')}/anno")
 
 
 def benchmark_quick_test(iterations=5):
@@ -1062,5 +1371,5 @@ if __name__ == "__main__":
         benchmark.benchmark_common_tasks(max_tasks=3)
     else:
         # Default: Top10 (5 iterazioni, 10 task)
-        benchmark = CarbonBenchmark(iterations=5)
+        benchmark = CarbonBenchmark(iterations=30)
         benchmark.benchmark_common_tasks(max_tasks=10)

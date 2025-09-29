@@ -103,7 +103,6 @@ class Program {
             },
 
             # === IMPERATIVE LANGUAGES ===
-            # === IMPERATIVE LANGUAGES ===
             'c': {
                 'extension': '.c',
                 'code': '''#include <stdio.h>
