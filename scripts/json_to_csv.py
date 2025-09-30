@@ -166,22 +166,22 @@ def main():
         print(f"❌ File non trovato: {json_file}")
         sys.exit(1)
     
-    print(f"📊 Convertendo: {json_file}")
+    print(f" Convertendo: {json_file}")
     
     # Genera entrambi i CSV
     csv_detailed = json_to_csv_detailed(json_file)
     csv_summary = json_to_csv_summary(json_file)
     
-    print(f"\n🎉 Conversione completata!")
-    print(f"📄 File dettagliato: {csv_detailed}")
-    print(f"📋 File riassuntivo: {csv_summary}")
+    print(f"\n Conversione completata!")
+    print(f" File dettagliato: {csv_detailed}")
+    print(f" File riassuntivo: {csv_summary}")
     
     # Mostra anteprima del riassuntivo
-    print(f"\n📊 ANTEPRIMA RANKING:")
+    print(f"\n ANTEPRIMA RANKING:")
     with open(csv_summary, 'r') as f:
         reader = csv.DictReader(f)
         for i, row in enumerate(reader):
-            if i < 5:  # Prime 5 righe
+            if i < 15:  # Prime 5 righe
                 print(f"{row['Rank']:2s}. {row['Language']:12s} - {row['Emissions_mg_CO2eq']:6s} mg CO2eq")
 
 if __name__ == "__main__":

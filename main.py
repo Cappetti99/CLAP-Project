@@ -32,9 +32,9 @@ def print_help():
     print("  analyze    - Trova task comuni eseguibili in più linguaggi")
     print("  smart      - Esegue 10 task nei linguaggi testati (RACCOMANDATO)")
     print("  execute    - Esegue task in TUTTI i linguaggi (anche non testati)")
-    print("  simple     - Esecuzione veloce (solo 3 task base)")
     print("  benchmark  - Misurazione CO2 con modalità interattive (top10/veloce/completo)")
     print("  carbon     - Visualizza report emissioni CO2 delle esecuzioni")
+    print("  quality    - Analisi qualitativa avanzata del codice (experimental)")
     print("  clean      - Rimuove file temporanei/cache")
     print("  status     - Stato progetto e statistiche")
     print("  install    - Installa dipendenze Python (codecarbon)")
@@ -43,7 +43,7 @@ def print_help():
     print("\n FLUSSO CONSIGLIATO:")
     print("  1. python main.py test      # Verifica linguaggi disponibili")
     print("  2. python main.py analyze   # Trova task comuni")
-    print("  3. python main.py smart     # Esegue in modo intelligente")
+    print("  3. python main.py smart     # Esegue in modo adattivo")
     print("  4. python main.py carbon    # Visualizza impatto CO2")
 
     print("\n DESCRIZIONI DETTAGLIATE:")
@@ -51,6 +51,7 @@ def print_help():
     print("  • smart: Usa solo linguaggi funzionanti, gestisce errori automaticamente")
     print("  • execute: Forza esecuzione anche su linguaggi non testati")
     print("  • benchmark: Misura CO2 con 3 modalità (veloce→top10→completo)")
+    print("  • quality: Analizza commenti, funzioni, error handling nel codice")
     print("  python main.py status      # Stato completo progetto")
 
 def analyze_tasks():
@@ -83,39 +84,33 @@ def analyze_tasks():
                 print(f"Errore lettura risultati test: {e}")
                 available_languages = []
     
+    # Verifica che abbiamo linguaggi disponibili
     if not available_languages:
-        print("Nessun risultato di test trovato.")
-        print("Esegui prima 'python main.py test' per rilevare i linguaggi disponibili.")
-        print("Procedo con analisi standard su tutti i linguaggi...")
-        print()
+        print("  Nessun risultato di test trovato.")
+        print("  AZIONE RICHIESTA: Esegui prima 'python main.py test' per rilevare i linguaggi disponibili.")
+        print("  Il comando 'analyze' richiede risultati del test per funzionare correttamente.")
+        return False
     
     try:
         from src.finder import UnifiedTaskFinder
         finder = UnifiedTaskFinder()
         
-        # Se abbiamo i linguaggi disponibili, usa la nuova logica TOP 10
-        if available_languages:
-            print(f"Cercando le TOP 10 task con più linguaggi tra quelli disponibili...")
-            print(f"Linguaggi disponibili: {len(available_languages)}")
-            
-            # Usa la nuova logica per TOP 10 task
-            common_tasks = finder.find_common_tasks(min_languages=1, available_languages=available_languages)
-        else:
-            # Logica originale per compatibilità
-            min_languages_threshold = 8  # Default originale
-            print(f"Analisi standard con soglia: {min_languages_threshold} linguaggi")
-            common_tasks = finder.find_common_tasks(min_languages=min_languages_threshold)
+        # Usa la logica TOP 10 con linguaggi disponibili
+        print(f"Cercando le TOP 10 task con più linguaggi tra quelli disponibili...")
+        print(f"Linguaggi disponibili: {len(available_languages)}")
+        
+        # Usa la nuova logica per TOP 10 task con output ottimizzato
+        common_tasks = finder.find_common_tasks(
+            min_languages=1, 
+            available_languages=available_languages,
+            verbose=False  # Output conciso per workflow normale
+        )
         
         if common_tasks:
-            if available_languages:
-                print(f"TOP 10 task trovate (con più linguaggi disponibili):")
-            else:
-                print(f"Trovate {len(common_tasks)} task comuni:")
+            print(f"TOP 10 task con più linguaggi disponibili:")
                 
             for i, task in enumerate(common_tasks[:10], 1):  # Mostra prime 10
                 lang_info = f"{task['language_count']} linguaggi"
-                if available_languages:
-                    lang_info += f" (tra {len(available_languages)} disponibili)"
                 print(f"  {i:2d}. {task['name']} - {lang_info}")
             
             # Salva i risultati su file
@@ -124,15 +119,15 @@ def analyze_tasks():
             os.makedirs("results/task_analysis", exist_ok=True)
             
             result_data = {
-                "analysis_type": "top_10_available_languages" if available_languages else "threshold_based",
+                "analysis_type": "top_10_available_languages",
                 "total_tasks": len(common_tasks),
-                "available_languages_count": len(available_languages) if available_languages else None,
+                "available_languages_count": len(available_languages),
                 "all_languages_count": len(finder.supported_languages),
                 "languages": list(finder.supported_languages),
                 "available_languages": available_languages,
                 "common_tasks": common_tasks,
-                "min_languages_filter": 1 if available_languages else 8,  # Fix: valore condizionale
-                "search_strategy": "top_10_by_coverage" if available_languages else "threshold_filter"
+                "min_languages_filter": 1,
+                "search_strategy": "top_10_by_coverage"
             }
             
             with open("results/task_analysis/common_tasks.json", 'w') as f:
@@ -215,15 +210,66 @@ def test_languages():
         print(f"   - Tasso successo: {success_rate:.1f}%")
         
         if not_working:
-            print(f"\n SUGGERIMENTI:")
-            print(f"   Per installare i linguaggi mancanti:")
+            print(f"\n 💡 SUGGERIMENTI PER INSTALLAZIONE:")
+            print(f"   Comandi per installare i linguaggi mancanti su Linux:")
+            
             for lang in sorted(not_working):
-                if lang == 'matlab':
-                    print(f"   - {lang}: Licenza commerciale richiesta")
+                print(f"   - {lang.upper()}:", end=" ")
+                
+                if lang == 'c':
+                    print("sudo apt install gcc build-essential")
+                elif lang == 'cpp':
+                    print("sudo apt install g++ build-essential")
+                elif lang == 'java':
+                    print("sudo apt install openjdk-11-jdk")
+                elif lang == 'javascript':
+                    print("sudo apt install nodejs")
+                elif lang == 'python':
+                    print("sudo apt install python3 python3-pip")
+                elif lang == 'go':
+                    print("sudo apt install golang-go")
+                elif lang == 'rust':
+                    print("curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh")
                 elif lang == 'csharp':
-                    print(f"   - {lang}: brew install mono")
+                    print("sudo apt install mono-complete")
+                elif lang == 'ruby':
+                    print("sudo apt install ruby-full")
+                elif lang == 'php':
+                    print("sudo apt install php-cli")
+                elif lang == 'perl':
+                    print("sudo apt install perl")
+                elif lang == 'lua':
+                    print("sudo apt install lua5.3")
+                elif lang == 'swift':
+                    print("Installazione complessa - vedi swift.org/download")
+                elif lang == 'kotlin':
+                    print("sudo snap install kotlin --classic")
+                elif lang == 'dart':
+                    print("sudo apt install dart")
+                elif lang == 'scala':
+                    print("sudo apt install scala")
+                elif lang == 'haskell':
+                    print("sudo apt install ghc")
+                elif lang == 'ocaml':
+                    print("sudo apt install ocaml")
+                elif lang == 'fortran':
+                    print("sudo apt install gfortran")
+                elif lang == 'matlab':
+                    print("🔒 Licenza commerciale richiesta - mathworks.com")
+                elif lang == 'r':
+                    print("sudo apt install r-base")
+                elif lang == 'julia':
+                    print("wget https://julialang.org/downloads/ (installazione manuale)")
                 else:
-                    print(f"   - {lang}: brew install {lang}")
+                    print(f"sudo apt install {lang} (verificare nome pacchetto)")
+            
+            print(f"\n   💻 Su altri sistemi operativi:")
+            print(f"   • macOS: usa 'brew install <linguaggio>'")
+            print(f"   • Windows: usa Windows Package Manager 'winget install'")
+            print(f"   • Arch Linux: usa 'pacman -S <linguaggio>'")
+            print(f"   • Fedora/RHEL: usa 'dnf install <linguaggio>'")
+            
+            print(f"\n   ⚠️  Nota: Alcuni linguaggi potrebbero richiedere riavvio del terminale")
         
         print("\n" + "="*60)
         
@@ -237,8 +283,8 @@ def test_languages():
     return True
 
 def smart_execute():
-    """Esegue i codici usando l'esecutore intelligente"""
-    print("\nESECUZIONE INTELLIGENTE")
+    """Esegue le TOP 10 task comuni solo nei linguaggi testati e disponibili"""
+    print("\nESECUZIONE ADATTIVA")
     print("-" * 40)
     
     try:
@@ -249,64 +295,7 @@ def smart_execute():
         print(f"Errore importazione modulo smart executor: {e}")
         return False
     except Exception as e:
-        print(f"Errore durante esecuzione intelligente: {e}")
-        return False
-    
-    return True
-
-def simple_execute():
-    """Esegue una versione semplificata del sistema - solo task di base"""
-    print("\nESECUZIONE SEMPLIFICATA")
-    print("-" * 40)
-    print("Modalità semplice: esegue solo 3 task di base nei linguaggi disponibili")
-    
-    try:
-        from src.smart_executor import SmartExecutor
-        executor = SmartExecutor()
-        
-        # Task semplici e universali
-        simple_tasks = [
-            "100_doors",
-            "Array_length", 
-            "Arithmetic-geometric_mean"
-        ]
-        
-        print(f"Task selezionate: {', '.join(simple_tasks)}")
-        print()
-        
-        # Rileva linguaggi disponibili
-        executor.detect_available_languages()
-        
-        success_count = 0
-        total_count = 0
-        
-        # Esegui solo le task specificate
-        for task in simple_tasks:
-            print(f"\n=== TASK: {task} ===")
-            try:
-                results = executor.execute_task_all_available_languages(task)
-                if results:
-                    for lang, result in results.items():
-                        total_count += 1
-                        if result.get('success', False):
-                            success_count += 1
-                            print(f"[OK] {lang}: successo")
-                        else:
-                            print(f"[FAIL] {lang}: {result.get('error', 'fallito')}")
-                else:
-                    print(f"[FAIL] Task {task}: nessun file trovato")
-            except Exception as e:
-                print(f"[FAIL] Task {task}: errore - {str(e)[:50]}...")
-        
-        print(f"\n Esecuzione semplice completata!")
-        print(f"Risultati: {success_count}/{total_count} esecuzioni riuscite ({(success_count/total_count*100):.1f}%)" if total_count > 0 else "Nessuna esecuzione")
-        print("Per analisi più approfondite usa: python main.py smart")
-        
-    except ImportError as e:
-        print(f"Errore importazione modulo smart executor: {e}")
-        return False
-    except Exception as e:
-        print(f"Errore durante esecuzione semplice: {e}")
+        print(f"Errore durante esecuzione adattiva: {e}")
         return False
     
     return True
@@ -572,6 +561,70 @@ def show_status():
     else:
         print("\nEsecuzioni Completate: 0 (esegui 'execute' prima)")
 
+def quality_analysis():
+    """Esegue analisi qualitativa avanzata del dataset"""
+    print("\\nANALISI QUALITATIVA AVANZATA")
+    print("-" * 40)
+    
+    try:
+        from src.finder import UnifiedTaskFinder
+        finder = UnifiedTaskFinder()
+        
+        print("🔍 Creazione dataset con analisi qualitativa...")
+        
+        # Crea DataFrame con quality analysis (output conciso)
+        finder.create_dataset_dataframe(include_quality_analysis=True, verbose=False)
+        
+        if finder.df is None or len(finder.df) == 0:
+            print("❌ Nessun dato trovato per l'analisi")
+            return False
+        
+        # Analisi task di alta qualità
+        print("\\n🏆 TASK DI ALTA QUALITÀ")
+        quality_tasks = finder.find_common_tasks(
+            min_languages=5,
+            include_quality=True,
+            min_quality_score=70,
+            verbose=False
+        )
+        
+        if quality_tasks:
+            print(f"Le migliori {min(5, len(quality_tasks))} task per qualità:")
+            for i, task in enumerate(quality_tasks[:5], 1):
+                quality_score = task.get('avg_quality_score', 0)
+                print(f"  {i}. {task['name']} - {quality_score:.1f}/100 ({task['language_count']} linguaggi)")
+        else:
+            print("  Nessuna task di alta qualità trovata")
+        
+        # Statistiche generali (verbose per dettagli)
+        print("\\n📊 STATISTICHE QUALITATIVE")
+        stats = finder.get_quality_statistics(verbose=True)
+        
+        # Suggerimenti per miglioramenti
+        if stats:
+            features = stats['feature_coverage']
+            print("\\n💡 SUGGERIMENTI MIGLIORAMENTO:")
+            
+            if features['has_error_handling_pct'] < 10:
+                print(f"  ⚠️  Error handling molto basso ({features['has_error_handling_pct']:.1f}%) - Considerare task più robuste")
+            
+            if features['has_comments_pct'] < 30:
+                print(f"  📝 Documentazione scarsa ({features['has_comments_pct']:.1f}%) - Migliorare commenti")
+            
+            if features['has_functions_pct'] < 50:
+                print(f"  🔧 Codice poco strutturato ({features['has_functions_pct']:.1f}%) - Più funzioni modulari")
+        
+        print("\\n✅ Analisi qualitativa completata!")
+        
+    except ImportError as e:
+        print(f"Errore importazione modulo finder: {e}")
+        return False
+    except Exception as e:
+        print(f"Errore durante analisi qualitativa: {e}")
+        return False
+    
+    return True
+
 def main():
     """Funzione principale"""
     parser = argparse.ArgumentParser(
@@ -581,7 +634,7 @@ def main():
     parser.add_argument(
         'command', 
         nargs='?',
-        choices=['analyze', 'execute', 'smart', 'test', 'clean', 'status', 'carbon', 'install', 'benchmark', 'simple', 'help'],
+        choices=['analyze', 'execute', 'smart', 'test', 'clean', 'status', 'carbon', 'install', 'benchmark', 'quality', 'help'],
         default='help',
         help='Comando da eseguire'
     )
@@ -617,18 +670,10 @@ def main():
     elif args.command == 'smart':
         success = smart_execute()
         if success:
-            print("\nEsecuzione intelligente completata!")
+            print("\nEsecuzione adattiva completata!")
             print("Controlla i risultati in results/execution/")
         else:
-            print("\nEsecuzione intelligente fallita")
-            sys.exit(1)
-    elif args.command == 'simple':
-        success = simple_execute()
-        if success:
-            print("\nEsecuzione semplice completata!")
-            print("Per analisi più approfondite prova: python main.py smart")
-        else:
-            print("\nEsecuzione semplice fallita")
+            print("\nEsecuzione adattiva fallita")
             sys.exit(1)
     elif args.command == 'test':
         success = test_languages()
@@ -663,6 +708,15 @@ def main():
             print("Controlla i risultati in results/carbon_benchmark/")
         else:
             print("\nBenchmark CO2 fallito")
+            sys.exit(1)
+    elif args.command == 'quality':
+        # Comando per analisi qualitativa avanzata
+        success = quality_analysis()
+        if success:
+            print("\nAnalisi qualitativa completata!")
+            print("I risultati mostrano la qualità del codice nel dataset")
+        else:
+            print("\nAnalisi qualitativa fallita")
             sys.exit(1)
     elif args.command == 'install':
         # Comando per installare le dipendenze

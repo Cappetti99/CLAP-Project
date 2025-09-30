@@ -61,12 +61,12 @@ def organize_by_category(task_name):
 
 def download_rosetta_code():
     """Scarica e organizza il dataset Rosetta Code"""
-    print("🔄 Scaricamento dataset Rosetta Code da Hugging Face...")
+    print(" Scaricamento dataset Rosetta Code da Hugging Face...")
     
     try:
         # Carica il dataset
         dataset = load_dataset("christopher/rosetta-code")
-        print(f"✅ Dataset caricato! Esempi trovati: {len(dataset['train'])}")
+        print(f" Dataset caricato! Esempi trovati: {len(dataset['train'])}")
         
         # Directory di output
         output_dir = Path("data/generated/code_snippets")
@@ -110,26 +110,26 @@ def download_rosetta_code():
                 total_files += 1
                 
                 if total_files % 100 == 0:
-                    print(f"  📁 Processati {total_files} file...")
+                    print(f"   Processati {total_files} file...")
                     
             except Exception as e:
-                print(f"❌ Errore scrittura {filepath}: {e}")
+                print(f" Errore scrittura {filepath}: {e}")
                 continue
         
         # Stampa statistiche finali
-        print(f"\n🎉 Download completato!")
-        print(f"📊 Statistiche:")
+        print(f"\n Download completato!")
+        print(f" Statistiche:")
         print(f"   Total file creati: {total_files}")
         
         for category, languages in stats.items():
-            print(f"   📂 {category}:")
+            print(f"    {category}:")
             for lang, count in sorted(languages.items()):
                 print(f"      {lang}: {count} file")
         
         return True
         
     except Exception as e:
-        print(f"❌ Errore durante il download: {e}")
+        print(f" Errore durante il download: {e}")
         return False
 
 if __name__ == "__main__":
@@ -140,8 +140,8 @@ if __name__ == "__main__":
     success = download_rosetta_code()
     
     if success:
-        print("\n✅ Dataset scaricato e organizzato con successo!")
+        print("\n Dataset scaricato e organizzato con successo!")
         print("Ora puoi eseguire: python main.py analyze")
     else:
-        print("\n❌ Download fallito!")
+        print("\n Download fallito!")
         sys.exit(1)

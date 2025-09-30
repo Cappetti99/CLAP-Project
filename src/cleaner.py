@@ -104,7 +104,7 @@ def cleanup_carbon_benchmarks():
         os.remove(file_to_remove)
         print(f" Rimosso: {os.path.basename(file_to_remove)} ({file_size//1024//1024} MB)")
 
-    print(f" 💾 Spazio liberato: {removed_size//1024//1024} MB")
+    print(f" Spazio liberato: {removed_size//1024//1024} MB")
     print(f" Mantenuti {len(files_to_keep)} benchmark recenti")
 
 

@@ -19,7 +19,7 @@ class LanguageTester:
     Testa la disponibilità e funzionalità di tutti i linguaggi supportati dal sistema SWAM.
 
     # OOP: C++, C#, Java
-    # Scripting: Python, Ruby, Javascript, typescript?
+    # Scripting: Python, Ruby, Javascript, typescript
     # "Imperative": C, GO, Rust, PHP
     # Functional: Haskell, Ocamel
     # Scientific: R, Matlab, Julia
@@ -254,7 +254,7 @@ main = putStrLn "Hello from Haskell!"''',
 
         except subprocess.TimeoutExpired:
             result['error'] = "Timeout durante esecuzione"
-            print(f" ⏰ Timeout")
+            print(f" Timeout")
         except Exception as e:
             result['error'] = f"Errore imprevisto: {str(e)}"
             print(f" Errore: {e}")
@@ -452,7 +452,7 @@ main = putStrLn "Hello from Haskell!"''',
         try:
             with open(results_file, 'w', encoding='utf-8') as f:
                 json.dump(save_data, f, indent=2)
-            print(f"\n💾 Risultati salvati in: {results_file}")
+            print(f"\n Risultati salvati in: {results_file}")
         except Exception as e:
             print(f"\n Errore salvataggio: {e}")
 
