@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Sistema di installazione automatica dipendenze per SWAM
-Installa automaticamente librerie mancanti durante l'esecuzione
+Enhanced Dependency Management for SWAM
+Integrates with modern dependency analyzer for intelligent dependency resolution
 """
 
 import subprocess
@@ -10,10 +10,24 @@ import re
 import os
 from pathlib import Path
 
-class AutoDependencyInstaller:
-    """Installatore automatico di dipendenze per linguaggi multiple"""
+# Import modern dependency analyzer
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(script_dir)
+modules_path = os.path.join(project_root, 'modules')
+sys.path.insert(0, modules_path)
+
+from modules.modern_dependency_analyzer import ModernDependencyAnalyzer
+from modules.modern_logger import get_logger
+
+
+class EnhancedDependencyInstaller:
+    """Enhanced dependency installer using modern analyzer"""
     
     def __init__(self):
+        self.analyzer = ModernDependencyAnalyzer()
+        self.logger = get_logger()
+        
+        # Enhanced dependency management with modern analyzer integration
         self.supported_installers = {
             'python': {
                 'installer': 'pip',
@@ -395,6 +409,10 @@ class EnhancedSmartExecutor:
         ]
         
         return any(indicator in error_message for indicator in dependency_indicators)
+
+
+# Compatibility alias for legacy code
+AutoDependencyInstaller = EnhancedDependencyInstaller
 
 
 if __name__ == "__main__":

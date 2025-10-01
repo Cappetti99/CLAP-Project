@@ -19,6 +19,16 @@ project_root = os.path.dirname(script_dir)
 modules_path = os.path.join(project_root, 'modules')
 sys.path.insert(0, modules_path)
 
+# Import modular components
+try:
+    from modules.language_config import LanguageConfigManager
+    from modules.modern_logger import get_logger
+    from modules.modern_dependency_analyzer import ModernDependencyAnalyzer
+    MODULAR_COMPONENTS_AVAILABLE = True
+except ImportError:
+    MODULAR_COMPONENTS_AVAILABLE = False
+    print("⚠️ Modular components not available, using fallback configuration")
+
 # Importa il carbon tracker per monitorare l'impatto ambientale (lazy import)
 CARBON_TRACKING_AVAILABLE = False  # Temporaneamente disabilitato per debug
 start_carbon_tracking = None
@@ -34,13 +44,26 @@ def _lazy_import_carbon():
             CARBON_TRACKING_AVAILABLE = False
 
 class SmartExecutor:
-    """Esecutore intelligente che rileva automaticamente i linguaggi disponibili"""
+    """Esecutore intelligente con componenti modulari che rileva automaticamente i linguaggi disponibili"""
 
     def __init__(self):
         self.results_dir = "results/execution"
         self.analysis_dir = "results/task_analysis"
         self.temp_files = []
         self.available_languages = {}
+        
+        # Initialize modular components
+        if MODULAR_COMPONENTS_AVAILABLE:
+            self.config_manager = LanguageConfigManager('SWAM')
+            self.logger = get_logger(session_id=f"smart_executor_{int(time.time())}")
+            self.dependency_analyzer = ModernDependencyAnalyzer()
+            self.logger.info("🚀 SmartExecutor initialized with modular components")
+            print("✅ MODULAR: Using modern language configuration and logging systems")
+        else:
+            self.config_manager = None
+            self.logger = None
+            self.dependency_analyzer = None
+            print("⚠️ LEGACY: Using fallback configuration (modular components not available)")
         
         # Aggiungi homebrew al PATH per trovare tutti i compilatori
         homebrew_path = "/opt/homebrew/bin"
@@ -179,6 +202,36 @@ func main() {
 
         # Rileva linguaggi disponibili dai risultati del test o fallback
         self.load_available_languages_from_test()
+
+    def get_modular_config(self, language):
+        """Get language configuration from modular components if available"""
+        if self.config_manager:
+            modular_config = self.config_manager.get_language_config(language)
+            if modular_config:
+                # Convert modular config to legacy format for compatibility
+                return {
+                    'extension': modular_config.get('extension', ''),
+                    'executor': [modular_config.get('executor', '')],
+                    'compiler': [modular_config.get('compiler', '')] if modular_config.get('compiler') else None,
+                    'timeout': modular_config.get('timeout', 30),
+                    'test_code': modular_config.get('test_code', '')
+                }
+        return None
+
+    def log_modular_execution(self, language, task_name, execution_time, success, error=None):
+        """Log execution using modular logger if available"""
+        if self.logger:
+            self.logger.log_execution_end(language, task_name, execution_time, success, 
+                                        error_type="ExecutionError" if error else None)
+            if error:
+                self.logger.log_error(language, task_name, "ExecutionError", str(error), "")
+
+    def analyze_dependencies(self, code, language):
+        """Analyze code dependencies using modular analyzer if available"""
+        if self.dependency_analyzer:
+            dependencies = self.dependency_analyzer.get_external_dependencies(code, language)
+            return dependencies
+        return []
 
     def get_swam_env(self, language=None):
         """Ottiene l'ambiente modificato per includere i binari dell'ambiente SWAM"""

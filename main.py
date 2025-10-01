@@ -32,6 +32,7 @@ def print_help():
     print("  analyze    - Trova task comuni eseguibili in più linguaggi")
     print("  smart      - Esegue 10 task nei linguaggi testati (RACCOMANDATO)")
     print("  execute    - Esegue task in TUTTI i linguaggi (anche non testati)")
+    print("  find       - Cerca task specifica per nome ed eseguila con CO2 tracking")
     print("  benchmark  - Misurazione CO2 con modalità interattive (top10/veloce/completo)")
     print("  carbon     - Visualizza report emissioni CO2 delle esecuzioni")
     print("  quality    - Analisi qualitativa avanzata del codice (experimental)")
@@ -44,13 +45,16 @@ def print_help():
     print("  1. python main.py test      # Verifica linguaggi disponibili")
     print("  2. python main.py analyze   # Trova task comuni")
     print("  3. python main.py smart     # Esegue in modo adattivo")
-    print("  4. python main.py carbon    # Visualizza impatto CO2")
+    print("  4. python main.py benchmark # Raccoglie dati CO2 (modalità veloce)")
+    print("  5. python main.py carbon    # Visualizza report impatto CO2")
 
     print("\n DESCRIZIONI DETTAGLIATE:")
     print("  • test: Controlla C, C++, Java, Python, JavaScript, Go, Rust, ecc.")
     print("  • smart: Usa solo linguaggi funzionanti, gestisce errori automaticamente")
     print("  • execute: Forza esecuzione anche su linguaggi non testati")
+    print("  • find: Ricerca interattiva per nome task + esecuzione mirata con CO2")
     print("  • benchmark: Misura CO2 con 3 modalità (veloce→top10→completo)")
+    print("  • carbon: Mostra report delle emissioni raccolte (solo visualizzazione)")
     print("  • quality: Analizza commenti, funzioni, error handling nel codice")
     print("  python main.py status      # Stato completo progetto")
 
@@ -634,7 +638,7 @@ def main():
     parser.add_argument(
         'command', 
         nargs='?',
-        choices=['analyze', 'execute', 'smart', 'test', 'clean', 'status', 'carbon', 'install', 'benchmark', 'quality', 'help'],
+        choices=['analyze', 'execute', 'smart', 'test', 'clean', 'status', 'carbon', 'install', 'benchmark', 'quality', 'find', 'help'],
         default='help',
         help='Comando da eseguire'
     )
@@ -643,6 +647,11 @@ def main():
         '--mode',
         choices=['veloce', 'top10', 'completo'],
         help='Modalità per il comando benchmark (veloce/top10/completo)'
+    )
+    
+    parser.add_argument(
+        '--task',
+        help='Nome della task da cercare (per comando find)'
     )
     
     args = parser.parse_args()
@@ -675,6 +684,19 @@ def main():
         else:
             print("\nEsecuzione adattiva fallita")
             sys.exit(1)
+    elif args.command == 'find':
+        # Comando per ricerca e esecuzione mirata di task specifiche
+        try:
+            from src.task_searcher import search_and_execute_task
+            success = search_and_execute_task(args.task)
+            if success:
+                print("\nRicerca e esecuzione task completata!")
+                print("Controlla i risultati in results/task_search/")
+            else:
+                print("\nRicerca task fallita o cancellata")
+        except ImportError:
+            print("❌ Task Searcher non disponibile")
+            print("Verifica che tutti i moduli siano correttamente installati")
     elif args.command == 'test':
         success = test_languages()
         if success:

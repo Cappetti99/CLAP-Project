@@ -21,6 +21,14 @@ project_root = os.path.dirname(script_dir)
 modules_path = os.path.join(project_root, 'modules')
 sys.path.insert(0, modules_path)
 
+# Import modular components for enhanced functionality
+try:
+    from modules.language_config import LanguageConfigManager
+    from modules.modern_logger import get_logger
+    MODULAR_COMPONENTS_AVAILABLE = True
+except ImportError:
+    MODULAR_COMPONENTS_AVAILABLE = False
+
 try:
     from src.carbon_tracker import start_carbon_tracking, stop_carbon_tracking
     CARBON_TRACKING_AVAILABLE = True
@@ -31,47 +39,42 @@ except ImportError:
 class EnhancedExecutor:
     """Esecutore migliorato che risolve i problemi di compilazione e esecuzione"""
 
-    def __init__(self):
+    def __init__(self, session_id=None):
         self.results_dir = os.path.abspath("results/execution")
         self.temp_dir = os.path.join(self.results_dir, "temp")
         os.makedirs(self.temp_dir, exist_ok=True)
 
-        # Rileva se siamo in un environment conda
-        self.conda_env = os.environ.get('CONDA_DEFAULT_ENV')
-        self.conda_prefix = os.environ.get('CONDA_PREFIX')
+        # Usa direttamente i comandi di sistema
+        print("� Usando comandi di sistema diretti")
+        
+                # Initialize modular components
+        if MODULAR_COMPONENTS_AVAILABLE:
+            self.logger = get_logger(f"enhanced_executor_{session_id or int(time.time())}")
+            self.logger.info(f"🔧 Enhanced executor initialized with system commands")
+        else:
+            self.config_manager = None
+            self.logger = None
 
-        # Force SWAM environment se disponibile
-        if not self.conda_env or self.conda_env == 'base':
-            swam_prefix = '/Users/lorenzocappetti/miniconda3/envs/SWAM'
-            if os.path.exists(swam_prefix):
-                self.conda_env = 'SWAM'
-                self.conda_prefix = swam_prefix
-                print(f" Forzato ambiente SWAM per maggiori linguaggi")
-
-        print(f" Environment rilevato: {self.conda_env or 'Sistema base'}")
-        if self.conda_prefix:
-            print(f" Conda prefix: {self.conda_prefix}")
-
-        # Configurazione linguaggi migliorata per conda
+        # Configurazione linguaggi con comandi diretti
         self.language_config = {
             'python': {
                 'extension': '.py',
-                'executor': self.get_conda_command('python'),
+                'executor': ['python'],
                 'timeout': 10,
                 'test_code': 'print("Hello from Python!")',
                 'type': 'interpreted'
             },
             'javascript': {
                 'extension': '.js',
-                'executor': self.get_conda_command('node'),
+                'executor': ['node'],
                 'timeout': 10,
                 'test_code': 'console.log("Hello from JavaScript!");',
                 'type': 'interpreted'
             },
             'java': {
                 'extension': '.java',
-                'compiler': self.get_conda_command('javac'),
-                'executor': self.get_conda_command('java'),
+                'compiler': ['javac'],
+                'executor': ['java'],
                 'timeout': 30,
                 'test_code': '''public class Test {
  public static void main(String[] args) {
@@ -83,36 +86,36 @@ class EnhancedExecutor:
             },
             'ruby': {
                 'extension': '.rb',
-                'executor': self.get_conda_command('ruby'),
+                'executor': ['ruby'],
                 'timeout': 15,
                 'test_code': 'puts "Hello from Ruby!"',
                 'type': 'interpreted'
             },
             'php': {
                 'extension': '.php',
-                'executor': self.get_conda_command('php'),
+                'executor': ['php'],
                 'timeout': 15,
                 'test_code': '<?php echo "Hello from PHP!\\n"; ?>',
                 'type': 'interpreted'
             },
             'r': {
                 'extension': '.r',
-                'executor': self.get_conda_command('Rscript'),
+                'executor': ['Rscript'],
                 'timeout': 15,
                 'test_code': 'cat("Hello from R!\\n")',
                 'type': 'interpreted'
             },
             'julia': {
                 'extension': '.jl',
-                'executor': self.get_conda_command('julia'),
+                'executor': ['julia'],
                 'timeout': 20,
                 'test_code': 'println("Hello from Julia!")',
                 'type': 'interpreted'
             },
             'csharp': {
                 'extension': '.cs',
-                'compiler': self.get_conda_command('mcs'),  # Mono C# compiler
-                'executor': self.get_conda_command('mono'),
+                'compiler': ['mcs'],  # Mono C# compiler
+                'executor': ['mono'],
                 'executable_ext': '.exe',
                 'timeout': 30,
                 'test_code': '''using System;
@@ -125,7 +128,7 @@ class Test {
             },
             'c': {
                 'extension': '.c',
-                'compiler': self.get_conda_command('gcc'),
+                'compiler': ['gcc'],
                 'compiler_args': ['-o'],
                 'timeout': 25,
                 'test_code': '''#include <stdio.h>
@@ -137,7 +140,7 @@ int main() {
             },
             'cpp': {
                 'extension': '.cpp',
-                'compiler': self.get_conda_command('g++'),
+                'compiler': ['g++'],
                 'compiler_args': ['-o'],
                 'timeout': 25,
                 'test_code': '''#include <iostream>
@@ -149,7 +152,7 @@ int main() {
             },
             'go': {
                 'extension': '.go',
-                'compiler': self.get_conda_command('go') + ['build'],
+                'compiler': ['go', 'build'],
                 'compiler_args': ['-o'],
                 'timeout': 25,
                 'test_code': '''package main
@@ -161,7 +164,7 @@ func main() {
             },
             'rust': {
                 'extension': '.rs',
-                'compiler': self.get_conda_command('rustc'),
+                'compiler': ['rustc'],
                 'compiler_args': ['-o'],
                 'timeout': 30,
                 'test_code': '''fn main() {
@@ -171,7 +174,7 @@ func main() {
             },
             'haskell': {
                 'extension': '.hs',
-                'compiler': self.get_conda_command('ghc'),
+                'compiler': ['ghc'],
                 'compiler_args': ['-o'],
                 'timeout': 30,
                 'test_code': '''main = putStrLn "Hello from Haskell!"''',
@@ -179,7 +182,7 @@ func main() {
             },
             'ocaml': {
                 'extension': '.ml',
-                'compiler': self.get_conda_command('ocamlc'),
+                'compiler': ['ocamlc'],
                 'compiler_args': ['-o'],
                 'timeout': 25,
                 'test_code': '''print_endline "Hello from OCaml!";;''',
@@ -187,8 +190,8 @@ func main() {
             },
             'typescript': {
                 'extension': '.ts',
-                'compiler': self.get_conda_command('tsc'),
-                'executor': self.get_conda_command('node'),
+                'compiler': ['tsc'],
+                'executor': ['node'],
                 'timeout': 25,
                 'test_code': '''console.log("Hello from TypeScript!");''',
                 'type': 'transpiled'
@@ -395,31 +398,6 @@ func main() {
             print(f" Errore test {language}: {e}")
             return False
 
-    def get_conda_command(self, command):
-        """
-        Restituisce il comando appropriato per l'environment conda
-        """
-        if self.conda_env and self.conda_env != 'base':
-            # Se siamo in un environment conda specifico, usa conda run
-            return ['conda', 'run', '-n', self.conda_env, command]
-        elif self.conda_prefix:
-            # Se siamo in conda ma environment base, controlla se il comando esiste nel prefix
-            conda_command_path = os.path.join(self.conda_prefix, 'bin', command)
-            if os.path.exists(conda_command_path):
-                return [conda_command_path]
-
-        # Fallback: prova il path di sistema o conda globale
-        # Prima controlla se il comando è disponibile nel PATH standard
-        try:
-            result = subprocess.run(['which', command], capture_output=True, text=True, timeout=5)
-            if result.returncode == 0 and result.stdout.strip():
-                return [result.stdout.strip()]
-        except:
-            pass
-
-        # Se non trovato, ritorna il comando base (potrebbe funzionare comunque)
-        return [command]
-
     def detect_available_languages(self):
         """Rileva i linguaggi disponibili"""
         print(" Rilevamento linguaggi disponibili...")
@@ -556,3 +534,28 @@ func main() {
                 'output': '',
                 'execution_time': time.time() - start_time
             }
+    
+    # Modular integration methods
+    def get_modular_config(self, language):
+        """Get language config from modular system if available"""
+        if self.config_manager:
+            return self.config_manager.get_language_config(language)
+        return None
+    
+    def get_modular_supported_languages(self):
+        """Get supported languages from modular system"""
+        if self.config_manager:
+            return self.config_manager.get_all_supported_languages()
+        return []
+    
+    def log_modular_execution(self, language, task_name, execution_time, success, error=None):
+        """Log execution using modular logger if available"""
+        if self.logger:
+            self.logger.log_execution_end(language, task_name, execution_time, success, 
+                                        error_type="ExecutionError" if error else None)
+            if error:
+                self.logger.log_error(language, task_name, "ExecutionError", str(error), "")
+
+
+# Compatibility alias for new modular executor
+ModernExecutor = EnhancedExecutor
