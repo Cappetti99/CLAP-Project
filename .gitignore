@@ -5,13 +5,15 @@
 # RISULTATI E OUTPUT GENERATI
 # =============================================================================
 
-# Directory risultati completa (esclusa dal versioning)
-results/
-# Ma include i CSV dei benchmark (dati importanti)
-!results/csv/
-!results/csv/*.csv
-!results/carbon/
-!results/carbon/*.csv
+# Directory risultati specifiche (escluse dal versioning)
+results/logs/
+results/execution/
+results/task_analysis/
+results/task_search/
+results/compliance/
+results/carbon_benchmark/
+# I CSV sono inclusi per l'analisi
+# results/csv/ - INCLUSO
 
 # File di log e tracciamento
 *.log
@@ -20,6 +22,11 @@ success_stats.json
 execution_*.log
 language_test_results_*.json
 smart_execution_results_*.json
+
+# File di sessione (escluisi dal versioning)
+session_*.json
+results/carbon/session_*.json
+**/session_*.json
 
 # Dati generati dal dataset
 data/generated/*
