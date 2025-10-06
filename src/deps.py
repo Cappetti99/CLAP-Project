@@ -269,10 +269,10 @@ class EnhancedDependencyInstaller:
             # Mappa import a coordinata Maven
             maven_coord = self.map_java_import_to_maven(java_import)
             if not maven_coord:
-                print(f"   ⚠️  Mapping non trovato per: {java_import}")
+                print(f"  Mapping non trovato per: {java_import}")
                 return False
             
-            print(f"   📦 Mapped: {java_import} -> {maven_coord}")
+            print(f" Mapped: {java_import} -> {maven_coord}")
             
             # Crea progetto Maven temporaneo
             temp_dir, pom_file = self.create_temp_maven_project([maven_coord])
@@ -303,10 +303,10 @@ class EnhancedDependencyInstaller:
             return success
             
         except subprocess.TimeoutExpired:
-            print(f"   ⏱️  Timeout durante download Maven")
+            print(f"  Timeout durante download Maven")
             return False
         except Exception as e:
-            print(f"   💥 Errore Java dependency: {e}")
+            print(f" Errore Java dependency: {e}")
             return False
     
     def _cache_maven_dependency(self, temp_dir, maven_coord):
@@ -330,7 +330,7 @@ class EnhancedDependencyInstaller:
                     cache_jar = cache_dir / jar_file.name
                     import shutil
                     shutil.copy2(jar_file, cache_jar)
-                    print(f"   📁 Cached: {jar_file.name}")
+                    print(f" Cached: {jar_file.name}")
                     
         except Exception as e:
             # Cache failure non è critico

@@ -55,20 +55,27 @@ def extract_top10_csv(input_csv, output_csv, top10_tasks):
         writer.writeheader()
         
         for row in reader:
-            task_name = row['task_name']
+            task_name = row['task']
             
-            # Verifica se questo task è nei TOP10
-            if task_name in top10_tasks:
+            # Normalizza il nome del task (sostituisce underscore con spazi)
+            normalized_task_name = task_name.replace('_', ' ')
+            
+            # Verifica se questo task è nei TOP10 (confronta case-insensitive)
+            if any(normalized_task_name.lower() == top10_task.lower() for top10_task in top10_tasks):
                 writer.writerow(row)
                 extracted_count += 1
-                print(f"✅ Estratto: {task_name}")
+                print(f"✅ Estratto: {task_name} -> {normalized_task_name}")
     
     print(f"\n📊 ESTRAZIONE COMPLETATA:")
     print(f"   Task estratti: {extracted_count}/{total_tasks}")
     print(f"   File creato: {output_csv}")
     
     if extracted_count < total_tasks:
-        missing = set(top10_tasks) - {row['task_name'] for row in csv.DictReader(open(input_csv))}
+        csv_tasks = {row['task'].replace('_', ' ').lower() for row in csv.DictReader(open(input_csv))}
+        top10_lower = {task.lower() for task in top10_tasks}
+        missing = top10_lower - csv_tasks
+        # Converti i nomi mancanti di nuovo al formato originale per visualizzazione
+        missing = {task for task in top10_tasks if task.lower() in missing}
         print(f"\n⚠️  Task non trovati nel CSV:")
         for task in missing:
             print(f"     - {task}")
@@ -102,7 +109,7 @@ def add_benchmark_results(top10_csv, benchmark_json):
     
     # Aggiorna ogni riga con dati benchmark
     for row in rows:
-        task_name = row['task_name']
+        task_name = row['task']
         
         # Mapping dei nomi task tra CSV e benchmark
         name_mapping = {
@@ -175,7 +182,14 @@ def main():
         return
     
     # 2. Estrai dal CSV completo
-    input_csv = "results/csv/swam_tasks_analysis.csv"
+    # Trova il file carbon_benchmark_summary più recente
+    import glob
+    csv_files = glob.glob("results/csv/carbon_benchmark_summary_*.csv")
+    if not csv_files:
+        print("❌ Nessun file carbon_benchmark_summary trovato!")
+        return
+    
+    input_csv = max(csv_files)  # Prende il più recente
     output_csv = "results/csv/top10_tasks_analysis.csv"
     
     success = extract_top10_csv(input_csv, output_csv, top10_tasks)
@@ -197,7 +211,7 @@ def main():
         reader = csv.DictReader(f)
         for i, row in enumerate(reader):
             if i < 5:
-                print(f"{row['task_name']:<30} | {row['total_implementations']:3s} impl | Avg: {row['avg_code_length']:2s} lines")
+                print(f"{row['task']:<30} | {row['language']:<10} | CO2: {row['avg_co2_mg']:<8} mg | Time: {row['avg_time_s']:<6} s")
 
 if __name__ == "__main__":
     main()

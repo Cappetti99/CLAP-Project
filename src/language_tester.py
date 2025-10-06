@@ -28,11 +28,6 @@ class LanguageTester:
     def __init__(self):
         self.test_results = {}
         self.temp_dirs = []
-        
-        # Aggiungi homebrew al PATH per trovare tutti i compilatori
-        homebrew_path = "/opt/homebrew/bin"
-        if homebrew_path not in os.environ.get("PATH", ""):
-            os.environ["PATH"] = homebrew_path + ":" + os.environ.get("PATH", "")
 
         # Configurazione test per ogni linguaggio
         self.test_programs = {
@@ -433,7 +428,30 @@ main = putStrLn "Hello from Haskell!"''',
                 if cmd == 'matlab':
                     print(f" {cmd}: Licenza commerciale richiesta")
                 else:
-                    print(f" {cmd}: brew install {cmd}")
+                    # Suggerimenti platform-aware
+                    if os.name == 'posix':  # Linux/Unix
+                        if cmd in ['gcc', 'g++']:
+                            print(f" {cmd}: sudo apt install build-essential")
+                        elif cmd == 'javac':
+                            print(f" {cmd}: sudo apt install openjdk-11-jdk")
+                        elif cmd == 'node':
+                            print(f" {cmd}: sudo apt install nodejs")
+                        elif cmd == 'go':
+                            print(f" {cmd}: sudo apt install golang-go")
+                        elif cmd == 'rustc':
+                            print(f" {cmd}: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh")
+                        elif cmd == 'ghc':
+                            print(f" {cmd}: sudo apt install ghc")
+                        elif cmd == 'ocamlc':
+                            print(f" {cmd}: sudo apt install ocaml")
+                        elif cmd == 'Rscript':
+                            print(f" {cmd}: sudo apt install r-base")
+                        elif cmd == 'julia':
+                            print(f" {cmd}: sudo snap install julia --classic")
+                        else:
+                            print(f" {cmd}: sudo apt install {cmd}")
+                    else:  # macOS or others
+                        print(f" {cmd}: brew install {cmd}")
 
     def save_results(self):
         """Salva i risultati in formato JSON con timestamp"""

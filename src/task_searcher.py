@@ -22,11 +22,10 @@ sys.path.insert(0, modules_path)
 try:
     from carbon_tracker import start_carbon_tracking, stop_carbon_tracking, CODECARBON_AVAILABLE
     from smart_executor import SmartExecutor
-    from language_config import LanguageConfigManager
     DEPENDENCIES_AVAILABLE = True
 except ImportError:
     DEPENDENCIES_AVAILABLE = False
-    print("  Alcune dipendenze non disponibili - funzionalità limitata")
+    print(" Alcune dipendenze non disponibili - funzionalità limitata")
 
 
 class TaskSearcher:
@@ -45,28 +44,26 @@ class TaskSearcher:
         # Inizializza componenti se disponibili
         if DEPENDENCIES_AVAILABLE:
             self.executor = SmartExecutor()
-            self.config_manager = LanguageConfigManager(conda_env='SWAM')
         else:
             self.executor = None
-            self.config_manager = None
             
         # Crea directory risultati
         os.makedirs(self.results_dir, exist_ok=True)
         
-        # Mapping linguaggi comuni per la ricerca (solo quelli testati)
+        # Mapping linguaggi comuni per la ricerca (nomi standardizzati)
         all_language_mapping = {
             'python': ['python'],
             'java': ['java'],
             'javascript': ['javascript'],
             'c': ['c'],
-            'cpp': ['cplusplus', 'c++'],
-            'c++': ['cplusplus', 'c++'],
+            'cpp': ['cpp'],                    # C++ standardizzato su 'cpp'  
+            'c++': ['cpp'],
             'go': ['go'],
             'rust': ['rust'],
             'ruby': ['ruby'],
             'php': ['php'],
-            'csharp': ['c#'],
-            'c#': ['c#'],
+            'csharp': ['csharp'],             # C# standardizzato su 'csharp'
+            'c#': ['csharp'],
             'haskell': ['haskell'],
             'ocaml': ['ocaml'],
             'r': ['r'],
@@ -95,25 +92,42 @@ class TaskSearcher:
                     with open(latest_test, 'r') as f:
                         test_data = json.load(f)
                     
-                    print(f"Caricando linguaggi testati da: {latest_test.name}")
+                    # Carica silenziosamente (l'output dettagliato è già mostrato da SmartExecutor)
                     
                     # Mappa nomi del test ai nomi nel dataset
                     test_to_dataset_mapping = {
-                        'cpp': 'cplusplus',        # C++ nel dataset è 'cplusplus'
+                        'cpp': 'cpp',             # C++ standardizzato su 'cpp'
+                        'c++': 'cpp',             # C++ alternativo
+                        'cplusplus': 'cpp',       # C++ forma completa
                         'java': 'java',
-                        'csharp': 'c#',           # C# nel dataset è 'c#'
+                        'csharp': 'csharp',       # C# standardizzato su 'csharp'
+                        'c#': 'csharp',           # C# simbolo diretto
+                        'cs': 'csharp',           # C# abbreviazione
                         'python': 'python',
+                        'python3': 'python',      # Python 3 specifico
+                        'py': 'python',           # Python abbreviazione
                         'ruby': 'ruby',
+                        'rb': 'ruby',             # Ruby abbreviazione
                         'javascript': 'javascript',
+                        'js': 'javascript',       # JavaScript abbreviazione
+                        'node': 'javascript',     # Node.js
+                        'nodejs': 'javascript',   # Node.js forma completa
                         'typescript': 'typescript',
+                        'ts': 'typescript',       # TypeScript abbreviazione
                         'c': 'c',
                         'go': 'go',
+                        'golang': 'go',           # Go nome completo
                         'rust': 'rust',
+                        'rs': 'rust',             # Rust abbreviazione
                         'php': 'php',
                         'haskell': 'haskell',
+                        'hs': 'haskell',          # Haskell abbreviazione
                         'ocaml': 'ocaml',
+                        'ml': 'ocaml',            # OCaml/ML abbreviazione
                         'r': 'r',
-                        'julia': 'julia'
+                        'rlang': 'r',             # R linguaggio completo
+                        'julia': 'julia',
+                        'jl': 'julia'             # Julia abbreviazione
                     }
                     
                     # Carica solo i linguaggi che hanno passato il test
@@ -123,9 +137,7 @@ class TaskSearcher:
                             available_languages.append(dataset_lang)
                     
                     if available_languages:
-                        print(f"✅ {len(available_languages)} linguaggi testati e disponibili:")
-                        for lang in sorted(available_languages):
-                            print(f"   • {lang.upper()}")
+                        # Output ridotto - dettagli già mostrati da SmartExecutor
                         return available_languages
                         
                 except Exception as e:
@@ -134,7 +146,7 @@ class TaskSearcher:
         # Fallback: usa tutti i linguaggi principali se non ci sono risultati del test
         print(" Nessun risultato test trovato, usando linguaggi principali di fallback")
         fallback_languages = ['python', 'java', 'javascript', 'c', 'cplusplus', 'go', 'rust']
-        print(f" Linguaggi fallback: {', '.join(fallback_languages)}")
+        print(f"Linguaggi fallback: {', '.join(fallback_languages)}")
         return fallback_languages
     
     def normalize_task_name(self, task_name: str) -> str:
@@ -147,21 +159,21 @@ class TaskSearcher:
     
     def _get_file_extensions(self, language: str) -> List[str]:
         """Ottiene le estensioni file supportate per un linguaggio"""
-        # Mappa linguaggi alle loro estensioni
+        # Mappa linguaggi alle loro estensioni (nomi standardizzati)
         extension_mapping = {
             'python': ['.py', '.txt'],
             'java': ['.java', '.txt'],
             'javascript': ['.js', '.txt'],
             'typescript': ['.ts', '.txt'],
             'c': ['.c', '.txt'],
-            'cplusplus': ['.cpp', '.txt'],
-            'c#': ['.cs', '.txt'],
+            'cpp': ['.cpp', '.cxx', '.cc', '.c++', '.txt'],  # C++ standardizzato su 'cpp'
+            'csharp': ['.cs', '.txt'],                       # C# standardizzato su 'csharp'
             'go': ['.go', '.txt'],
             'rust': ['.rs', '.txt'],
             'ruby': ['.rb', '.txt'],
             'php': ['.php', '.txt'],
-            'haskell': ['.hs', '.txt'],
-            'ocaml': ['.ml', '.txt'],
+            'haskell': ['.hs', '.lhs', '.txt'],  # .lhs per Literate Haskell
+            'ocaml': ['.ml', '.mli', '.txt'],   # .mli per interface files
             'julia': ['.jl', '.txt'],
             'r': ['.r', '.R', '.txt']
         }
@@ -179,18 +191,18 @@ class TaskSearcher:
         Returns:
             Dict con linguaggi come chiavi e lista di file come valori
         """
-        print(f"\n Ricerca task: '{task_name}' (solo linguaggi testati)")
-        print("=" * 60)
+        print(f"\nRicerca task: '{task_name}' (solo linguaggi testati)")
+        print("=" * 50)
         
         normalized_name = self.normalize_task_name(task_name)
         found_tasks = defaultdict(list)
         
         # Filtra solo i linguaggi disponibili
         if not self.available_languages:
-            print("  Nessun linguaggio disponibile - esegui prima 'python main.py test'")
+            print(" Nessun linguaggio disponibile - esegui prima 'python main.py test'")
             return dict(found_tasks)
         
-        print(f" Cerco in {len(self.available_languages)} linguaggi testati...")
+        print(f"Cerco in {len(self.available_languages)} linguaggi testati...")
         
         # Cerca in tutte le directory di linguaggi
         for category_dir in glob.glob(os.path.join(self.code_base_path, "*")):
@@ -235,22 +247,21 @@ class TaskSearcher:
     def display_search_results(self, found_tasks: Dict[str, List[str]], task_name: str):
         """Mostra i risultati della ricerca in formato user-friendly"""
         if not found_tasks:
-            print(f"❌ Nessuna task trovata per '{task_name}' nei linguaggi testati")
+            print(f"Nessuna task trovata per '{task_name}' nei linguaggi testati")
             print("\n Suggerimenti:")
             print("   • Prova una ricerca più generica (es: 'sort' invece di 'quicksort')")
             print("   • Usa parole chiave in inglese")
             print("   • Verifica che i linguaggi siano stati testati con 'python main.py test'")
-            print("   • Controlla la lista task disponibili con 'python main.py status'")
             return
         
         total_tasks = sum(len(files) for files in found_tasks.values())
-        print(f"✅ Trovate {total_tasks} task in {len(found_tasks)} linguaggi testati:")
-        print(f" Su {len(self.available_languages)} linguaggi disponibili dal test")
+        print(f"Trovate {total_tasks} task in {len(found_tasks)} linguaggi testati:")
+        print(f"Su {len(self.available_languages)} linguaggi disponibili dal test")
         print()
         
         # Raggruppa per linguaggio
         for lang, files in sorted(found_tasks.items()):
-            print(f" {lang.upper()} ({len(files)} file):")
+            print(f"{lang.upper()} ({len(files)} file):")
             for file_path in files[:3]:  # Mostra max 3 file per linguaggio
                 file_name = os.path.basename(file_path)
                 print(f"   • {file_name}")
@@ -268,7 +279,7 @@ class TaskSearcher:
         if not found_tasks:
             return None
         
-        print(" Seleziona task da eseguire:")
+        print("Seleziona task da eseguire:")
         print()
         
         # Crea lista ordinata di opzioni
@@ -296,11 +307,11 @@ class TaskSearcher:
                 lang, file_path, _ = options[choice_num - 1]
                 return lang, file_path
             else:
-                print("❌ Scelta non valida")
+                print("Scelta non valida")
                 return None
                 
         except (ValueError, KeyboardInterrupt):
-            print("❌ Operazione cancellata")
+            print("Operazione cancellata")
             return None
     
     def execute_task_with_carbon_tracking(self, language: str, file_path: str) -> bool:
@@ -314,37 +325,43 @@ class TaskSearcher:
         Returns:
             True se l'esecuzione ha successo, False altrimenti
         """
-        if not DEPENDENCIES_AVAILABLE:
-            print("❌ Dipendenze non disponibili per l'esecuzione")
+        if not DEPENDENCIES_AVAILABLE or not self.executor:
+            print("Dipendenze non disponibili per l'esecuzione")
             return False
         
-        task_name = os.path.basename(file_path).replace('.txt', '')
-        print(f"\n Esecuzione task: '{task_name}' in {language.upper()}")
-        print("=" * 60)
+        task_name = os.path.basename(file_path)
+        print(f"\nEsecuzione task: '{task_name}' in {language.upper()}")
+        print("=" * 50)
         
         try:
             # Legge il codice
             with open(file_path, 'r', encoding='utf-8') as f:
                 code = f.read()
+
+            print(f"File: {os.path.basename(file_path)}")
+            print(f"Linguaggio: {language}")
+            print(f"Dimensione: {len(code)} caratteri")
             
-            print(f" File: {os.path.basename(file_path)}")
-            print(f" Linguaggio: {language}")
-            print(f" Dimensione: {len(code)} caratteri")
+            # Analisi qualitativa del codice prima dell'esecuzione
+            print("\nANALISI QUALITATIVA")
+            print("-" * 30)
+            quality_analysis = self._analyze_code_quality(code, language)
+            self._display_quality_results(quality_analysis)
             print()
-            
+
             # Avvia tracking CO2
             if CODECARBON_AVAILABLE:
                 carbon_session = start_carbon_tracking(task_name, language)
-                print(" Monitoraggio CO2 avviato")
+                print("Monitoraggio CO2 avviato")
             else:
                 carbon_session = None
-                print("⚠️  Monitoraggio CO2 non disponibile")
+                print("Monitoraggio CO2 non disponibile")
             
-            print("⚡ Esecuzione in corso...")
+            print("Esecuzione in corso...")
             print("-" * 40)
             
             # Esegue il codice
-            success = self.executor.execute_code(
+            result = self.executor.execute_code(
                 code=code,
                 language=language,
                 task_name=task_name
@@ -353,26 +370,30 @@ class TaskSearcher:
             print("-" * 40)
             
             # Ferma tracking CO2
+            emissions = None
             if carbon_session and CODECARBON_AVAILABLE:
                 emissions = stop_carbon_tracking()
                 if emissions:
-                    print(f" Emissioni CO2: {emissions:.6f} kg")
-                    print(f" Equivalente a: {emissions * 1000:.3f} g di CO2")
+                    print(f"Emissioni CO2: {emissions:.6f} kg ({emissions * 1000:.3f} g)")
                 else:
-                    print(" Dati CO2 non disponibili")
+                    print("Dati CO2 non disponibili")
             
             # Salva risultati
-            self._save_execution_results(task_name, language, file_path, success, emissions if carbon_session else None)
+            self._save_execution_results(task_name, language, file_path, result.get('success', False), emissions)
             
-            if success:
-                print("✅ Esecuzione completata con successo!")
+            if result.get('success', False):
+                print("Esecuzione completata con successo")
+                if result.get('output'):
+                    print(f"Output: {result['output'][:100]}...")
             else:
-                print("❌ Esecuzione fallita")
+                print("Esecuzione fallita")
+                if result.get('error'):
+                    print(f"Errore: {result['error'][:100]}...")
             
-            return success
+            return result.get('success', False)
             
         except Exception as e:
-            print(f"❌ Errore durante l'esecuzione: {e}")
+            print(f"Errore durante l'esecuzione: {e}")
             return False
     
     def _save_execution_results(self, task_name: str, language: str, file_path: str, 
@@ -401,7 +422,7 @@ class TaskSearcher:
             print(f" Risultati salvati in: {result_file}")
             
         except Exception as e:
-            print(f"  Errore nel salvataggio: {e}")
+            print(f" Errore nel salvataggio: {e}")
     
     def interactive_task_search(self, initial_query: Optional[str] = None):
         """
@@ -410,10 +431,9 @@ class TaskSearcher:
         Args:
             initial_query: Query iniziale opzionale
         """
-        print("\n TASK SEARCHER - Ricerca e Esecuzione Mirata")
-        print("=" * 60)
-        print("Cerca task specifiche per nome ed eseguile con monitoraggio CO2")
-        print(f" Limitato ai {len(self.available_languages)} linguaggi testati e disponibili")
+        print("\nTASK SEARCHER - Ricerca e Esecuzione Mirata")
+        print("=" * 50)
+        print(f"Limitato ai {len(self.available_languages)} linguaggi testati e disponibili")
         print()
         
         # Query iniziale
@@ -424,7 +444,7 @@ class TaskSearcher:
             query = input(" Inserisci nome task da cercare: ").strip()
         
         if not query:
-            print("❌ Query vuota, operazione cancellata")
+            print("Query vuota, operazione cancellata")
             return False
         
         # Cerca task (solo nei linguaggi testati)
@@ -435,17 +455,23 @@ class TaskSearcher:
             return False
         
         # Selezione per esecuzione
-        print(" Vuoi eseguire una di queste task?")
+        print("Vuoi eseguire una di queste task?")
         execute_choice = input("Conferma [s/N]: ").strip().lower()
         
         if execute_choice not in ['s', 'si', 'y', 'yes']:
-            print(" Operazione cancellata")
+            print("Operazione cancellata")
+            print("\nRicerca e esecuzione task completata!")
+            print("Controlla i risultati in results/task_search/")
+            print("=" * 60)
             return True
         
         # Selezione task specifica
         selection = self.select_task_for_execution(found_tasks)
         if not selection:
-            print(" Nessuna task selezionata")
+            print("Nessuna task selezionata")
+            print("\nRicerca e esecuzione task completata!")
+            print("Controlla i risultati in results/task_search/")
+            print("=" * 60)
             return True
         
         language, file_path = selection
@@ -453,7 +479,136 @@ class TaskSearcher:
         # Esecuzione con monitoraggio CO2
         success = self.execute_task_with_carbon_tracking(language, file_path)
         
+        print("\nRicerca e esecuzione task completata!")
+        print("Controlla i risultati in results/task_search/")
+        print("=" * 60)
+        
         return success
+    
+    def _analyze_code_quality(self, code: str, language: str) -> Dict:
+        """
+        Analizza la qualità del codice
+        
+        Args:
+            code: Codice sorgente da analizzare
+            language: Linguaggio di programmazione
+            
+        Returns:
+            Dizionario con metriche di qualità
+        """
+        quality_patterns = {
+            'comments': [
+                r'//.*',           # C, C++, Java, JavaScript, Go, Rust
+                r'/\*.*?\*/',      # C, C++, Java, JavaScript
+                r'#.*',            # Python, Ruby, Perl, Bash
+                r'<!--.*?-->',     # HTML, XML
+                r'--.*',           # SQL, Haskell
+                r';.*',            # Scheme, Lisp
+                r'\(\*.*?\*\)'     # OCaml, F#
+            ],
+            'functions': [
+                r'def\s+\w+',      # Python
+                r'function\s+\w+', # JavaScript
+                r'func\s+\w+',     # Go
+                r'fn\s+\w+',       # Rust
+                r'\w+\s+\w+\s*\([^)]*\)\s*{',  # C, C++, Java
+                r'sub\s+\w+',      # Perl
+                r'class\s+\w+',    # OOP languages
+                r'module\s+\w+'    # F#, Haskell
+            ],
+            'error_handling': [
+                r'try\s*{',        # Java, C#
+                r'try:',           # Python
+                r'catch',          # Java, C#, JavaScript
+                r'except',         # Python
+                r'finally',        # Java, Python
+                r'panic',          # Go, Rust
+                r'Result<',        # Rust
+                r'Option<',        # Rust
+                r'if.*error',      # Go
+                r'rescue',         # Ruby
+                r'ensure'          # Ruby
+            ],
+            'imports': [
+                r'import\s+',      # Python, Java, JavaScript
+                r'#include\s*<',   # C, C++
+                r'using\s+',       # C#
+                r'require\s+',     # Ruby, JavaScript
+                r'use\s+',         # Rust
+                r'from\s+\w+\s+import', # Python
+                r'package\s+',     # Go, Java
+                r'extern\s+crate'  # Rust
+            ]
+        }
+        
+        quality_metrics = {
+            'has_comments': False,
+            'has_functions': False,
+            'has_error_handling': False,
+            'has_imports': False,
+            'code_length': len(code),
+            'line_count': len(code.split('\n')),
+            'non_empty_lines': len([line for line in code.split('\n') if line.strip()])
+        }
+        
+        # Verifica pattern di qualità
+        import re
+        for pattern_type, patterns in quality_patterns.items():
+            metric_name = f"has_{pattern_type}"
+            
+            for pattern in patterns:
+                if re.search(pattern, code, re.MULTILINE | re.DOTALL):
+                    quality_metrics[metric_name] = True
+                    break
+        
+        # Calcola quality score (0-100)
+        score = 0
+        if quality_metrics['has_comments']: score += 25     # Documentazione
+        if quality_metrics['has_functions']: score += 30    # Struttura modulare  
+        if quality_metrics['has_error_handling']: score += 25  # Robustezza
+        if quality_metrics['has_imports']: score += 10     # Uso librerie
+        
+        # Bonus per codice ben strutturato
+        if quality_metrics['non_empty_lines'] > 10: score += 10  # Non triviale
+        
+        quality_metrics['quality_score'] = min(score, 100)
+        quality_metrics['language'] = language
+        
+        return quality_metrics
+    
+    def _display_quality_results(self, quality_analysis: Dict):
+        """
+        Mostra i risultati dell'analisi qualitativa
+        
+        Args:
+            quality_analysis: Risultati dell'analisi qualitativa
+        """
+        score = quality_analysis.get('quality_score', 0)
+        
+        # Testo per il punteggio
+        if score >= 80:
+            score_text = "ECCELLENTE"
+        elif score >= 60:
+            score_text = "BUONO"
+        elif score >= 40:
+            score_text = "DISCRETO"
+        else:
+            score_text = "MIGLIORABILE"
+        
+        print(f"Quality Score: {score}/100 ({score_text})")
+        print(f"Righe: {quality_analysis['line_count']} (effettive: {quality_analysis['non_empty_lines']})")
+        
+        # Dettagli feature
+        features = []
+        if quality_analysis.get('has_comments'): features.append("Commenti")
+        if quality_analysis.get('has_functions'): features.append("Funzioni")
+        if quality_analysis.get('has_error_handling'): features.append("Error handling")
+        if quality_analysis.get('has_imports'): features.append("Import/Include")
+        
+        if features:
+            print(f"Caratteristiche: {', '.join(features)}")
+        else:
+            print("Caratteristiche base: nessuna rilevata")
 
 
 def search_and_execute_task(task_name: Optional[str] = None) -> bool:
@@ -470,10 +625,10 @@ def search_and_execute_task(task_name: Optional[str] = None) -> bool:
         searcher = TaskSearcher()
         return searcher.interactive_task_search(task_name)
     except KeyboardInterrupt:
-        print("\n  Operazione interrotta dall'utente")
+        print("\nOperazione interrotta dall'utente")
         return False
     except Exception as e:
-        print(f"❌ Errore nel task searcher: {e}")
+        print(f"Errore nel task searcher: {e}")
         return False
 
 

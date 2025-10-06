@@ -1296,35 +1296,35 @@ print("Executing {task_name} in {language}")
             total_failed_tasks = sum(len(info['failed_tasks']) for info in self.language_failures.values())
             print(f"   Task totali falliti: {total_failed_tasks}")
             
-            # Categorizza i tipi di errori
+            # Categorizza i tipi di errori per linguaggio
             error_categories = {
-                'Compilazione': 0,
-                'Librerie/Dipendenze': 0, 
-                'Sintassi': 0,
-                'Runtime': 0,
-                'Configurazione': 0,
-                'Altri': 0
+                'Compilazione': set(),
+                'Librerie/Dipendenze': set(), 
+                'Sintassi': set(),
+                'Runtime': set(),
+                'Configurazione': set(),
+                'Altri': set()
             }
             
-            for failure_info in self.language_failures.values():
+            for language, failure_info in self.language_failures.items():
                 for error in failure_info['sample_errors']:
                     error_lower = error.lower()
                     if 'compilazione' in error_lower or 'compile' in error_lower:
-                        error_categories['Compilazione'] += 1
+                        error_categories['Compilazione'].add(language)
                     elif 'libtinfo' in error_lower or 'library' in error_lower:
-                        error_categories['Librerie/Dipendenze'] += 1
+                        error_categories['Librerie/Dipendenze'].add(language)
                     elif 'syntax' in error_lower or 'token' in error_lower:
-                        error_categories['Sintassi'] += 1
+                        error_categories['Sintassi'].add(language)
                     elif 'traceback' in error_lower or 'runtime' in error_lower:
-                        error_categories['Runtime'] += 1
+                        error_categories['Runtime'].add(language)
                     elif 'no input files' in error_lower or 'command not found' in error_lower:
-                        error_categories['Configurazione'] += 1
+                        error_categories['Configurazione'].add(language)
                     else:
-                        error_categories['Altri'] += 1
+                        error_categories['Altri'].add(language)
             
-            for category, count in error_categories.items():
-                if count > 0:
-                    print(f"   {category}: {count} linguaggi")
+            for category, language_set in error_categories.items():
+                if len(language_set) > 0:
+                    print(f"   {category}: {len(language_set)} linguaggi")
 
         # Stima impatto annuale
         if total_emissions > 0:

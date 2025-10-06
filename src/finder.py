@@ -130,7 +130,7 @@ class UnifiedTaskFinder:
                                         'extension': file_path.suffix
                                     }
                                     
-                                    # Analisi qualitativa del codice (opzionale)
+                                    # Analisi qualitativa del codice
                                     if include_quality_analysis:
                                         try:
                                             with open(file_path, 'r', encoding='utf-8') as f:
@@ -154,12 +154,11 @@ class UnifiedTaskFinder:
         
         self.df = pd.DataFrame(data)
         
-        # Output conciso sempre
         total_records = len(self.df)
         unique_tasks = self.df['task_name'].nunique() if not self.df.empty else 0
         unique_languages = self.df['language'].nunique() if not self.df.empty else 0
         
-        print(f"📊 Dataset: {total_records:,} file | {unique_tasks:,} task | {unique_languages} linguaggi")
+        print(f" Dataset: {total_records:,} file | {unique_tasks:,} task | {unique_languages} linguaggi")
         
         if verbose and not self.df.empty:
             print(f" Categorie analizzate: {categories_found}")
@@ -198,7 +197,7 @@ class UnifiedTaskFinder:
             self.create_dataset_dataframe(include_quality_analysis=include_quality, verbose=verbose)
         elif include_quality and 'quality_score' not in self.df.columns:
             if verbose:
-                print(" 🔄 Ricreo DataFrame con analisi qualitativa...")
+                print(" Ricreo DataFrame con analisi qualitativa...")
             self.create_dataset_dataframe(include_quality_analysis=True, verbose=verbose)
         
         # Filtra DataFrame per linguaggi disponibili se specificato
@@ -220,7 +219,7 @@ class UnifiedTaskFinder:
                 filters_applied.append(f"{len(available_languages)} linguaggi")
             if include_quality and min_quality_score > 0:
                 filters_applied.append(f"quality≥{min_quality_score}")
-            print(f" 🔽 Filtri: {', '.join(filters_applied)} | {initial_count:,} → {final_count:,} record")
+            print(f" Filtri: {', '.join(filters_applied)} | {initial_count:,} → {final_count:,} record")
         
         # Query Pandas ottimizzata su dati filtrati
         agg_dict = {
@@ -256,9 +255,9 @@ class UnifiedTaskFinder:
         # Output risultato conciso
         result_count = len(common_tasks_df)
         if available_languages:
-            print(f"🎯 TOP 10 task trovate (su {len(task_stats)} totali)")
+            print(f" TOP 10 task trovate (su {len(task_stats)} totali)")
         else:
-            print(f"🎯 {result_count} task comuni (≥{min_languages} linguaggi)")
+            print(f" {result_count} task comuni (≥{min_languages} linguaggi)")
             
         if include_quality and result_count > 0 and 'avg_quality' in common_tasks_df.columns:
             avg_quality = common_tasks_df['avg_quality'].mean()
@@ -283,7 +282,7 @@ class UnifiedTaskFinder:
                 'total_implementations': int(row['total_implementations']),
                 'avg_file_size': float(row['avg_file_size']),
                 'size_variation': float(row['size_std']) if not pd.isna(row['size_std']) else 0.0,
-                'available_language_count': len(actual_languages)  # Nuovo campo
+                'available_language_count': len(actual_languages) 
             }
             
             # Aggiungi metriche qualitative se disponibili
@@ -380,12 +379,12 @@ class UnifiedTaskFinder:
         if 'quality_score' not in self.df.columns:
             print("❌ DataFrame non contiene analisi qualitative")
             if verbose:
-                print("💡 Usa create_dataset_dataframe(include_quality_analysis=True)")
+                print(" Usa create_dataset_dataframe(include_quality_analysis=True)")
             return None
         
         # Calcola statistiche senza stampare header se non verbose
         if verbose:
-            print("\n📊 STATISTICHE QUALITATIVE")
+            print("\n STATISTICHE QUALITATIVE")
             print("=" * 50)
         
         stats = {
@@ -422,10 +421,10 @@ class UnifiedTaskFinder:
             print(f"Range: {overview['min_quality_score']:.0f} - {overview['max_quality_score']:.0f}")
             print(f"")
             print(f"Copertura Features:")
-            print(f"  📝 Commenti: {features['has_comments_pct']:.1f}%")
-            print(f"  🔧 Funzioni: {features['has_functions_pct']:.1f}%")
-            print(f"  ⚠️  Error Handling: {features['has_error_handling_pct']:.1f}%")
-            print(f"  📦 Import: {features['has_imports_pct']:.1f}%")
+            print(f" Commenti: {features['has_comments_pct']:.1f}%")
+            print(f" Funzioni: {features['has_functions_pct']:.1f}%")
+            print(f" Error Handling: {features['has_error_handling_pct']:.1f}%")
+            print(f" Import: {features['has_imports_pct']:.1f}%")
         
         return stats
     

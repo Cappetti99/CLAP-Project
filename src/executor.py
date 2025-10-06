@@ -45,12 +45,12 @@ class EnhancedExecutor:
         os.makedirs(self.temp_dir, exist_ok=True)
 
         # Usa direttamente i comandi di sistema
-        print("� Usando comandi di sistema diretti")
+        print(" Usando comandi di sistema diretti")
         
                 # Initialize modular components
         if MODULAR_COMPONENTS_AVAILABLE:
             self.logger = get_logger(f"enhanced_executor_{session_id or int(time.time())}")
-            self.logger.info(f"🔧 Enhanced executor initialized with system commands")
+            self.logger.info(f" Enhanced executor initialized with system commands")
         else:
             self.config_manager = None
             self.logger = None
@@ -295,7 +295,7 @@ func main() {
                 executable_path = base_name + config.get('executable_ext', '')
                 cmd_parts = compiler + config.get('compiler_args', []) + [executable_path, file_path]
 
-            print(f"🔨 Compilando: {' '.join(str(x) for x in cmd_parts)}")
+            print(f" Compilando: {' '.join(str(x) for x in cmd_parts)}")
 
             result = subprocess.run(
                 cmd_parts,

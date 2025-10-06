@@ -341,7 +341,7 @@ cached_*
 dataset_cache/
 
 # File dataset scaricati
-*.csv
+data/raw/*.csv
 *.parquet
 datasets/
 data/raw/*
