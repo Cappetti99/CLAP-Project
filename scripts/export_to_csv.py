@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-CSV Exporter per i risultati SWAM
-Esporta i risultati dell'ultima run in formato CSV per analisi
+CSV Exporter
+Export the results of the last run in CSV format for analysis
 """
 
 import json
@@ -13,7 +13,7 @@ from datetime import datetime
 import glob
 
 class SWAMCSVExporter:
-    """Esporta i risultati SWAM in formato CSV"""
+    """Export the results in CSV format"""
     
     def __init__(self):
         self.results_dir = Path("results")
@@ -21,7 +21,7 @@ class SWAMCSVExporter:
         self.csv_dir.mkdir(exist_ok=True)
         
     def find_latest_results(self):
-        """Trova i file di risultati più recenti"""
+        """Find the latest result files"""
         results = {}
         
         # Carbon benchmark results
@@ -30,7 +30,7 @@ class SWAMCSVExporter:
             latest_carbon = max(carbon_files, key=lambda x: x.stat().st_mtime)
             results['carbon_detailed'] = latest_carbon
             
-            # Trova anche il summary corrispondente
+            # Find the corresponding summary file
             timestamp = latest_carbon.stem.split('_')[-1]
             summary_file = latest_carbon.parent / f"carbon_benchmark_summary_{timestamp}.json"
             if summary_file.exists():
@@ -45,20 +45,20 @@ class SWAMCSVExporter:
         return results
     
     def export_carbon_detailed(self, json_file, output_name=None):
-        """Esporta risultati carbon dettagliati in CSV"""
-        print(f" Caricamento carbon benchmark da: {json_file.name}")
-        
+        """Export carbon detailed results to CSV"""
+        print(f" Loading carbon benchmark from: {json_file.name}")
+
         with open(json_file, 'r') as f:
             data = json.load(f)
-        
-        # Prepara i dati per il DataFrame
+
+        # Prepare data for DataFrame
         rows = []
         
-        # Il nostro JSON inizia direttamente con le task, non ha 'results'
+        # Our JSON starts directly with the tasks, it does not have “results”.
         for task_name, task_data in data.items():
             for lang, lang_results in task_data.items():
                 if isinstance(lang_results, dict) and 'all_iterations' in lang_results:
-                    # Statistiche aggregate per linguaggio/task dal nostro formato
+                    # Statistics aggregated by language/task from our format
                     emissions_stats = lang_results.get('emissions_stats', {})
                     time_stats = lang_results.get('execution_time_stats', {})
                     
@@ -90,21 +90,21 @@ class SWAMCSVExporter:
         
         output_path = self.csv_dir / output_name
         df.to_csv(output_path, index=False)
-        print(f"✅ CSV esportato: {output_path}")
-        print(f" {len(df)} righe | {len(df.columns)} colonne")
-        
+        print(f"✅ CSV exported: {output_path}")
+        print(f" {len(df)} rows | {len(df.columns)} columns")
+
         return output_path
     
     def export_carbon_individual_runs(self, json_file, output_name=None):
-        """Esporta ogni singola run in CSV"""
-        print(f" Caricamento run individuali da: {json_file.name}")
+        """Export individual runs to CSV"""
+        print(f" Loading individual runs from: {json_file.name}")
         
         with open(json_file, 'r') as f:
             data = json.load(f)
         
         rows = []
-        
-        # Il nostro JSON inizia direttamente con le task, non ha 'results'
+
+        # Our JSON starts directly with the tasks, it does not have 'results'
         for task_name, task_data in data.items():
             for lang, lang_results in task_data.items():
                 if isinstance(lang_results, dict) and 'all_iterations' in lang_results:
@@ -114,7 +114,7 @@ class SWAMCSVExporter:
                             'language': lang,
                             'run_number': run.get('iteration', 0),
                             'success': run.get('success', False),
-                            'co2_mg': run.get('emissions', 0) * 1000000,  # Converti kg a mg
+                            'co2_mg': run.get('emissions', 0) * 1000000,  # kg to mg
                             'execution_time_s': run.get('execution_time', 0),
                             'session_id': run.get('session_id', ''),
                             'timestamp': run.get('timestamp', '')
@@ -129,19 +129,19 @@ class SWAMCSVExporter:
         
         output_path = self.csv_dir / output_name
         df.to_csv(output_path, index=False)
-        print(f"✅ CSV run individuali: {output_path}")
-        print(f" {len(df)} righe | {len(df.columns)} colonne")
-        
+        print(f"✅ CSV exported: {output_path}")
+        print(f" {len(df)} rows | {len(df.columns)} columns")
+
         return output_path
     
     def export_language_rankings(self, json_file, output_name=None):
-        """Esporta ranking linguaggi per efficienza energetica"""
-        print(f" Caricamento per ranking da: {json_file.name}")
+        """Export language rankings for energy efficiency"""
+        print(f" Loading rankings from: {json_file.name}")
         
         with open(json_file, 'r') as f:
             data = json.load(f)
-        
-        # Calcola statistiche per linguaggio
+
+        # Calculate statistics for each language
         lang_stats = {}
         
         for task_name, task_data in data.items():
@@ -161,17 +161,17 @@ class SWAMCSVExporter:
                     stats = lang_stats[lang]
                     stats['total_runs'] += lang_results.get('total_iterations', 0)
                     stats['successful_runs'] += lang_results.get('successful_runs', 0)
-                    stats['total_co2_mg'] += lang_results.get('emissions_stats', {}).get('total', 0) * 1000000  # Converti kg a mg
+                    stats['total_co2_mg'] += lang_results.get('emissions_stats', {}).get('total', 0) * 1000000  # Convert kg to mg
                     stats['total_time_s'] += lang_results.get('execution_time_stats', {}).get('total', 0)
                     stats['tasks_count'] += 1
                     
                     if 'all_iterations' in lang_results:
                         for run in lang_results['all_iterations']:
                             if run.get('success', False):
-                                stats['co2_values'].append(run.get('emissions', 0) * 1000000)  # Converti kg a mg
+                                stats['co2_values'].append(run.get('emissions', 0) * 1000000)  # Convert kg to mg
                                 stats['time_values'].append(run.get('execution_time', 0))
-        
-        # Crea DataFrame ranking
+
+        # Create DataFrame ranking
         ranking_rows = []
         for lang, stats in lang_stats.items():
             if stats['successful_runs'] > 0 and stats['total_runs'] > 0:
@@ -190,7 +190,7 @@ class SWAMCSVExporter:
                 ranking_rows.append(row)
         
         df = pd.DataFrame(ranking_rows)
-        df = df.sort_values('avg_co2_per_run_mg')  # Ordina per efficienza energetica
+        df = df.sort_values('avg_co2_per_run_mg')  # Sort by energy efficiency
         df['energy_rank'] = range(1, len(df) + 1)
         
         if output_name is None:
@@ -199,14 +199,14 @@ class SWAMCSVExporter:
         
         output_path = self.csv_dir / output_name
         df.to_csv(output_path, index=False)
-        print(f"✅ CSV ranking linguaggi: {output_path}")
-        print(f" {len(df)} linguaggi | {len(df.columns)} metriche")
-        
+        print(f"✅ CSV language ranking: {output_path}")
+        print(f" {len(df)} languages | {len(df.columns)} metrics")
+
         return output_path
     
     def export_language_test_results(self, json_file, output_name=None):
-        """Esporta risultati test linguaggi"""
-        print(f" Caricamento test linguaggi da: {json_file.name}")
+        """Export language test results"""
+        print(f" Loading language tests from: {json_file.name}")
         
         with open(json_file, 'r') as f:
             data = json.load(f)
@@ -221,8 +221,8 @@ class SWAMCSVExporter:
                 'compiler_found': result.get('compiler_found', False),
                 'compile_success': result.get('compile_success', False),
                 'run_success': result.get('run_success', False),
-                'output': result.get('output', '')[:100],  # Tronca output lungo
-                'error': result.get('error', '')[:200],    # Tronca errore lungo
+                'output': result.get('output', '')[:100],  # Truncate long output
+                'error': result.get('error', '')[:200],    # Truncate long error
                 'execution_time': result.get('execution_time', 0)
             }
             rows.append(row)
@@ -235,20 +235,20 @@ class SWAMCSVExporter:
         
         output_path = self.csv_dir / output_name
         df.to_csv(output_path, index=False)
-        print(f"✅ CSV test linguaggi: {output_path}")
-        print(f" {len(df)} linguaggi | {len(df.columns)} colonne")
-        
+        print(f"✅ CSV language test results: {output_path}")
+        print(f" {len(df)} languages | {len(df.columns)} columns")
+
         return output_path
     
     def export_all_latest(self):
-        """Esporta tutti i risultati più recenti"""
-        print("EXPORT RISULTATI ULTIMA RUN")
+        """Export all the latest results"""
+        print("EXPORT RESULTS OF LAST RUN")
         print("=" * 50)
         
         latest = self.find_latest_results()
         
         if not latest:
-            print("❌ Nessun risultato trovato!")
+            print("❌ No results found!")
             return
         
         exported_files = []
@@ -262,26 +262,26 @@ class SWAMCSVExporter:
             summary_csv = self.export_carbon_detailed(latest['carbon_detailed'])
             exported_files.append(summary_csv)
             
-            # Run individuali
+            # Individual runs
             runs_csv = self.export_carbon_individual_runs(latest['carbon_detailed'])
             exported_files.append(runs_csv)
             
-            # Ranking linguaggi
+            # Language ranking
             ranking_csv = self.export_language_rankings(latest['carbon_detailed'])
             exported_files.append(ranking_csv)
         
         # Language test
         if 'language_test' in latest:
             print(f"\n LANGUAGE TEST")
-            print(f"File sorgente: {latest['language_test']}")
+            print(f"Source file: {latest['language_test']}")
             
             test_csv = self.export_language_test_results(latest['language_test'])
             exported_files.append(test_csv)
         
-        # Summary finale
-        print(f"\n✅ EXPORT COMPLETATO!")
+        # Final summary
+        print(f"\n✅ EXPORT COMPLETE!")
         print(f" Directory CSV: {self.csv_dir}")
-        print(f" File esportati: {len(exported_files)}")
+        print(f" Export File: {len(exported_files)}")
         for f in exported_files:
             size_kb = f.stat().st_size / 1024
             print(f"   • {f.name} ({size_kb:.1f} KB)")
@@ -289,11 +289,11 @@ class SWAMCSVExporter:
         return exported_files
 
 def main():
-    parser = argparse.ArgumentParser(description="Esporta risultati SWAM in CSV")
+    parser = argparse.ArgumentParser(description="Export SWAM results to CSV")
     parser.add_argument("--type", choices=["all", "carbon", "test"], default="all",
-                       help="Tipo di export (default: all)")
+                       help="Type of export (default: all)")
     parser.add_argument("--latest", action="store_true", default=True,
-                       help="Usa risultati più recenti (default)")
+                       help="Use latest results (default)")
     
     args = parser.parse_args()
     
@@ -302,7 +302,7 @@ def main():
     if args.type == "all":
         exporter.export_all_latest()
     else:
-        print(f"Tipo {args.type} non ancora implementato per singolo export")
+        print(f"Type {args.type} not yet implemented for single export")
 
 if __name__ == "__main__":
     main()

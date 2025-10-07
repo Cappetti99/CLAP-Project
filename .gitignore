@@ -1,21 +1,20 @@
-# SWAM Project - Cross-Language Code Analysis System
-# Gitignore ottimizzato per struttura pulita v4.0 (Post-cleanup)
+# CLAP – Cross-Language Analysis Project
 
 # =============================================================================
-# RISULTATI E OUTPUT GENERATI
+# RESULTS AND GENERATED OUTPUT
 # =============================================================================
 
-# Directory risultati specifiche (escluse dal versioning)
+# Specific results directories (excluded from versioning)
 results/logs/
 results/execution/
 results/task_analysis/
 results/task_search/
 results/compliance/
 results/carbon_benchmark/
-# I CSV sono inclusi per l'analisi
-# results/csv/ - INCLUSO
+# CSV files are included for analysis
+# results/csv/ - INCLUDED
 
-# File di log e tracciamento
+# Log and tracking files
 *.log
 error_analysis.json
 success_stats.json
@@ -23,31 +22,31 @@ execution_*.log
 language_test_results_*.json
 smart_execution_results_*.json
 
-# File di sessione (escluisi dal versioning)
+# Session files (excluded from versioning)
 session_*.json
 results/carbon/session_*.json
 **/session_*.json
 
-# Dati generati dal dataset
+# Generated dataset data
 data/generated/*
 !data/generated/.gitkeep
 data/cache/*
 !data/cache/.gitkeep
 
-# Code snippets generati (mantiene struttura)
+# Generated code snippets (keep structure)
 data/generated/code_snippets/*/*
 !data/generated/code_snippets/*/.gitkeep
 
-# File temporanei di output
+# Temporary output files
 Rplots.pdf
 floatArray
 yin_yang.png
 
 # =============================================================================
-# FILE COMPILATI E ESEGUIBILI
+# COMPILED AND EXECUTABLE FILES
 # =============================================================================
 
-# C/C++ compilati
+# Compiled C/C++
 *.o
 *.obj
 *.exe
@@ -59,26 +58,26 @@ a.out
 *.a
 *.lib
 
-# Java compilati
+# Compiled Java
 *.class
 *.jar
 *.war
 *.ear
 
-# C# compilati
+# Compiled C#
 *.exe
 *.dll
 *.pdb
 bin/
 obj/
 
-# Haskell compilati
+# Compiled Haskell
 *.hi
 *.o
 dist/
 dist-newstyle/
 
-# OCaml compilati
+# Compiled OCaml
 *.cmo
 *.cmi
 *.cmx
@@ -87,25 +86,25 @@ dist-newstyle/
 *.a
 _build/
 
-# Rust compilati
+# Compiled Rust
 target/
 Cargo.lock
 *.rlib
 *.rmeta
 
-# Go compilati
+# Compiled Go
 *.test
 *.prof
 go.sum
 
-# TypeScript/JavaScript compilati
+# Compiled TypeScript/JavaScript
 *.js.map
 node_modules/
 npm-debug.log*
 .npm/
 
 # =============================================================================
-# CACHE E DIPENDENZE
+# CACHE AND DEPENDENCIES
 # =============================================================================
 
 # Python cache
@@ -161,7 +160,7 @@ htmlcov/
 .hypothesis/
 
 # =============================================================================
-# SISTEMA OPERATIVO
+# OPERATING SYSTEM
 # =============================================================================
 
 # macOS
@@ -197,10 +196,10 @@ $RECYCLE.BIN/
 .nfs*
 
 # =============================================================================
-# IDE E EDITOR
+# IDE AND EDITORS
 # =============================================================================
 
-# VS Code (mantiene configurazione progetto)
+# VS Code 
 .vscode/
 !.vscode/tasks.json
 !.vscode/settings.json
@@ -231,10 +230,10 @@ auto-save-list
 tramp
 
 # =============================================================================
-# FILE TEMPORANEI E BACKUP
+# TEMPORARY AND BACKUP FILES
 # =============================================================================
 
-# File backup generici
+# Generic backup files
 *.bak
 *.backup
 *.old
@@ -243,7 +242,7 @@ tramp
 *_backup.*
 *_old.*
 
-# File temporanei progetto
+# Temporary project files
 *.tmp
 *.temp
 temp_*
@@ -251,7 +250,7 @@ test_*
 diagnostic_*
 quick_*
 
-# File README backup
+# README backup files
 README_OLD.md
 README_NEW.md
 .gitignore_new
@@ -259,7 +258,7 @@ README_NEW.md
 README_BACKUP.md
 
 # =============================================================================
-# TESTING E SVILUPPO
+# TESTING AND DEVELOPMENT
 # =============================================================================
 
 # Test results
@@ -283,7 +282,7 @@ core.*
 *.mem
 
 # =============================================================================
-# LINGUAGGI SPECIFICI
+# LANGUAGE SPECIFIC
 # =============================================================================
 
 # R
@@ -315,7 +314,7 @@ Manifest.toml
 *.rbc
 
 # =============================================================================
-# SICUREZZA E CONFIGURAZIONI LOCALI
+# SECURITY AND LOCAL CONFIGURATION
 # =============================================================================
 
 # Environment variables
@@ -325,7 +324,7 @@ Manifest.toml
 .env.production.local
 .env.secret
 
-# API keys e credenziali
+# API keys and credentials
 secrets.*
 api_keys.*
 *.pem
@@ -333,21 +332,21 @@ api_keys.*
 *.crt
 credentials.json
 
-# Configurazioni locali
+# Local configurations
 config.local.*
 settings.local.*
 
 # =============================================================================
-# DATASET E CACHE HUGGING FACE
+# DATASETS AND HUGGING FACE CACHE
 # =============================================================================
 
-# Cache Hugging Face
+# Hugging Face cache
 ~/.cache/huggingface/
 .cache/huggingface/
 cached_*
 dataset_cache/
 
-# File dataset scaricati
+# Downloaded dataset files
 data/raw/*.csv
 *.parquet
 datasets/
@@ -355,7 +354,7 @@ data/raw/*
 !data/raw/.gitkeep
 
 # =============================================================================
-# PERFORMANCE E MONITORAGGIO
+# PERFORMANCE AND MONITORING
 # =============================================================================
 
 # Profiling files
@@ -373,49 +372,49 @@ performance_*
 *.heap
 
 # =============================================================================
-# CLEANUP E MANUTENZIONE
+# CLEANUP AND MAINTENANCE
 # =============================================================================
 
-# File stats e cleanup
+# Stats and cleanup files
 cleanup_stats.json
 installed_packages.json
 dependency_*.json
 
-# File di stato temporanei
+# Temporary state files
 .state
 .status
 *.state
 
 # =============================================================================
-# CODECARBON - MONITORAGGIO CO2 (v2.0.0)
+# CODECARBON - CO2 MONITORING (v2.0.0)
 # =============================================================================
 
-# CodeCarbon cache e configurazione locale
+# CodeCarbon cache and local configuration
 .codecarbon/
 .codecarbon_cache/
 
-# File temporanei di tracciamento
+# Temporary tracking files
 emissions.csv.tmp
 emissions_*.csv.tmp
 codecarbon_*.log
 
-# Output temporanei benchmark (mantieni i risultati finali)
+# Temporary benchmark output (keep final results)
 results/carbon/session_*.json.tmp
 results/carbon/benchmark_temp_*
 results/carbon/*.log
 
-# PowerMetrics temporanei (macOS)
+# PowerMetrics temporary (macOS)
 powermetrics_log_temp.txt
 powermetrics_*.tmp
 
-# Note: I file results/carbon/*.json e emissions.csv sono mantenuti 
-# per tracking storico delle emissioni CO2
+# Note: results/carbon/*.json and emissions.csv are kept 
+# for historical CO2 emissions tracking
 
 # =============================================================================
-# ESCLUSIONI SPECIFICHE POST-CLEANUP
+# POST-CLEANUP SPECIFIC EXCLUSIONS
 # =============================================================================
 
-# File rimossi durante cleanup (evita ricreazione accidentale)
+# Files removed during cleanup (prevent accidental recreation)
 diagnostic_test.py
 quick_test.py
 structure_analyzer.py
@@ -429,5 +428,5 @@ src/cleanup_manager.py
 modules/execution_manager.py
 
 # =============================================================================
-# FINE GITIGNORE
+# END OF GITIGNORE
 # =============================================================================

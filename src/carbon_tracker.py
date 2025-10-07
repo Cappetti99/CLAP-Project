@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Carbon Tracker - Sistema di monitoraggio impatto ambientale per SWAM
-Integra CodeCarbon per tracciare le emissioni CO2 delle esecuzioni multi-linguaggio
+Carbon Tracker - Environmental impact monitoring system for CLAP
+Integrates CodeCarbon to track CO2 emissions from multi-language executions
 """
 
 import os
@@ -15,11 +15,11 @@ try:
     CODECARBON_AVAILABLE = True
 except ImportError:
     CODECARBON_AVAILABLE = False
-    print(" CodeCarbon non installato. Installa con: pip install codecarbon")
+    print(" CodeCarbon not installed. Install with: pip install codecarbon")
 
 
 class SWAMCarbonTracker:
-    """Tracker dedicato per misurare l'impatto ambientale delle esecuzioni SWAM"""
+    """Tracker dedicated to measuring the environmental impact of CLAP executions"""
 
     def __init__(self, project_name="SWAM-Project"):
         self.project_name = project_name
@@ -27,24 +27,24 @@ class SWAMCarbonTracker:
         self.tracker = None
         self.current_session = None
 
-        # Crea directory per i risultati
+        # Create directory for results
         os.makedirs(self.results_dir, exist_ok=True)
 
         if CODECARBON_AVAILABLE:
-            # Configurazione tracker - DISABILITIAMO IL SALVATAGGIO CSV PER EVITARE ERRORI
+            # Tracker configuration - DISABLE CSV SAVING TO AVOID ERRORS
             self.tracker = EmissionsTracker(
                 project_name=project_name,
                 output_dir=self.results_dir,
-                log_level="ERROR",  # Riduciamo i log
-                save_to_file=False,  # DISABILITATO per evitare errore CSV
-                save_to_api=False,  # Disabilitato per privacy 
+                log_level="ERROR",  # Reduce logging
+                save_to_file=False,  # DISABLED to avoid CSV error
+                save_to_api=False,  # Disabled for privacy
                 experiment_id=f"swam_session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             )
         else:
-            print(" CodeCarbon non disponibile - tracking CO2 disabilitato")
+            print(" CodeCarbon not available - CO2 tracking disabled")
 
     def start_tracking(self, task_name=None, language=None):
-        """Inizia il tracking delle emissioni per una sessione"""
+        """Start tracking emissions for a session"""
         if not CODECARBON_AVAILABLE or not self.tracker:
             return None
 
@@ -58,44 +58,44 @@ class SWAMCarbonTracker:
         self.current_session = session_info
         self.tracker.start()
 
-        print(f" Tracking CO2 avviato per: {session_info.get('session_id', 'sessione generica')}")
+        print(f" Tracking CO2 started for: {session_info.get('session_id', 'generic session')}")
         return session_info
 
     def stop_tracking(self):
-        """Ferma il tracking e salva i risultati"""
+        """Stop tracking and save results"""
         if not CODECARBON_AVAILABLE or not self.tracker:
             return None
 
         try:
             emissions = self.tracker.stop()
-            
-            # Gestisci il caso in cui emissions sia None
+
+            # Handle case where emissions is None
             if emissions is None:
                 emissions = 0.0
         except Exception as e:
-            print(f"⚠️  Errore durante misurazione CO2: {e}")
+            print(f" Error during CO2 measurement: {e}")
             emissions = 0.0
 
         if self.current_session:
             self.current_session["end_time"] = datetime.now().isoformat()
             self.current_session["emissions_kg"] = emissions
 
-            # Salva dettagli sessione
+            # Save session details
             session_file = os.path.join(self.results_dir, f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
             with open(session_file, 'w') as f:
                 json.dump(self.current_session, f, indent=2)
 
-            # Converti in mg per leggibilità (1 kg = 1,000,000 mg)
+            # Convert to mg for readability (1 kg = 1,000,000 mg)
             emissions_mg = emissions * 1_000_000
-            print(f" Tracking CO2 completato: {emissions_mg:.3f} mg CO2eq")
-            print(f" Dettagli salvati in: {session_file}")
+            print(f" Tracking CO2 completed: {emissions_mg:.3f} mg CO2eq")
+            print(f" Details saved in: {session_file}")
 
         return emissions
 
     def track_function(self, func_name=None):
-        """Decorator per tracciare automaticamente le funzioni"""
+        """Decorator to automatically track functions"""
         if not CODECARBON_AVAILABLE:
-            # Decorator vuoto se CodeCarbon non è disponibile
+            # Empty decorator if CodeCarbon is not available
             def dummy_decorator(func):
                 return func
             return dummy_decorator
@@ -107,7 +107,7 @@ class SWAMCarbonTracker:
         )
 
     def get_summary_report(self):
-        """Genera un report riassuntivo delle emissioni"""
+        """Generate a summary report of emissions"""
         carbon_files = list(Path(self.results_dir).glob("*.csv"))
         session_files = list(Path(self.results_dir).glob("session_*.json"))
 
@@ -120,7 +120,7 @@ class SWAMCarbonTracker:
             "sessions_by_task": {}
         }
 
-        # Analizza file CSV di emissioni
+        # Analyze emission CSV files
         if carbon_files:
             latest_file = max(carbon_files, key=lambda x: x.stat().st_mtime)
             summary["latest_emissions_file"] = str(latest_file)
@@ -133,7 +133,7 @@ class SWAMCarbonTracker:
             except:
                 pass
 
-        # Analizza sessioni dettagliate
+        # Analyze detailed sessions
         for session_file in session_files:
             try:
                 with open(session_file) as f:
@@ -156,77 +156,77 @@ class SWAMCarbonTracker:
         return summary
 
     def print_impact_report(self):
-        """Stampa un report dell'impatto ambientale"""
+        """Print environmental impact report"""
         print("\n SWAM PROJECT - CARBON IMPACT REPORT")
         print("=" * 50)
 
         if not CODECARBON_AVAILABLE:
-            print(" CodeCarbon non installato")
+            print(" CodeCarbon not installed")
             print(" Installa con: pip install codecarbon")
             return
 
         summary = self.get_summary_report()
 
-        print(f" Sessioni tracciate: {summary['total_sessions']}")
-        print(f" File emissioni: {summary['total_carbon_files']}")
-        # Converti in mg per leggibilità
+        print(f" Tracked sessions: {summary['total_sessions']}")
+        print(f" Emissions files: {summary['total_carbon_files']}")
+        # Convert to mg for readability
         emissions_mg = summary['total_estimated_emissions'] * 1_000_000
-        print(f" Emissioni totali stimate: {emissions_mg:.3f} mg CO2eq")
+        print(f" Estimated total emissions: {emissions_mg:.3f} mg CO2eq")
 
         if summary['sessions_by_language']:
-            print(f"\n Sessioni per linguaggio:")
+            print(f"\n Sessions by language:")
             for lang, count in sorted(summary['sessions_by_language'].items()):
-                print(f" • {lang}: {count} sessioni")
+                print(f" • {lang}: {count} sessions")
 
         if summary['sessions_by_task']:
-            print(f"\n Sessioni per task:")
+            print(f"\n Sessions by task:")
             for task, count in sorted(summary['sessions_by_task'].items()):
-                print(f" • {task}: {count} sessioni")
+                print(f" • {task}: {count} sessions")
 
         if summary['latest_emissions_file']:
-            print(f"\n File emissioni più recente:")
+            print(f"\n Latest emissions file:")
             print(f" {summary['latest_emissions_file']}")
 
-        print(f"\n Per visualizzare i dettagli: carbonboard --filepath=\"{self.results_dir}/emissions.csv\"")
+        print(f"\n To view details: carbonboard --filepath=\"{self.results_dir}/emissions.csv\"")
 
 
-# Istanza globale per uso semplice
+# Global instance for simple usage
 swam_carbon_tracker = SWAMCarbonTracker()
 
 
-# Funzioni di utilità
+# Utility functions
 def start_carbon_tracking(task_name=None, language=None):
-    """Avvia il tracking CO2 per una sessione"""
+    """Start CO2 tracking for a session"""
     return swam_carbon_tracker.start_tracking(task_name, language)
 
 
 def stop_carbon_tracking():
-    """Ferma il tracking CO2"""
+    """Stop CO2 tracking"""
     return swam_carbon_tracker.stop_tracking()
 
 
 def track_emissions_decorator(func_name=None):
-    """Decorator per tracciare automaticamente le emissioni di una funzione"""
+    """Decorator to automatically track emissions for a function"""
     return swam_carbon_tracker.track_function(func_name)
 
 
 def print_carbon_report():
-    """Stampa il report dell'impatto ambientale"""
+    """Print environmental impact report"""
     swam_carbon_tracker.print_impact_report()
 
 
 if __name__ == "__main__":
-    # Test del sistema di tracking
+    # Test carbon tracking system
     print(" Test SWAM Carbon Tracker")
 
-    # Test tracking manuale
+    # Test manual tracking
     start_carbon_tracking("test_task", "python")
 
-    # Simula del lavoro
+    # Simulate work
     import time
     time.sleep(1)
 
     stop_carbon_tracking()
 
-    # Mostra report
+    # Show report
     print_carbon_report()

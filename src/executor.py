@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Enhanced Executor - Esecutore migliorato per il benchmark CO2
-Risolve i problemi di path, compilazione e gestione file per tutti i linguaggi
+Enhanced Executor - Improved executor for the CO2 benchmark
+Resolves path, compilation, and file management issues for all languages
 """
 
 import sys
@@ -15,7 +15,7 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 
-# Aggiunge il path per importare i moduli SWAM
+# Adds the path to import SWAM modules
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 modules_path = os.path.join(project_root, 'modules')
@@ -37,17 +37,17 @@ except ImportError:
 
 
 class EnhancedExecutor:
-    """Esecutore migliorato che risolve i problemi di compilazione e esecuzione"""
+    """Improved executor that resolves compilation and execution issues"""
 
     def __init__(self, session_id=None):
         self.results_dir = os.path.abspath("results/execution")
         self.temp_dir = os.path.join(self.results_dir, "temp")
         os.makedirs(self.temp_dir, exist_ok=True)
 
-        # Usa direttamente i comandi di sistema
-        print(" Usando comandi di sistema diretti")
-        
-                # Initialize modular components
+        # Use system commands directly
+        print(" Using system commands directly")
+
+        # Initialize modular components
         if MODULAR_COMPONENTS_AVAILABLE:
             self.logger = get_logger(f"enhanced_executor_{session_id or int(time.time())}")
             self.logger.info(f" Enhanced executor initialized with system commands")
@@ -55,7 +55,7 @@ class EnhancedExecutor:
             self.config_manager = None
             self.logger = None
 
-        # Configurazione linguaggi con comandi diretti
+        # Language configuration with direct commands
         self.language_config = {
             'python': {
                 'extension': '.py',
@@ -202,9 +202,9 @@ func main() {
         self.detect_available_languages()
 
     def check_command_available(self, command):
-        """Verifica se un comando è disponibile nel sistema o environment conda"""
+        """Check whether a command is available in the system or environment conda"""
         try:
-            # Prima prova nell'environment conda
+            # First try in the conda environment
             if self.conda_env and self.conda_env != 'base':
                 result = subprocess.run(
                     ['conda', 'run', '-n', self.conda_env, 'which', command],
@@ -215,7 +215,7 @@ func main() {
                 if result.returncode == 0:
                     return True
 
-            # Fallback: controlla nel PATH standard
+            # Fallback: check in the standard PATH
             result = subprocess.run(
                 ['which', command] if os.name != 'nt' else ['where', command],
                 capture_output=True,
@@ -227,23 +227,23 @@ func main() {
             return False
 
     def get_safe_filename(self, task_name, language):
-        """Genera un nome file sicuro per evitare conflitti"""
+        """Generates a safe file name to avoid conflicts"""
         timestamp = int(time.time() * 1000)
         safe_task = re.sub(r'[^a-zA-Z0-9_]', '_', task_name)
         return f"{safe_task}_{language}_{timestamp}"
 
     def extract_java_class_name(self, code):
-        """Estrae il nome della classe Java dal codice"""
+        """Extracts the Java class name from the code"""
         pattern = r'public\s+class\s+(\w+)'
         match = re.search(pattern, code)
         return match.group(1) if match else None
 
     def create_temp_file(self, code, extension, task_name, language):
-        """Crea un file temporaneo con gestione sicura"""
+        """Creates a temporary file with safe handling"""
         try:
             base_name = self.get_safe_filename(task_name, language)
 
-            # Gestione speciale per Java
+            # Special handling for Java
             if language == 'java':
                 class_name = self.extract_java_class_name(code)
                 if class_name:
@@ -261,12 +261,12 @@ func main() {
             return file_path
 
         except Exception as e:
-            print(f" Errore creazione file temporaneo: {e}")
+            print(f" Error creating temporary file: {e}")
             return None
 
     def compile_code(self, file_path, config, language):
         """
-        Compila un file di codice se necessario
+        Compiles a code file if necessary
         """
         try:
             if 'compiler' not in config:
@@ -275,10 +275,10 @@ func main() {
             compiler = config['compiler']
             base_name = os.path.splitext(file_path)[0]
 
-            # Costruisci il comando di compilazione
+            # Build the compilation command
             if language == 'java':
                 cmd_parts = compiler + [file_path]
-                executable_path = None  # Java non crea eseguibile diretto
+                executable_path = None  # Java does not create a direct executable
             elif language == 'typescript':
                 cmd_parts = compiler + [file_path]
                 executable_path = base_name + '.js'
@@ -291,11 +291,11 @@ func main() {
                     executable_path = base_name
                     cmd_parts = compiler + config.get('compiler_args', []) + [executable_path, file_path]
             else:
-                # Altri linguaggi compilati
+                # Other compiled languages
                 executable_path = base_name + config.get('executable_ext', '')
                 cmd_parts = compiler + config.get('compiler_args', []) + [executable_path, file_path]
 
-            print(f" Compilando: {' '.join(str(x) for x in cmd_parts)}")
+            print(f" Compiling: {' '.join(str(x) for x in cmd_parts)}")
 
             result = subprocess.run(
                 cmd_parts,
@@ -311,34 +311,34 @@ func main() {
                 return {'success': False, 'executable': None, 'error': result.stderr}
 
         except subprocess.TimeoutExpired:
-            return {'success': False, 'executable': None, 'error': f"Timeout durante compilazione ({config['timeout']}s)"}
+            return {'success': False, 'executable': None, 'error': f"Timeout during compilation ({config['timeout']}s)"}
         except Exception as e:
-            return {'success': False, 'executable': None, 'error': f"Errore durante compilazione: {str(e)}"}
+            return {'success': False, 'executable': None, 'error': f"Error during compilation: {str(e)}"}
 
     def run_code(self, file_path, config, language, executable_path=None):
         """
-        Esegue un file di codice nel linguaggio specificato
+        Runs a code file in the specified language
         """
         try:
             if config['type'] == 'interpreted' or config['type'] == 'transpiled':
-                # Per linguaggi interpretati, usa l'executor configurato
+                # For interpreted languages, use the configured executor
                 if 'run' in config:
                     cmd_parts = config['run'] + [file_path]
                 else:
                     cmd_parts = config['executor'] + [file_path]
             elif config['type'] == 'compiled':
-                # Per linguaggi compilati, esegui l'eseguibile
+                # For compiled languages, run the executable
                 if executable_path:
                     if language == 'java':
-                        # Java ha bisogno del classpath
+                        # Java needs the classpath
                         class_name = os.path.splitext(os.path.basename(file_path))[0]
                         cmd_parts = config['executor'] + ['-cp', os.path.dirname(file_path), class_name]
                     else:
                         cmd_parts = [executable_path]
                 else:
-                    return {'success': False, 'output': '', 'error': 'Eseguibile non trovato'}
+                    return {'success': False, 'output': '', 'error': 'Executable not found'}
 
-            print(f" Eseguendo: {' '.join(str(x) for x in cmd_parts)}")
+            print(f" Running: {' '.join(str(x) for x in cmd_parts)}")
 
             result = subprocess.run(
                 cmd_parts,
@@ -355,12 +355,12 @@ func main() {
             return {'success': success, 'output': output, 'error': error}
 
         except subprocess.TimeoutExpired:
-            return {'success': False, 'output': '', 'error': f"Timeout durante l'esecuzione ({config['timeout']}s)"}
+            return {'success': False, 'output': '', 'error': f"Timeout during execution ({config['timeout']}s)"}
         except Exception as e:
-            return {'success': False, 'output': '', 'error': f"Errore durante l'esecuzione: {str(e)}"}
+            return {'success': False, 'output': '', 'error': f"Error during execution: {str(e)}"}
 
     def test_language_execution(self, language, config):
-        """Testa l'esecuzione di un linguaggio"""
+        """Tests the execution of a language"""
         try:
             temp_file = self.create_temp_file(config['test_code'], config['extension'], 'test', language)
             if not temp_file:
@@ -368,7 +368,7 @@ func main() {
 
             executable_path = None
 
-            # Compilazione se necessaria
+            # Compilation if necessary
             if config['type'] in ['compiled', 'transpiled']:
                 compile_result = self.compile_code(temp_file, config, language)
                 if not compile_result['success']:
@@ -376,7 +376,7 @@ func main() {
                     return False
                 executable_path = compile_result['executable']
 
-            # Esecuzione
+            # Execution
             run_result = self.run_code(temp_file, config, language, executable_path)
             success = run_result['success'] and "Hello from" in run_result.get('output', '')
 
@@ -384,7 +384,7 @@ func main() {
                 print(f" Test output: {run_result.get('output', '')[:50]}...")
                 print(f" Test error: {run_result.get('error', '')[:50]}...")
 
-            # Pulizia
+            # Cleanup
             self.cleanup_temp_files([temp_file])
             if executable_path and os.path.exists(executable_path):
                 try:
@@ -399,21 +399,21 @@ func main() {
             return False
 
     def detect_available_languages(self):
-        """Rileva i linguaggi disponibili"""
-        print(" Rilevamento linguaggi disponibili...")
+        """Detects available languages"""
+        print(" Detecting available languages...")
 
         for language, config in self.language_config.items():
             print(f" Testing {language.upper()}... ", end="")
 
-            # Estrai i comandi base dalle configurazioni
+            # Extract base commands from configurations
             commands_to_check = []
 
             if config['type'] in ['compiled', 'transpiled']:
-                # Per i linguaggi compilati, estrai il comando base dal compiler
+                # For compiled languages, extract the base command from the compiler
                 compiler_cmd = config['compiler']
                 if isinstance(compiler_cmd, list):
                     base_cmd = compiler_cmd[0] if len(compiler_cmd) > 0 else None
-                    # Se è un comando conda, estrai il comando reale
+                    # If it's a conda command, extract the real command
                     if base_cmd == 'conda' and len(compiler_cmd) > 4:
                         base_cmd = compiler_cmd[4]
                     elif isinstance(base_cmd, str):
@@ -422,12 +422,12 @@ func main() {
                 else:
                     commands_to_check.append(compiler_cmd)
 
-            # Estrai il comando executor
+            # Extract executor command
             if 'executor' in config:
                 executor_cmd = config['executor']
                 if isinstance(executor_cmd, list):
                     base_cmd = executor_cmd[0] if len(executor_cmd) > 0 else None
-                    # Se è un comando conda, estrai il comando reale
+                    # If it's a conda command, extract the real command
                     if base_cmd == 'conda' and len(executor_cmd) > 4:
                         base_cmd = executor_cmd[4]
                     elif isinstance(base_cmd, str):
@@ -436,7 +436,7 @@ func main() {
                 else:
                     commands_to_check.append(executor_cmd)
 
-            # Rimuovi duplicati e argomenti
+            # Remove duplicates and empty commands
             commands_to_check = [cmd for cmd in set(commands_to_check) if cmd and not cmd.startswith('-')]
 
             missing_commands = []
@@ -445,25 +445,25 @@ func main() {
                     missing_commands.append(cmd)
 
             if missing_commands:
-                print(f" comando '{missing_commands[0]}' non trovato")
+                print(f" command '{missing_commands[0]}' not found")
                 continue
 
-            # Test di esecuzione
+            # Execution test
             try:
                 if self.test_language_execution(language, config):
                     self.available_languages[language] = config
-                    print(" disponibile")
+                    print(" available")
                 else:
-                    print(" test fallito")
+                    print(" test failed")
             except Exception as e:
-                print(f" errore nel test: {str(e)[:30]}...")
+                print(f" error in test: {str(e)[:30]}...")
 
-        print(f"\n Linguaggi disponibili: {len(self.available_languages)}")
+        print(f"\n Available languages: {len(self.available_languages)}")
         for lang in sorted(self.available_languages.keys()):
             print(f" • {lang.upper()}")
 
     def cleanup_temp_files(self, file_list):
-        """Pulisce i file temporanei"""
+        """Cleans up temporary files"""
         for file_path in file_list:
             try:
                 if os.path.exists(file_path):
@@ -472,11 +472,11 @@ func main() {
                 pass
 
     def execute_code(self, code, language, task_name):
-        """Esegue il codice per il benchmark"""
+        """Executes the code for the benchmark"""
         if language not in self.available_languages:
             return {
                 'success': False,
-                'error': f'Linguaggio {language} non disponibile',
+                'error': f'Language {language} not available',
                 'output': '',
                 'execution_time': 0
             }
@@ -485,36 +485,36 @@ func main() {
         start_time = time.time()
 
         try:
-            # Crea file temporaneo
+            # Create temporary file
             temp_file = self.create_temp_file(code, config['extension'], task_name, language)
             if not temp_file:
                 return {
                     'success': False,
-                    'error': 'Impossibile creare file temporaneo',
+                    'error': 'Unable to create temporary file',
                     'output': '',
                     'execution_time': time.time() - start_time
                 }
 
             executable_path = None
 
-            # Compilazione se necessaria
+            # Compilation if necessary
             if config['type'] in ['compiled', 'transpiled']:
                 compile_result = self.compile_code(temp_file, config, language)
                 if not compile_result['success']:
                     self.cleanup_temp_files([temp_file])
                     return {
                         'success': False,
-                        'error': f'Errore compilazione: {compile_result["error"]}',
+                        'error': f'Compilation error: {compile_result["error"]}',
                         'output': '',
                         'execution_time': time.time() - start_time
                     }
                 executable_path = compile_result['executable']
 
-            # Esecuzione
+            # Execution
             run_result = self.run_code(temp_file, config, language, executable_path)
             execution_time = time.time() - start_time
 
-            # Pulizia
+            # Cleanup
             files_to_clean = [temp_file]
             if executable_path and os.path.exists(executable_path):
                 files_to_clean.append(executable_path)

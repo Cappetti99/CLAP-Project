@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Carbon Benchmark - Sistema di benchmarking per misurare emissioni CO2 medie
-Esegue ogni codice 30 volte per calcolare statistiche accurate delle emissioni
+Carbon Benchmark - Benchmarking system for measuring average CO2 emissions
+Runs each code 30 times to calculate accurate emissions statistics
 """
 
 import os
@@ -17,7 +17,7 @@ from datetime import datetime
 from pathlib import Path
 from tqdm import tqdm
 
-# Aggiunge il path per importare i moduli SWAM
+# Adds the path to import SWAM modules
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 modules_path = os.path.join(project_root, 'modules')
@@ -29,7 +29,7 @@ try:
     CARBON_TRACKING_AVAILABLE = True
 except ImportError:
     try:
-        # Fallback per import diretto
+        # Fallback for direct import
         from carbon_tracker import start_carbon_tracking, stop_carbon_tracking, CODECARBON_AVAILABLE
         from smart_executor import SmartExecutor
         CARBON_TRACKING_AVAILABLE = True
@@ -38,15 +38,15 @@ except ImportError:
 
 
 class CarbonBenchmark:
-    """Sistema di benchmarking per misurare emissioni CO2 con ripetizioni multiple"""
+    """Benchmarking system for measuring CO2 emissions with multiple repetitions"""
 
     def __init__(self, iterations=30):
         self.iterations = iterations
         self.results_dir = "results/carbon_benchmark"
         self.code_base_path = "data/generated/code_snippets"
         self.executor = SmartExecutor()
-        
-        # Crea un logger semplice
+
+        # Create a simple logger
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.DEBUG)
         if not self.logger.handlers:
@@ -57,25 +57,25 @@ class CarbonBenchmark:
             self.logger.addHandler(handler)
             
         self.benchmark_results = {}
-        
-        # Statistiche sui fallimenti per linguaggio
+
+        # Statistics on failures by language
         self.language_failures = {}
 
-        # Crea directory per i risultati
+        # Create directory for results
         os.makedirs(self.results_dir, exist_ok=True)
 
         print(f" CARBON BENCHMARK SYSTEM")
-        print(f" Configurato per {self.iterations} iterazioni per codice")
-        print(f" Risultati salvati in: {self.results_dir}")
+        print(f" Configured for {self.iterations} iterations per code")
+        print(f" Results saved in: {self.results_dir}")
 
         if not CARBON_TRACKING_AVAILABLE:
-            print(" Carbon tracking non disponibile")
+            print(" Carbon tracking not available")
             return
     
     def format_co2_value(self, kg_value, unit='mg'):
-        """Converte e formatta i valori CO2 da kg a unità più leggibili."""
+        """Converts and formats CO2 values from kg to more readable units."""
         if unit == 'mg':
-            # Converte da kg a mg (1 kg = 1,000,000 mg)
+            # Converts from kg to mg (1 kg = 1,000,000 mg)
             mg_value = kg_value * 1_000_000
             if mg_value < 0.001:
                 return f"{mg_value:.6f} mg CO2eq"
@@ -84,37 +84,37 @@ class CarbonBenchmark:
             else:
                 return f"{mg_value:.2f} mg CO2eq"
         elif unit == 'g':
-            # Converte da kg a g (1 kg = 1,000 g)
+            # Converts from kg to g (1 kg = 1,000 g)
             g_value = kg_value * 1_000
             return f"{g_value:.6f} g CO2eq"
         else:
-            # Mantiene in kg
+            # Keeps in kg
             return f"{kg_value:.8f} kg CO2eq"
 
     def benchmark_single_execution(self, code, language, task_name, iteration):
-        """Esegue un singolo benchmark di un codice"""
+        """Runs a single benchmark of a code"""
         session_id = f"{task_name}_{language}_iter{iteration:02d}_{datetime.now().strftime('%H%M%S')}"
 
         try:
-            # Avvia tracking
+            # Start tracking
             if CARBON_TRACKING_AVAILABLE:
                 start_carbon_tracking(f"{task_name}_benchmark", f"{language}_iter{iteration}")
 
             start_time = time.time()
 
-            # Disabilita temporaneamente il tracking nel smart_executor per evitare doppio tracking
+            # Temporarily disable tracking in smart_executor to avoid double tracking
             original_tracking = getattr(self.executor, 'disable_carbon_tracking', False)
             self.executor.disable_carbon_tracking = True
 
-            # Esegui il codice
+            # Execute the code
             result = self.executor.execute_code(code, language, f"{task_name}_benchmark_iter{iteration}")
 
-            # Ripristina il tracking del smart_executor
+            # Restore smart_executor tracking
             self.executor.disable_carbon_tracking = original_tracking
 
             execution_time = time.time() - start_time
 
-            # Ferma tracking e ottieni emissioni
+            # Stop tracking and get emissions
             emissions = 0.0
             if CARBON_TRACKING_AVAILABLE:
                 emissions = stop_carbon_tracking()
@@ -144,19 +144,19 @@ class CarbonBenchmark:
             }
 
     def determine_category(self, task_name, language):
-        """Determina la categoria di un task cercando in tutte le sottodirectory."""
+        """Determines the category of a task by searching all subdirectories."""
         categories = ['functional', 'imperative', 'oop', 'scientific', 'scripting']
         
         for category in categories:
             category_path = os.path.join(self.code_base_path, category, language)
             if os.path.exists(category_path):
-                # Cerca file in questa categoria
+                # Search for files in this category
                 files = glob.glob(os.path.join(category_path, "snippet_*.*"))
                 for file_path in files:
                     filename = os.path.basename(file_path)
                     name_part = filename.replace("snippet_", "").rsplit(".", 1)[0]
-                    
-                    # Rimuovi il numero iniziale se presente
+
+                    # Remove the leading number if present
                     if "_" in name_part:
                         parts = name_part.split("_", 1)
                         if parts[0].isdigit():
@@ -166,24 +166,24 @@ class CarbonBenchmark:
                     else:
                         task_in_filename = name_part
                     
-                    # Confronta con il nome del task
+                    # Compare with task name
                     normalized_task_name = task_name.replace(" ", "_")
                     
                     if (task_in_filename.lower() == normalized_task_name.lower() or 
                         normalized_task_name.lower() in task_in_filename.lower() or
                         task_in_filename.lower() in normalized_task_name.lower()):
                         return category
-        
-        # Default alla prima categoria se non trovato
+
+        # Default to the first category if not found
         return 'scripting'
     
     def load_task_code(self, task_name, language, category_subdir):
-        """Carica il codice per un task specifico dal dataset SWAM."""
+        """Loads the code for a specific task from the SWAM dataset."""
         try:
-            # Cerca in tutte le categorie del dataset SWAM
+            # Search in all categories of the SWAM dataset
             categories = ['algorithms', 'basic', 'io', 'mathematics', 'misc', 'strings']
-            
-            # Mappa i nomi dei linguaggi al formato usato nel dataset
+
+            # Map programming language names to the format used in the dataset
             language_mapping = {
                 'python': 'python',
                 'javascript': 'javascript', 
@@ -204,15 +204,15 @@ class CarbonBenchmark:
             
             dataset_language = language_mapping.get(language, language)
             normalized_task_name = task_name.replace(" ", "_")
-            
-            # Cerca in tutte le categorie
+
+            # Search in all categories
             for category in categories:
                 base_path = os.path.join(self.code_base_path, category, dataset_language)
                 
                 if not os.path.exists(base_path):
                     continue
-                    
-                # Pattern per trovare file che contengono il nome del task
+
+                # Pattern to find files containing the task name
                 pattern = f"snippet_*_{normalized_task_name}.*"
                 files = glob.glob(os.path.join(base_path, pattern))
                 
@@ -220,15 +220,15 @@ class CarbonBenchmark:
                     try:
                         with open(file_path, 'r', encoding='utf-8') as f:
                             content = f.read()
-                            # Applica pulizia caratteri invisibili
+                            # Apply invisible character cleaning
                             content = self.executor.clean_code_content(content)
-                            self.logger.debug(f"Trovato codice per '{task_name}' in {file_path}")
+                            self.logger.debug(f"Found code for '{task_name}' in {file_path}")
                             return content
                     except Exception as e:
-                        self.logger.warning(f"Errore lettura file {file_path}: {e}")
+                        self.logger.warning(f"Error reading file {file_path}: {e}")
                         continue
-            
-            # Se non trovato con il pattern esatto, prova pattern più flessibile
+
+            # If not found with the exact pattern, try a more flexible pattern
             for category in categories:
                 base_path = os.path.join(self.code_base_path, category, dataset_language)
                 
@@ -239,33 +239,33 @@ class CarbonBenchmark:
                 
                 for file_path in files:
                     filename = os.path.basename(file_path)
-                    # Controlla se il nome del task è contenuto nel nome del file
+                    # Check if the task name is contained in the file name
                     if normalized_task_name.lower() in filename.lower():
                         try:
                             with open(file_path, 'r', encoding='utf-8') as f:
                                 content = f.read()
-                                # Applica pulizia caratteri invisibili
+                                # Apply invisible character cleaning
                                 content = self.executor.clean_code_content(content)
-                                self.logger.debug(f"Trovato codice per '{task_name}' in {file_path} (match flessibile)")
+                                self.logger.debug(f"Found code for '{task_name}' in {file_path} (flexible match)")
                                 return content
                         except Exception as e:
-                            self.logger.warning(f"Errore lettura file {file_path}: {e}")
+                            self.logger.warning(f"Error reading file {file_path}: {e}")
                             continue
-            
-            self.logger.debug(f"Nessun file trovato per task '{task_name}' in {language}")
+
+            self.logger.debug(f"No file found for task '{task_name}' in {language}")
             return None
                 
         except Exception as e:
-            self.logger.error(f"Errore nel caricamento del codice per {task_name}: {e}")
+            self.logger.error(f"Error loading code for {task_name}: {e}")
             return None
 
     def generate_missing_code(self, task_name, target_language, source_language=None):
         """
-        Genera automaticamente il codice per un task mancante in un linguaggio target.
-        Cerca prima un'implementazione di riferimento in un altro linguaggio.
+        Automatically generate code for a missing task in a target language.
+        First, it looks for a reference implementation in another language.
         """
         try:
-            # Se non specificato, cerca un linguaggio sorgente disponibile
+            # If not specified, look for an available source language
             if not source_language:
                 reference_languages = ['python', 'javascript', 'java', 'cpp', 'c']
                 for ref_lang in reference_languages:
@@ -277,39 +277,39 @@ class CarbonBenchmark:
                             break
                 
                 if not source_language:
-                    self.logger.warning(f"Nessun codice di riferimento trovato per '{task_name}'")
+                    self.logger.warning(f"No reference code found for '{task_name}'")
                     return None
 
-            # Carica il codice sorgente
+            # Load the source code
             source_category = self.determine_category(task_name, source_language)
             source_code = self.load_task_code(task_name, source_language, source_category)
             
             if not source_code:
-                self.logger.warning(f"Codice sorgente non trovato per '{task_name}' in {source_language}")
+                self.logger.warning(f"No source code found for '{task_name}' in {source_language}")
                 return None
 
-            # Genera il codice convertito usando dei template base
+            # Generate the converted code using base templates
             converted_code = self.convert_code_to_language(source_code, source_language, target_language, task_name)
             
             if converted_code:
-                # Salva il codice generato
+                # Save the generated code
                 self.save_generated_code(task_name, target_language, converted_code)
-                self.logger.info(f"Codice generato per '{task_name}' in {target_language}")
+                self.logger.info(f"Generated code for '{task_name}' in {target_language}")
                 return converted_code
             
             return None
             
         except Exception as e:
-            self.logger.error(f"Errore nella generazione del codice per {task_name} in {target_language}: {e}")
+            self.logger.error(f"Error generating code for {task_name} in {target_language}: {e}")
             return None
 
     def convert_code_to_language(self, source_code, source_lang, target_lang, task_name):
         """
-        Converte il codice da un linguaggio a un altro usando template e pattern.
-        Questa è una versione semplificata - in futuro si potrebbe integrare con AI.
+        Convert code from one language to another using templates and patterns.
+        This is a simplified version - in the future it could be integrated with AI.
         """
         try:
-            # Template base per diversi linguaggi
+            # Base template for different languages
             if target_lang == 'python':
                 return self.convert_to_python(source_code, source_lang, task_name)
             elif target_lang == 'javascript':
@@ -341,16 +341,16 @@ class CarbonBenchmark:
             elif target_lang == 'csharp':
                 return self.convert_to_csharp(source_code, source_lang, task_name)
             else:
-                # Fallback: crea un template generico
+                # Fallback: create a generic template
                 return self.create_generic_template(target_lang, task_name)
                 
         except Exception as e:
-            self.logger.error(f"Errore nella conversione da {source_lang} a {target_lang}: {e}")
+            self.logger.error(f"Error converting from {source_lang} to {target_lang}: {e}")
             return None
 
     def convert_to_python(self, source_code, source_lang, task_name):
-        """Converte codice in Python"""
-        # Template Python base
+        """Convert code to Python"""
+        # Base Python template
         template = f'''#!/usr/bin/env python3
 """
 {task_name} implementation
@@ -392,7 +392,7 @@ console.log(`Result: ${{result}}`);
         return template
 
     def convert_to_java(self, source_code, source_lang, task_name):
-        """Converte codice in Java"""
+        """Converts code into Java"""
         class_name = ''.join(word.capitalize() for word in task_name.replace('-', ' ').split())
         template = f'''/**
  * {task_name} implementation
@@ -416,7 +416,7 @@ public class {class_name} {{
         return template
 
     def convert_to_cpp(self, source_code, source_lang, task_name):
-        """Converte codice in C++"""
+        """Convert code to C++"""
         template = f'''/**
  * {task_name} implementation
  * Auto-generated from {source_lang}
@@ -438,7 +438,7 @@ int main() {{
         return template
 
     def convert_to_c(self, source_code, source_lang, task_name):
-        """Converte codice in C"""
+        """Convert code to C"""
         template = f'''/**
  * {task_name} implementation
  * Auto-generated from {source_lang}
@@ -461,7 +461,7 @@ int main() {{
         return template
 
     def convert_to_php(self, source_code, source_lang, task_name):
-        """Converte codice in PHP"""
+        """Convert code to PHP"""
         template = f'''<?php
 /**
  * {task_name} implementation
@@ -481,7 +481,7 @@ echo "Result: " . ($result ? 'true' : 'false') . "\\n";
         return template
 
     def convert_to_ruby(self, source_code, source_lang, task_name):
-        """Converte codice in Ruby"""
+        """Convert code to Ruby"""
         template = f'''#!/usr/bin/env ruby
 # {task_name} implementation
 # Auto-generated from {source_lang}
@@ -498,7 +498,7 @@ puts "Result: #{{result}}"
         return template
 
     def convert_to_r(self, source_code, source_lang, task_name):
-        """Converte codice in R"""
+        """Convert code to R"""
         template = f'''# {task_name} implementation
 # Auto-generated from {source_lang}
 
@@ -514,7 +514,7 @@ cat("Result:", result, "\\n")
         return template
 
     def convert_to_julia(self, source_code, source_lang, task_name):
-        """Converte codice in Julia"""
+        """Convert code to Julia"""
         func_name = task_name.lower().replace(' ', '_').replace('-', '_')
         template = f'''# {task_name} implementation
 # Auto-generated from {source_lang}
@@ -531,7 +531,7 @@ println("Result: $result")
         return template
 
     def convert_to_haskell(self, source_code, source_lang, task_name):
-        """Converte codice in Haskell"""
+        """Convert code to Haskell"""
         func_name = task_name.lower().replace(' ', '_').replace('-', '_')
         template = f'''-- {task_name} implementation
 -- Auto-generated from {source_lang}
@@ -550,7 +550,7 @@ main = do
         return template
 
     def convert_to_ocaml(self, source_code, source_lang, task_name):
-        """Converte codice in OCaml"""
+        """Convert code to OCaml"""
         func_name = task_name.lower().replace(' ', '_').replace('-', '_')
         template = f'''(* {task_name} implementation *)
 (* Auto-generated from {source_lang} *)
@@ -567,7 +567,7 @@ let () =
         return template
 
     def convert_to_go(self, source_code, source_lang, task_name):
-        """Converte codice in Go"""
+        """Convert code to Go"""
         func_name = task_name.lower().replace(' ', '_').replace('-', '_')
         template = f'''// {task_name} implementation
 // Auto-generated from {source_lang}
@@ -589,7 +589,7 @@ func main() {{
         return template
 
     def convert_to_rust(self, source_code, source_lang, task_name):
-        """Converte codice in Rust"""
+        """Convert code to Rust"""
         func_name = task_name.lower().replace(' ', '_').replace('-', '_')
         template = f'''// {task_name} implementation
 // Auto-generated from {source_lang}
@@ -608,7 +608,7 @@ fn main() {{
         return template
 
     def convert_to_typescript(self, source_code, source_lang, task_name):
-        """Converte codice in TypeScript"""
+        """Convert code to TypeScript"""
         func_name = task_name.lower().replace(' ', '_').replace('-', '_')
         template = f'''/**
  * {task_name} implementation
@@ -627,7 +627,7 @@ console.log(`Result: ${{result}}`);
         return template
 
     def convert_to_csharp(self, source_code, source_lang, task_name):
-        """Converte codice in C#"""
+        """Convert code to C#"""
         class_name = ''.join(word.capitalize() for word in task_name.replace('-', ' ').split())
         template = f'''/**
  * {task_name} implementation
@@ -655,7 +655,7 @@ class {class_name}
         return template
 
     def create_generic_template(self, language, task_name):
-        """Crea un template generico per linguaggi non supportati"""
+        """Create a generic template for unsupported languages"""
         template = f'''# {task_name} implementation
 # Auto-generated template for {language}
 # TODO: Implement {task_name} in {language}
@@ -666,33 +666,33 @@ print("Executing {task_name} in {language}")
         return template
 
     def save_generated_code(self, task_name, language, code):
-        """Salva il codice generato nella struttura appropriata"""
+        """Save the generated code in the appropriate structure"""
         try:
-            # Determina la categoria (usa 'generated' come fallback)
+            # Determine the category (use 'generated' as a fallback)
             category = self.determine_category(task_name, language) or 'generated'
-            
-            # Crea il percorso per il file generato
+
+            # Create the path for the generated file
             lang_dir = os.path.join(self.code_base_path, category, language)
             os.makedirs(lang_dir, exist_ok=True)
-            
-            # Nome del file
+
+            # File name
             extension = self.get_file_extension(language)
             filename = f"generated_{task_name.replace(' ', '_')}.{extension}"
             file_path = os.path.join(lang_dir, filename)
-            
-            # Salva il file
+
+            # Save the file
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(code)
-            
-            self.logger.info(f"Codice salvato in: {file_path}")
+
+            self.logger.info(f"Code saved to: {file_path}")
             return file_path
             
         except Exception as e:
-            self.logger.error(f"Errore nel salvataggio del codice generato: {e}")
+            self.logger.error(f"Error saving generated code: {e}")
             return None
             
     def get_file_extension(self, language):
-        """Restituisce l'estensione del file per il linguaggio."""
+        """Return the file extension for the language."""
         extensions = {
             'python': 'py',
             'java': 'java',
@@ -718,11 +718,11 @@ print("Executing {task_name} in {language}")
         return extensions.get(language, language)
 
     def is_code_executable(self, code, language):
-        """Verifica se il codice è potenzialmente eseguibile"""
+        """Check if the code is potentially executable"""
         if not code or len(code.strip()) < 10:
-            return False, "Codice troppo corto"
+            return False, "Code too short"
 
-        # Pattern che indicano codice non eseguibile
+        # Patterns indicating non-executable code
         problematic_patterns = {
             'python': [
                 r'>>>\s',  # Interactive prompt
@@ -744,14 +744,14 @@ print("Executing {task_name} in {language}")
             ]
         }
 
-        # Verifica pattern problematici
+        # Check problematic patterns
         patterns_to_check = problematic_patterns.get(language, []) + problematic_patterns.get('all', [])
 
         for pattern in patterns_to_check:
             if re.search(pattern, code, re.MULTILINE | re.IGNORECASE):
-                return False, f"Codice non eseguibile: contiene pattern '{pattern[:20]}...'"
+                return False, f"Code not executable: contains pattern '{pattern[:20]}...'"
 
-        # Verifica se è principalmente commenti
+        # Check if it's mostly comments
         lines = code.split('\n')
         code_lines = 0
         comment_lines = 0
@@ -766,20 +766,20 @@ print("Executing {task_name} in {language}")
                 code_lines += 1
 
         if code_lines == 0:
-            return False, "Solo commenti, nessun codice eseguibile"
+            return False, "Only comments, no executable code"
 
         if comment_lines > code_lines * 2:
-            return False, "Troppi commenti rispetto al codice"
+            return False, "Too many comments compared to code"
 
         return True, "OK"
 
     def benchmark_task_language(self, task_name, language, code):
-        print(f"\n📊 Benchmark: {task_name} in {language}")
+        print(f"\n Benchmark: {task_name} in {language}")
 
         iteration_results = []
         successful_runs = 0
 
-        # Usa tqdm per la barra di progresso delle iterazioni
+        # Use tqdm for the progress bar of iterations
         desc = f"{language:>12}"
         with tqdm(total=self.iterations, desc=desc, unit="iter", 
                   bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]") as pbar:
@@ -802,13 +802,13 @@ print("Executing {task_name} in {language}")
                     })
 
                 pbar.update(1)
-                # Piccola pausa tra iterazioni per stabilizzare le misurazioni
+                # Short pause between iterations to stabilise measurements
                 time.sleep(0.1)
 
-        # Calcola statistiche
+        # Calculate statistics
         success_rate = (successful_runs / self.iterations) * 100
-        
-        # Traccia i fallimenti per linguaggio
+
+        # Track failures by language
         if successful_runs == 0:
             if language not in self.language_failures:
                 self.language_failures[language] = {
@@ -819,14 +819,14 @@ print("Executing {task_name} in {language}")
             
             self.language_failures[language]['failed_tasks'].append(task_name)
             self.language_failures[language]['total_failures'] += 1
-            
-            # Raccoglie esempi di errori (max 3 per linguaggio)
+
+            # Collect error samples (max 3 per language)
             failed_results = [r for r in iteration_results if not r['success']]
             if failed_results and len(self.language_failures[language]['sample_errors']) < 3:
                 sample_error = failed_results[0]['error'][:100] + "..." if len(failed_results[0]['error']) > 100 else failed_results[0]['error']
                 self.language_failures[language]['sample_errors'].add(sample_error)
 
-        # Filtra solo le esecuzioni riuscite per le statistiche
+        # Filter only successful executions for statistics
         successful_results = [r for r in iteration_results if r['success']]
 
         statistics_data = {
@@ -861,153 +861,153 @@ print("Executing {task_name} in {language}")
                 'total': sum(execution_times)
             }
 
-        # Stampa risultati
+        # Print results
         self.print_benchmark_summary(task_name, language, statistics_data)
 
         return statistics_data
 
     def print_benchmark_summary(self, task_name, language, stats):
-        """Stampa un riassunto del benchmark"""
-        print(f"\n RISULTATI BENCHMARK: {task_name} - {language}")
+        """Print a summary of the benchmark"""
+        print(f"\n BENCHMARK RESULTS: {task_name} - {language}")
         print("-" * 60)
-        print(f" Esecuzioni riuscite: {stats['successful_runs']}/{stats['total_iterations']} ({stats['success_rate']:.1f}%)")
+        print(f" Successful executions: {stats['successful_runs']}/{stats['total_iterations']} ({stats['success_rate']:.1f}%)")
 
         if stats['emissions_stats']:
             em = stats['emissions_stats']
-            print(f" EMISSIONI CO2:")
-            print(f" • Media: {self.format_co2_value(em['mean'])}")
-            print(f" • Mediana: {self.format_co2_value(em['median'])}")
+            print(f" CO2 EMISSIONS:")
+            print(f" • Mean: {self.format_co2_value(em['mean'])}")
+            print(f" • Median: {self.format_co2_value(em['median'])}")
             print(f" • Min-Max: {self.format_co2_value(em['min'])} - {self.format_co2_value(em['max'])}")
-            print(f" • Deviazione std: {self.format_co2_value(em['std_dev'])}")
-            print(f" • Totale {self.iterations} esecuzioni: {self.format_co2_value(em['total'])}")
+            print(f" • Std Dev: {self.format_co2_value(em['std_dev'])}")
+            print(f" • Total {self.iterations} executions: {self.format_co2_value(em['total'])}")
 
             et = stats['execution_time_stats']
-            print(f" TEMPI ESECUZIONE:")
-            print(f" • Media: {et['mean']:.3f}s")
-            print(f" • Mediana: {et['median']:.3f}s")
+            print(f" EXECUTION TIME:")
+            print(f" • Mean: {et['mean']:.3f}s")
+            print(f" • Median: {et['median']:.3f}s")
             print(f" • Min-Max: {et['min']:.3f} - {et['max']:.3f}s")
-            print(f" • Deviazione std: {et['std_dev']:.3f}s")
+            print(f" • Std Dev: {et['std_dev']:.3f}s")
         else:
-            print(" Nessuna esecuzione riuscita - impossibile calcolare statistiche")
+            print(" No successful executions - unable to calculate statistics")
 
     def benchmark_all_tasks(self):
-        """Esegue benchmark su TUTTE le task disponibili nel dataset (modalità COMPLETO)"""
-        
-        print(f"\n AVVIO CARBON BENCHMARK SYSTEM - MODALITÀ COMPLETA")
+        """Run benchmark on ALL tasks available in the dataset (FULL mode)"""
+
+        print(f"\n STARTING CARBON BENCHMARK SYSTEM - FULL MODE")
         print("=" * 60)
 
         if not CARBON_TRACKING_AVAILABLE:
-            print(" Carbon tracking non disponibile - uscita")
+            print(" Carbon tracking not available - exiting")
             return {}
 
-        # Rileva linguaggi disponibili dall'executor
+        # Detect available languages from the executor
         available_languages = list(self.executor.available_languages.keys())
 
-        print(f" Linguaggi disponibili: {len(available_languages)}")
-        print(f" Linguaggi: {', '.join(available_languages)}")
+        print(f" Available languages: {len(available_languages)}")
+        print(f" Languages: {', '.join(available_languages)}")
 
         if not available_languages:
-            print(" Nessun linguaggio disponibile per il benchmark")
+            print(" No languages available for benchmarking")
             return {}
 
-        # Scansiona direttamente il dataset per trovare TUTTE le task
-        print(" Scansionando dataset completo per trovare tutte le task...")
+        # Scan the entire dataset to find ALL tasks
+        print(" Scanning complete dataset to find all tasks...")
         all_tasks = set()
-        
-        # Scansiona tutte le categorie
+
+        # Scan all categories
         categories = ['algorithms', 'basic', 'io', 'mathematics', 'misc', 'strings']
         
         for category in categories:
             category_path = os.path.join(self.code_base_path, category)
             if os.path.exists(category_path):
-                # Per ogni linguaggio nella categoria
+                # For each programming language in the category
                 for lang_dir in os.listdir(category_path):
                     lang_path = os.path.join(category_path, lang_dir)
                     if os.path.isdir(lang_path):
-                        # Trova tutti i file snippet
+                        # Find all snippet files
                         for file_name in os.listdir(lang_path):
                             if file_name.startswith('snippet_') and '_' in file_name:
-                                # Estrae il nome della task dal filename
+                                # Extract task name from filename
                                 task_name = self.extract_task_name_from_filename(file_name)
                                 if task_name:
                                     all_tasks.add(task_name)
 
-        # Filtra solo le task che hanno almeno 2 linguaggi disponibili
+        # Filter only tasks that have at least 2 available languages
         valid_tasks = []
-        print(" Verificando disponibilità task per linguaggi disponibili...")
-        
+        print(" Checking task availability for available languages...")
+
         for task_name in sorted(all_tasks):
             available_count = 0
             for language in available_languages:
                 if self.task_exists_for_language(task_name, language):
                     available_count += 1
-            
-            # Includi task che hanno almeno 2 linguaggi disponibili
+
+            # Include tasks that have at least 2 available languages
             if available_count >= 2:
                 valid_tasks.append({
                     'name': task_name,
                     'available_languages': available_count
                 })
 
-        # Ordina per numero di linguaggi disponibili (discendente)
+        # Sort by number of available languages (descending)
         valid_tasks.sort(key=lambda x: x['available_languages'], reverse=True)
         selected_tasks = [task['name'] for task in valid_tasks]
 
-        print(f" Task totali trovate nel dataset: {len(all_tasks)}")
-        print(f" Task valide (≥2 linguaggi disponibili): {len(selected_tasks)}")
-        print(f" Tempo stimato: ~{len(selected_tasks) * len(available_languages) * self.iterations * 0.5 / 3600:.1f} ore")
-        
+        print(f" Total tasks found in dataset: {len(all_tasks)}")
+        print(f" Valid tasks (≥2 available languages): {len(selected_tasks)}")
+        print(f" Estimated time: ~{len(selected_tasks) * len(available_languages) * self.iterations * 0.5 / 3600:.1f} hours")
+
         if not selected_tasks:
-            print(" Nessuna task valida trovata")
+            print(" No valid tasks found")
             return {}
 
-        # Conferma dall'utente per benchmark molto grandi
+        # User confirmation for very large benchmarks
         if len(selected_tasks) > 100:
-            print(f"\n⚠️  ATTENZIONE: Benchmark molto esteso!")
-            print(f"   • {len(selected_tasks)} task")
-            print(f"   • {len(available_languages)} linguaggi") 
-            print(f"   • {self.iterations} iterazioni per combinazione")
-            print(f"   • {len(selected_tasks) * len(available_languages) * self.iterations:,} esecuzioni totali")
-            
+            print(f"\n  WARNING: Very extensive benchmark!")
+            print(f"   • {len(selected_tasks)} tasks")
+            print(f"   • {len(available_languages)} languages")
+            print(f"   • {self.iterations} iterations per combination")
+            print(f"   • {len(selected_tasks) * len(available_languages) * self.iterations:,} total executions")
+
             try:
-                confirm = input("Procedere comunque? [s/N]: ").strip().lower()
+                confirm = input("Proceed anyway? [s/N]: ").strip().lower()
                 if confirm not in ['s', 'si', 'sì', 'y', 'yes']:
-                    print("❌ Benchmark annullato dall'utente")
+                    print("❌ Benchmark cancelled by user")
                     return {}
             except (EOFError, KeyboardInterrupt):
-                print("\n❌ Benchmark annullato")
+                print("\n❌ Benchmark cancelled")
                 return {}
 
-        # Esegui benchmark per ogni task/linguaggio
+        # Run benchmark for each task/language
         benchmark_data = {}
         total_combinations = len(selected_tasks) * len(available_languages)
-        
-        print(f"\n🚀 Avvio benchmark completo: {len(selected_tasks)} task × {len(available_languages)} linguaggi")
-        print(f"📊 Totale combinazioni: {total_combinations:,}")
+
+        print(f"\n Starting full benchmark: {len(selected_tasks)} tasks × {len(available_languages)} languages")
+        print(f" Total combinations: {total_combinations:,}")
         print("=" * 60)
 
-        # Usa tqdm per il progresso generale
-        with tqdm(total=total_combinations, desc="🔬 Benchmark Progress", unit="combo",
+        # Use tqdm for overall progress
+        with tqdm(total=total_combinations, desc=" Benchmark Progress", unit="combo",
                   bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]") as main_pbar:
             
             for task_name in selected_tasks:
                 benchmark_data[task_name] = {}
-                main_pbar.set_description(f"🔬 Task: {task_name[:25]}")
+                main_pbar.set_description(f" Task: {task_name[:25]}")
 
                 for language in available_languages:
-                    # Verifica se la task esiste per questo linguaggio
+                    # Check if the task exists for this language
                     if not self.task_exists_for_language(task_name, language):
                         benchmark_data[task_name][language] = {
                             'total_iterations': self.iterations,
                             'successful_runs': 0,
                             'success_rate': 0.0,
-                            'error': 'Task non disponibile per questo linguaggio'
+                            'error': 'Task not available for this language'
                         }
-                        main_pbar.set_postfix({'Lang': language, 'Status': '⚠️ Skip'})
+                        main_pbar.set_postfix({'Lang': language, 'Status': ' Skip'})
                         main_pbar.update(1)
                         continue
 
-                    # Carica il codice per questa task/linguaggio
+                    # Load code for this task/language
                     category_subdir = self.determine_category(task_name, language)
                     code = self.load_task_code(task_name, language, category_subdir)
 
@@ -1016,39 +1016,39 @@ print("Executing {task_name} in {language}")
                             'total_iterations': self.iterations,
                             'successful_runs': 0,
                             'success_rate': 0.0,
-                            'error': 'Codice non trovato nel dataset'
+                            'error': 'Code not found in dataset'
                         }
-                        main_pbar.set_postfix({'Lang': language, 'Status': '⚠️ No Code'})
+                        main_pbar.set_postfix({'Lang': language, 'Status': ' No Code'})
                         main_pbar.update(1)
                         continue
 
-                    # Aggiorna postfix con info corrente
-                    main_pbar.set_postfix({'Lang': language, 'Status': '🔄 Running'})
-                    
-                    # Esegui benchmark per questo linguaggio
+                    # Update postfix with current info
+                    main_pbar.set_postfix({'Lang': language, 'Status': ' Running'})
+
+                    # Run benchmark for this language
                     stats = self.benchmark_task_language(task_name, language, code)
                     benchmark_data[task_name][language] = stats
-                    
-                    # Aggiorna con risultato
+
+                    # Update with result
                     success_rate = stats.get('success_rate', 0)
                     status = '✅' if success_rate > 50 else '❌' if success_rate == 0 else '⚠️'
                     main_pbar.set_postfix({'Lang': language, 'Status': f'{status} {success_rate:.0f}%'})
                     main_pbar.update(1)
 
-        # Salva risultati
+        # Save results
         self.save_benchmark_results(benchmark_data)
         self.generate_benchmark_report(benchmark_data)
 
         return benchmark_data
 
     def extract_task_name_from_filename(self, filename):
-        """Estrae il nome della task dal nome del file"""
+        """Extract the task name from the filename"""
         try:
-            # Formato tipico: snippet_123_Task_name.ext
+            # Typical format: snippet_123_Task_name.ext
             if filename.startswith('snippet_') and '_' in filename:
-                parts = filename.split('_', 2)  # Divide in max 3 parti
+                parts = filename.split('_', 2)  # Split into max 3 parts
                 if len(parts) >= 3:
-                    # Rimuove l'estensione dal nome della task
+                    # Remove extension from task name
                     task_name = parts[2].rsplit('.', 1)[0]
                     return task_name
             return None
@@ -1056,7 +1056,7 @@ print("Executing {task_name} in {language}")
             return None
 
     def task_exists_for_language(self, task_name, language):
-        """Verifica se una task esiste per un determinato linguaggio"""
+        """Check if a task exists for a specific language"""
         try:
             category_subdir = self.determine_category(task_name, language)
             code = self.load_task_code(task_name, language, category_subdir)
@@ -1065,67 +1065,67 @@ print("Executing {task_name} in {language}")
             return False
 
     def benchmark_common_tasks(self, max_tasks=10):
-        """Esegue benchmark su task comuni tra linguaggi"""
-        
-        # Controlla se esiste il file di analisi task comuni
+        """Run benchmark on common tasks across languages"""
+
+        # Check if common tasks analysis file exists
         common_tasks_files = glob.glob("results/task_analysis/common_tasks.json")
         if not common_tasks_files:
-            print(" File task comuni non trovato.")
-            print(" Per generare il file common_tasks.json, esegui prima il comando:")
+            print(" Common tasks file not found.")
+            print(" To generate the common_tasks.json file, please run the following command:")
             print(" python main.py analyze")
             return {}
-        
-        # Ora procede con la logica esistente
+
+        # Now proceed with the existing logic
         if not common_tasks_files:
-            print(" Impossibile trovare o generare file task comuni")
+            print(" Unable to find or generate common tasks file")
             return {}
             
         common_tasks_file = common_tasks_files[0]
         
-        print(f"\n AVVIO CARBON BENCHMARK SYSTEM")
+        print(f"\n START CARBON BENCHMARK SYSTEM")
         print("=" * 60)
 
         if not CARBON_TRACKING_AVAILABLE:
-            print(" Carbon tracking non disponibile - uscita")
+            print(" Carbon tracking not available - exiting")
             return {}
 
-        # Rileva linguaggi disponibili dall'executor
+        # Detect available languages from executor
         available_languages = list(self.executor.available_languages.keys())
 
-        print(f" Linguaggi disponibili: {len(available_languages)}")
-        print(f" Linguaggi: {', '.join(available_languages)}")
+        print(f" Available languages: {len(available_languages)}")
+        print(f" Languages: {', '.join(available_languages)}")
 
         if not available_languages:
-            print(" Nessun linguaggio disponibile per il benchmark")
+            print(" No languages available for benchmarking")
             return {}
 
-        # Carica task comuni dal file
+        # Load common tasks from file
         try:
             with open(common_tasks_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 
                 if 'common_tasks' in data and isinstance(data['common_tasks'], list):
                     available_tasks = [task['name'] for task in data['common_tasks'] if 'name' in task]
-                    
-                    # Seleziona task secondo max_tasks
+
+                    # Select tasks according to max_tasks
                     if max_tasks and len(available_tasks) > max_tasks:
                         selected_tasks = available_tasks[:max_tasks]
-                        print(f" Task selezionate per benchmark: {len(selected_tasks)} (prime {max_tasks} task)")
+                        print(f" Selected tasks for benchmark: {len(selected_tasks)} (first {max_tasks} tasks)")
                     else:
                         selected_tasks = available_tasks
-                        print(f" Task selezionate per benchmark: {len(selected_tasks)}")
-                    
+                        print(f" Selected tasks for benchmark: {len(selected_tasks)}")
+
                     if not selected_tasks:
-                        print(" Nessuna task comune trovata")
+                        print(" No common tasks found")
                         return {}
                 else:
-                    print(" Formato task comuni non valido")
+                    print(" Invalid common tasks format")
                     return {}
         except Exception as e:
             print(f" Errore caricamento task: {e}")
             return {}
 
-        # Esegui benchmark per ogni task/linguaggio
+        # Run benchmark for each task/language combination
         benchmark_data = {}
         total_combinations = len(selected_tasks) * len(available_languages)
         current_combination = 0
@@ -1137,30 +1137,30 @@ print("Executing {task_name} in {language}")
 
             for language in available_languages:
                 current_combination += 1
-                print(f"\n Progresso: {current_combination}/{total_combinations} ({(current_combination/total_combinations)*100:.1f}%)")
+                print(f"\n Progress: {current_combination}/{total_combinations} ({(current_combination/total_combinations)*100:.1f}%)")
 
-                # Carica il codice per questa task/linguaggio
+                # Load code for this task/language
                 category_subdir = self.determine_category(task_name, language)
                 code = self.load_task_code(task_name, language, category_subdir)
 
                 if not code:
-                    print(f" ⚠️  File non trovato per {task_name} in {language} - saltato")
-                    # Salta questo task/linguaggio se non è disponibile nel dataset
+                    print(f" ⚠️  File not found for {task_name} in {language} - skipping")
+                    # Skip this task/language if not available in dataset
                     benchmark_data[task_name][language] = {
                         'total_iterations': self.iterations,
                         'successful_runs': 0,
                         'success_rate': 0.0,
-                        'error': 'File non disponibile nel dataset'
+                        'error': 'File not available in dataset'
                     }
                     continue
 
                 print(f"\n Benchmark: {task_name} in {language}")
 
-                # Esegui benchmark per questo linguaggio
+                # Run benchmark for this language
                 stats = self.benchmark_task_language(task_name, language, code)
                 benchmark_data[task_name][language] = stats
 
-        # Salva risultati
+        # Save results
         self.save_benchmark_results(benchmark_data)
         self.generate_benchmark_report(benchmark_data)
 
@@ -1170,12 +1170,12 @@ print("Executing {task_name} in {language}")
         """Salva i risultati del benchmark"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        # Salva dati completi
+        # Save detailed results
         detailed_file = os.path.join(self.results_dir, f"carbon_benchmark_detailed_{timestamp}.json")
         with open(detailed_file, 'w') as f:
             json.dump(benchmark_data, f, indent=2)
 
-        # Salva summary
+        # Save summary
         summary_data = {}
         for task_name, task_data in benchmark_data.items():
             summary_data[task_name] = {}
@@ -1192,13 +1192,13 @@ print("Executing {task_name} in {language}")
         with open(summary_file, 'w') as f:
             json.dump(summary_data, f, indent=2)
 
-        print(f"\n💾 Risultati salvati:")
-        print(f" Dettagliati: {detailed_file}")
+        print(f"\n Results saved:")
+        print(f" Detailed: {detailed_file}")
         print(f" Summary: {summary_file}")
 
     def generate_benchmark_report(self, benchmark_data):
-        """Genera un report finale del benchmark"""
-        print(f"\n CARBON BENCHMARK REPORT FINALE")
+        """Generate a final benchmark report"""
+        print(f"\n FINAL CARBON BENCHMARK REPORT")
         print("=" * 60)
 
         total_tasks = len(benchmark_data)
@@ -1225,31 +1225,31 @@ print("Executing {task_name} in {language}")
                     language_stats[language]['total_emissions'] += emissions
                     language_stats[language]['total_executions'] += executions
 
-        # Calcola medie per linguaggio
+        # Calculate averages per language
         for language in language_stats:
             if language_stats[language]['total_executions'] > 0:
                 language_stats[language]['avg_emissions_per_execution'] = \
                     language_stats[language]['total_emissions'] / language_stats[language]['total_executions']
 
-        # Lista completa dei linguaggi supportati
+        # Complete list of supported languages
         all_languages = [
             'python', 'javascript', 'java', 'cpp', 'c', 'ruby', 'php', 'r', 'julia', 
             'csharp', 'go', 'rust', 'haskell', 'ocaml', 'typescript'
         ]
-        
-        # Calcola statistiche sui linguaggi
+
+        # Calculate language statistics
         working_languages = set(language_stats.keys())
         failed_languages = set(all_languages) - working_languages
-        
-        print(f" STATISTICHE GENERALI:")
-        print(f" Task benchmarked: {total_tasks}")
-        print(f" Linguaggi supportati: {len(all_languages)}")
-        print(f" Linguaggi funzionanti: {len(working_languages)}/{len(all_languages)} ({len(working_languages)/len(all_languages)*100:.1f}%)")
-        print(f" Esecuzioni totali riuscite: {total_executions}")
-        print(f" Emissioni totali: {self.format_co2_value(total_emissions)}")
-        print(f" Media per esecuzione: {self.format_co2_value(total_emissions/total_executions)}" if total_executions > 0 else " Media per esecuzione: N/A")
 
-        print(f"\n✅ LINGUAGGI FUNZIONANTI ({len(working_languages)}):")
+        print(f" GENERAL STATISTICS:")
+        print(f" Tasks benchmarked: {total_tasks}")
+        print(f" Supported languages: {len(all_languages)}")
+        print(f" Working languages: {len(working_languages)}/{len(all_languages)} ({len(working_languages)/len(all_languages)*100:.1f}%)")
+        print(f" Successful total executions: {total_executions}")
+        print(f" Total emissions: {self.format_co2_value(total_emissions)}")
+        print(f" Mean per execution: {self.format_co2_value(total_emissions/total_executions)}" if total_executions > 0 else " Mean per execution: N/A")
+
+        print(f"\n✅ WORKING LANGUAGES ({len(working_languages)}):")
         if working_languages:
             sorted_languages = sorted(language_stats.items(),
                                       key=lambda x: x[1]['avg_emissions_per_execution'])
@@ -1257,100 +1257,99 @@ print("Executing {task_name} in {language}")
                 print(f" {i:2d}. {language:12s}: {self.format_co2_value(stats['avg_emissions_per_execution'])}/run "
                       f"({stats['total_executions']} runs)")
         else:
-            print("   Nessun linguaggio ha completato con successo il benchmark")
-            
-        print(f"\n❌ LINGUAGGI CON PROBLEMI ({len(failed_languages)}):")
+            print("   No language successfully completed the benchmark")
+
+        print(f"\n❌ LANGUAGES WITH ISSUES ({len(failed_languages)}):")
         if failed_languages:
             for language in sorted(failed_languages):
                 if language in self.language_failures:
                     failure_info = self.language_failures[language]
                     failed_tasks = len(failure_info['failed_tasks'])
-                    print(f"   • {language:12s}: {failed_tasks} task falliti")
-                    
-                    # Mostra alcuni esempi di errori
+                    print(f"   • {language:12s}: {failed_tasks} failed tasks")
+
+                    # Show some sample errors
                     if failure_info['sample_errors']:
                         sample_error = list(failure_info['sample_errors'])[0]
-                        if 'Errore compilazione:' in sample_error:
-                            error_type = "Errori di compilazione"
+                        if 'Compilation error:' in sample_error:
+                            error_type = "Compilation Errors"
                         elif 'libtinfo' in sample_error.lower():
-                            error_type = "Problemi libreria libtinfo"
+                            error_type = "Library Issues"
                         elif 'no input files' in sample_error.lower():
-                            error_type = "Problemi configurazione compilatore"
+                            error_type = "Compiler Configuration Issues"
                         elif 'unknown start of token' in sample_error.lower():
-                            error_type = "Errori di sintassi nel codice"
+                            error_type = "Syntax Errors"
                         elif 'traceback' in sample_error.lower():
-                            error_type = "Errori runtime Python"
+                            error_type = "Python Runtime Errors"
                         elif 'error:' in sample_error.lower():
-                            error_type = "Errori di compilazione"
+                            error_type = "Compilation Errors"
                         else:
-                            error_type = "Vari errori"
+                            error_type = "Other Errors"
                         print(f"     → {error_type}")
                 else:
-                    print(f"   • {language:12s}: Non testato")
+                    print(f"   • {language:12s}: Not Tested")
         else:
-            print("   Tutti i linguaggi funzionano correttamente!")
-            
-        # Statistiche riassuntive dei problemi
+            print("   All languages are working correctly!")
+
+        # Summary statistics of issues
         if self.language_failures:
-            print(f"\n DETTAGLIO PROBLEMI:")
+            print(f"\n ISSUE DETAILS:")
             total_failed_tasks = sum(len(info['failed_tasks']) for info in self.language_failures.values())
-            print(f"   Task totali falliti: {total_failed_tasks}")
-            
-            # Categorizza i tipi di errori per linguaggio
+            print(f"   Total failed tasks: {total_failed_tasks}")
+
+            # Categorize error types by language
             error_categories = {
-                'Compilazione': set(),
-                'Librerie/Dipendenze': set(), 
-                'Sintassi': set(),
-                'Runtime': set(),
-                'Configurazione': set(),
-                'Altri': set()
+                'Compilation': set(),
+                'Library Issues': set(),
+                'Syntax Errors': set(),
+                'Runtime Errors': set(),
+                'Configuration Issues': set(),
+                'Other Errors': set()
             }
             
             for language, failure_info in self.language_failures.items():
                 for error in failure_info['sample_errors']:
                     error_lower = error.lower()
-                    if 'compilazione' in error_lower or 'compile' in error_lower:
-                        error_categories['Compilazione'].add(language)
+                    if 'compilation' in error_lower or 'compile' in error_lower:
+                        error_categories['Compilation'].add(language)
                     elif 'libtinfo' in error_lower or 'library' in error_lower:
-                        error_categories['Librerie/Dipendenze'].add(language)
+                        error_categories['Library Issues'].add(language)
                     elif 'syntax' in error_lower or 'token' in error_lower:
-                        error_categories['Sintassi'].add(language)
+                        error_categories['Syntax Errors'].add(language)
                     elif 'traceback' in error_lower or 'runtime' in error_lower:
-                        error_categories['Runtime'].add(language)
+                        error_categories['Runtime Errors'].add(language)
                     elif 'no input files' in error_lower or 'command not found' in error_lower:
-                        error_categories['Configurazione'].add(language)
+                        error_categories['Configuration Issues'].add(language)
                     else:
-                        error_categories['Altri'].add(language)
-            
+                        error_categories['Other Errors'].add(language)
             for category, language_set in error_categories.items():
                 if len(language_set) > 0:
-                    print(f"   {category}: {len(language_set)} linguaggi")
+                    print(f"   {category}: {len(language_set)} languages")
 
         # Stima impatto annuale
         if total_emissions > 0:
             daily_estimate = total_emissions * (86400 / (self.iterations * len(language_stats)))  # 24h estimate
             yearly_estimate = daily_estimate * 365
-            print(f"\n🔮 STIME IMPATTO:")
-            print(f" Stima giornaliera (uso continuo): {self.format_co2_value(daily_estimate, 'g')}/giorno")
-            print(f" Stima annuale (uso continuo): {self.format_co2_value(yearly_estimate, 'g')}/anno")
+            print(f"\n🔮 IMPACT ESTIMATES:")
+            print(f" Daily estimate (continuous usage): {self.format_co2_value(daily_estimate, 'g')}/day")
+            print(f" Yearly estimate (continuous usage): {self.format_co2_value(yearly_estimate, 'g')}/year")
 
 
 def benchmark_quick_test(iterations=5):
-    """Test rapido del sistema di benchmark"""
+    """Quick test of the benchmarking system"""
     print(" QUICK BENCHMARK TEST")
     benchmark = CarbonBenchmark(iterations=iterations)
 
-    # Test con codice Python semplice
+    # Test with simple Python code
     test_code = '''
 import time
 import math
 
-# Calcolo matematico semplice
+# Simple mathematical computation
 result = 0
 for i in range(1000):
     result += math.sqrt(i) * math.sin(i)
 
-print(f"Risultato: {result:.2f}")
+print(f"Result: {result:.2f}")
 '''
 
     stats = benchmark.benchmark_task_language("test_math", "python", test_code)
@@ -1359,17 +1358,17 @@ print(f"Risultato: {result:.2f}")
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "test":
-        # Test rapido
+        # Quick test
         benchmark_quick_test(5)
     elif len(sys.argv) > 1 and sys.argv[1] == "debug":
-        # Debug veloce (3 iterazioni, 2 task) - per test rapidi
+        # Fast debug (3 iterations, 2 tasks) - for quick tests
         benchmark = CarbonBenchmark(iterations=3)
         benchmark.benchmark_common_tasks(max_tasks=2)
     elif len(sys.argv) > 1 and sys.argv[1] == "quick":
-        # Benchmark veloce (10 iterazioni, 3 task)
+        # Quick benchmark (10 iterations, 3 tasks)
         benchmark = CarbonBenchmark(iterations=10)
         benchmark.benchmark_common_tasks(max_tasks=3)
     else:
-        # Default: Top10 (5 iterazioni, 10 task)
+        # Default: Top10 (5 iterations, 10 tasks)
         benchmark = CarbonBenchmark(iterations=30)
         benchmark.benchmark_common_tasks(max_tasks=10)

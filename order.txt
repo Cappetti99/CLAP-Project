@@ -1,63 +1,62 @@
-# SWAM PROJECT - Sequenza Demo Completa
-# Lista ordinata di comandi per mostrare tutte le funzionalità
+# SWAM PROJECT - Complete Demo Sequence
+# Ordered list of commands to showcase all functionalities
 
 # ========================================
-# PREPARAZIONE AMBIENTE
+# ENVIRONMENT SETUP
 # ========================================
-conda activate SWAM # Attiva ambiente Python
+conda activate SWAM # Activate Python environment
 
 # ========================================
-# 1. DIAGNOSTICA INIZIALE (2-3 min)
+# 1. INITIAL DIAGNOSTICS (2-3 min)
 # ========================================
-python main.py status # Mostra stato completo del progetto
-python main.py test # Testa disponibilità dei 16 linguaggi
+python main.py status # Show complete project status
+python main.py test # Test availability of the 16 languages
 
 # ========================================
-# 2. ANALISI TASK COMUNI (3-5 min)
+# 2. COMMON TASK ANALYSIS (3-5 min)
 # ========================================
-python main.py analyze # Trova task comuni tra linguaggi
-# Output: CSV con matrici di compatibilità
+python main.py analyze # Find common tasks among languages
+# Output: CSV with compatibility matrices
 
 # ========================================
-# 3. ESECUZIONE VELOCE (2-3 min)
+# 3. QUICK EXECUTION (2-3 min)
 # ========================================
-python main.py smart # Esecuzione intelligente (solo linguaggi disponibili)
-# Dimostra adattamento automatico del sistema
+python main.py smart # Intelligent execution (only available languages)
+# Demonstrates automatic system adaptation
 
 # ========================================
-# 4. BENCHMARK CO2 (5-10 min)
+# 4. CO2 BENCHMARK (5-10 min)
 # ========================================
-# Modalità debug per demo veloce:
-echo "debug" | python main.py benchmark # 3 iterazioni per linguaggio
+# Debug mode for quick demo:
+echo "debug" | python main.py benchmark # 3 iterations per language
 
-# Modalità completa per ricerca seria:
-# echo "standard" | python main.py benchmark # 30 iterazioni (LENTO!)
-
-# ========================================
-# 5. VISUALIZZAZIONE RISULTATI (1-2 min)
-# ========================================
-ls -la results/ # Mostra file generati
-du -sh results/ # Dimensioni dati
-head -5 results/common_tasks_*.csv # Anteprima risultati
+# Full mode for serious research:
+# echo "standard" | python main.py benchmark # 30 iterations (SLOW!)
 
 # ========================================
-# 6. GESTIONE STORAGE (1 min)
+# 5. RESULTS VISUALIZATION (1-2 min)
 # ========================================
-python main.py clean # Cleanup intelligente con backup
+ls -la results/ # Show generated files
+du -sh results/ # Data size
+head -5 results/common_tasks_*.csv # Preview results
 
 # ========================================
-# COMANDI BONUS PER DEMO AVANZATA
+# 6. STORAGE MANAGEMENT (1 min)
 # ========================================
-python main.py execute # Esecuzione completa (tutti i linguaggi)
-python main.py simple # Modalità semplificata
+python main.py clean # Intelligent cleanup with backup
 
 # ========================================
-# ORDINE SUGGERITO PER PRESENTAZIONE:
+# BONUS COMMANDS FOR ADVANCED DEMO
 # ========================================
-# 1. status → Panoramica progetto
-# 2. test → Mostra multi-linguaggio
-# 3. analyze → Intelligenza del sistema
-# 4. smart → Esecuzione adattiva
-# 5. benchmark → Innovazione CO2
-# 6. clean → Gestione professionale
+python main.py execute # Complete execution (all languages)
+python main.py simple # Simplified mode
 
+# ========================================
+# SUGGESTED ORDER FOR PRESENTATION:
+# ========================================
+# 1. status → Project overview
+# 2. test → Show multi-language support
+# 3. analyze → System intelligence
+# 4. smart → Adaptive execution
+# 5. benchmark → CO2 innovation
+# 6. clean → Professional management

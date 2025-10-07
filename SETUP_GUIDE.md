@@ -1,25 +1,26 @@
-# 🚀 GUIDA COMPLETA: Setup Environment SWAM Project
+# 🚀 COMPLETE GUIDE: CLAP Project Environment Setup
 
-Questa guida ti aiuta a configurare un environment completo per eseguire tutto il progetto SWAM con tutti i 16 linguaggi supportati.
+This guide helps you configure a complete environment to run the entire CLAP project with all 16 supported languages.
 
-## 🎯 OBIETTIVO
-- Environment Python isolato ✅
-- Tutti i 16 linguaggi funzionanti ✅  
-- Monitoraggio CO2 attivo ✅
-- Dataset disponibili ✅
+
+## 🎯 OBJECTIVE
+- Isolated Python environment ✅
+- All 16 languages working ✅  
+- CO2 monitoring active ✅
+- Datasets available ✅
 
 ---
 
-## 📋 PREREQUISITI
+## 📋 PREREQUISITES
 
-### Sistema Operativo
-- **Linux** (Ubuntu/Debian) - Raccomandato
-- **macOS** - Supportato  
-- **Windows** - Possibile ma più complesso
+### Operating System
+- **Linux** (Ubuntu/Debian) - Recommended
+- **macOS** - Supported  
+- **Windows** - Possible but more complex
 
-### Strumenti Base
+### Basic Tools
 ```bash
-# Verifica che ci siano:
+# Ensure the following are installed:
 git --version
 python3 --version  # >= 3.8
 pip3 --version
@@ -27,63 +28,63 @@ pip3 --version
 
 ---
 
-## 🔧 STEP 1: CLONE E SETUP DIRECTORY
+## 🔧 STEP 1: CLONE AND SETUP DIRECTORY
 
 ```bash
-# 1. Clone del progetto
+# 1. Clone the project
 git clone https://github.com/Cappetti99/SWAM-Project.git
 cd SWAM-Project
 
-# 2. Verifica struttura
+# 2. Verify structure
 ls -la
-# Dovresti vedere: main.py, requirements.txt, src/, modules/, data/, etc.
+# You should see: main.py, requirements.txt, src/, modules/, data/, etc.
 ```
 
 ---
 
 ## 🐍 STEP 2: PYTHON ENVIRONMENT
 
-### Opzione A: venv (Raccomandato)
+### Option A: venv (Recommended)
 ```bash
-# 1. Crea environment virtuale
+# 1. Create virtual environment
 python3 -m venv swam_env
 
-# 2. Attiva environment
+# 2. Activate environment
 source swam_env/bin/activate  # Linux/macOS
 # swam_env\Scripts\activate   # Windows
 
-# 3. Aggiorna pip
+# 3. Upgrade pip
 pip install --upgrade pip
 
-# 4. Installa dipendenze Python
+# 4. Install Python dependencies
 pip install -r requirements.txt
 
-# 5. Verifica installazione
-pip list | grep codecarbon  # Dovrebbe mostrare codecarbon>=3.0.0
+# 5. Verify installation
+pip list | grep codecarbon  # Should show codecarbon>=3.0.0
 ```
 
-### Opzione B: conda (Alternativa)
+### Option B: conda (Alternative)
 ```bash
-# 1. Crea environment conda
+# 1. Create conda environment
 conda create -n swam_env python=3.10
 
-# 2. Attiva environment
+# 2. Activate environment
 conda activate swam_env
 
-# 3. Installa dipendenze
+# 3. Install dependencies
 pip install -r requirements.txt
 ```
 
 ---
 
-## 🛠️ STEP 3: COMPILATORI E INTERPRETI
+## 🛠️ STEP 3: COMPILERS AND INTERPRETERS
 
 ### Ubuntu/Debian (apt)
 ```bash
-# 1. Update sistema
+# 1. Update system
 sudo apt update
 
-# 2. Installa linguaggi di base
+# 2. Install base languages
 sudo apt install -y \
   build-essential \    # gcc, g++, make
   openjdk-11-jdk \     # Java
@@ -92,29 +93,29 @@ sudo apt install -y \
   php-cli \            # PHP
   ruby-full \          # Ruby
   r-base \             # R
-  ghc \                # Haskell (se non già presente)
-  ocaml \              # OCaml (se non già presente)
-  mono-complete        # C# Mono (se non già presente)
+  ghc \                # Haskell (if not already installed)
+  ocaml \              # OCaml (if not already installed)
+  mono-complete        # C# Mono (if not already installed)
 
 # 3. TypeScript (via npm)
 sudo npm install -g typescript
 
-# 4. Rust (installer speciale)
+# 4. Rust (special installer)
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.cargo/env
 
-# 5. Julia (via snap - più affidabile)
+# 5. Julia (via snap - more reliable)
 sudo snap install julia --classic
 
-# 6. RIAVVIA IL TERMINALE per caricare tutti i PATH
+# 6. RESTART TERMINAL to load all PATHs
 ```
 
 ### macOS (Homebrew)
 ```bash
-# 1. Installa Homebrew se non presente
+# 1. Install Homebrew if not present
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# 2. Installa linguaggi
+# 2. Install languages
 brew install \
   gcc \
   openjdk \
@@ -140,24 +141,24 @@ brew install julia
 
 ---
 
-## ✅ STEP 4: VERIFICA INSTALLAZIONE
+## ✅ STEP 4: VERIFY INSTALLATION
 
 ```bash
-# 1. Attiva environment Python (se non già attivo)
+# 1. Activate Python environment (if not already active)
 source swam_env/bin/activate  # Linux/macOS
 # swam_env\Scripts\activate   # Windows
 
-# 2. Test completo linguaggi
+# 2. Complete language test
 python main.py test
 
-# 3. Obiettivo: vedere questo risultato
-# "Linguaggi disponibili: 16"
-# "Tasso di successo: 100.0%"
+# 3. Expected result:
+# "Available languages: 16"
+# "Success rate: 100.0%"
 ```
 
-### 🐛 Debug se qualcosa non funziona:
+### 🐛 Debug if something doesn't work:
 ```bash
-# Controlla singoli comandi:
+# Check individual commands:
 gcc --version      # C
 g++ --version      # C++
 javac -version     # Java
@@ -172,93 +173,93 @@ Rscript --version  # R
 julia --version    # Julia
 mono --version     # C#
 tsc --version      # TypeScript
-matlab -help       # MATLAB (se disponibile)
+matlab -help       # MATLAB (if available)
 ```
 
 ---
 
-## 🌱 STEP 5: SETUP CODECARBON (Monitoraggio CO2)
+## 🌱 STEP 5: SETUP CODECARBON (CO2 Monitoring)
 
 ```bash
-# 1. Verifica codecarbon
+# 1. Verify codecarbon
 python -c "import codecarbon; print('CodeCarbon OK!')"
 
-# 2. Test monitoraggio CO2
+# 2. Test CO2 monitoring
 python main.py carbon
 
-# 3. Se da errori, reinstalla:
+# 3. If errors occur, reinstall:
 pip uninstall codecarbon
 pip install codecarbon>=3.0.0
 ```
 
 ---
 
-## 📊 STEP 6: DOWNLOAD DATASET (Opzionale)
+## 📊 STEP 6: DOWNLOAD DATASET (Optional)
 
 ```bash
-# Solo se vuoi scaricare dataset freschi (altrimenti usa quelli inclusi)
+# Only if you want to download fresh datasets (otherwise use included ones)
 python download.py
 
-# Verifica dataset
+# Verify dataset
 ls -la data/generated/code_snippets/
-# Dovresti vedere cartelle per vari linguaggi
+# You should see folders for various languages
 ```
 
 ---
 
-## 🧪 STEP 7: TEST COMPLETO SISTEMA
+## 🧪 STEP 7: COMPLETE SYSTEM TEST
 
 ```bash
-# 1. Test linguaggi
+# 1. Test languages
 python main.py test
-# Obiettivo: 16/16 linguaggi ✅
+# Goal: 16/16 languages ✅
 
-# 2. Test ricerca task
+# 2. Test task search
 python main.py find --task "hello"
-# Dovrebbe trovare task e permettere esecuzione
+# Should find task and allow execution
 
-# 3. Test benchmark veloce
+# 3. Quick benchmark test
 python main.py benchmark
-# Scegli modalità "veloce" per test rapido
+# Choose "quick" mode for a fast test
 
-# 4. Visualizza risultati CO2
+# 4. View CO2 results
 python main.py carbon
 ```
 
 ---
 
-## 📁 STEP 8: STRUTTURA FINALE
+## 📁 STEP 8: FINAL STRUCTURE
 
-Dopo il setup completo dovresti avere:
+After completing the setup, you should have:
 
 ```
 SWAM-Project/
-├── swam_env/                    # Environment Python
+├── swam_env/                    # Python environment
 ├── main.py                      # Entry point
-├── requirements.txt             # Dipendenze Python ✅
-├── SYSTEM_REQUIREMENTS.md       # Guida compilatori ✅
-├── src/                         # Codice sorgente
-├── modules/                     # Moduli SWAM
+├── requirements.txt             # Python dependencies ✅
+├── SYSTEM_REQUIREMENTS.md       # Compiler guide ✅
+├── src/                         # Source code
+├── modules/                     # CLAP modules
 ├── data/generated/              # Dataset code snippets
-├── results/                     # Risultati analisi (vuoti dopo pulizia)
-└── export_to_csv.py            # Export risultati
+├── results/                     # Analysis results (empty after cleanup)
+└── export_to_csv.py             # Export results
 ```
 
 ---
 
-## 🎯 VERIFICA FINALE SUCCESS
+## 🎯 FINAL SUCCESS CHECK
 
-Esegui questa checklist per verificare che tutto funzioni:
+Run this checklist to verify everything works:
 
 ```bash
-# ✅ Environment attivo
-echo $VIRTUAL_ENV  # Dovrebbe mostrare path swam_env
+# ✅ Active environment
+echo $VIRTUAL_ENV  # Should show swam_env path
 
 # ✅ Python dependencies
 python -c "import codecarbon, pandas, datasets; print('All Python deps OK!')"
 
 # ✅ System compilers  
-python main.py test | grep "Tasso di successo: 100.0%"
+python main.py test | grep "Success rate: 100.0%"
 
 # ✅ CO2 tracking
 python main.py carbon --help
@@ -272,57 +273,57 @@ python export_to_csv.py --help
 
 ---
 
-## 🚨 TROUBLESHOOTING COMUNE
+## 🚨 COMMON TROUBLESHOOTING
 
-### Problema: "Command not found"
+### Issue: "Command not found"
 ```bash
-# Soluzione: Riavvia terminale o ricarica PATH
+# Solution: Restart terminal or reload PATH
 source ~/.bashrc
-source ~/.cargo/env  # Per Rust
+source ~/.cargo/env  # For Rust
 ```
 
-### Problema: "Permission denied"
+### Issue: "Permission denied"
 ```bash
-# Soluzione: Aggiungi sudo dove necessario
-sudo apt install <linguaggio>
+# Solution: Add sudo where necessary
+sudo apt install <language>
 ```
 
-### Problema: Julia non trovato
+### Issue: Julia not found
 ```bash
-# Soluzione alternativa: Download manuale
+# Alternative solution: Manual download
 wget https://julialang-s3.julialang.org/bin/linux/x64/1.9/julia-1.9.3-linux-x86_64.tar.gz
 tar zxvf julia-1.9.3-linux-x86_64.tar.gz
 sudo mv julia-1.9.3 /opt/julia
 sudo ln -s /opt/julia/bin/julia /usr/local/bin/julia
 ```
 
-### Problema: MATLAB non disponibile
+### Issue: MATLAB not available
 ```bash
-# È normale - richiede licenza commerciale
+# This is normal - requires a commercial license
 # Alternative: GNU Octave
 sudo apt install octave
 ```
 
 ---
 
-## 🎉 RISULTATO FINALE
+## 🎉 FINAL RESULT
 
-Dopo aver seguito tutti gli step dovresti avere:
+After following all the steps, you should have:
 
-- ✅ **Environment Python** isolato e funzionante
-- ✅ **16/16 linguaggi** disponibili e testati  
-- ✅ **Monitoraggio CO2** attivo con CodeCarbon
-- ✅ **Dataset** code snippets disponibili
-- ✅ **Tutti i comandi** SWAM funzionanti
+- ✅ **Isolated Python environment** working
+- ✅ **16/16 languages** available and tested  
+- ✅ **CO2 monitoring** active with CodeCarbon
+- ✅ **Code snippets dataset** available
+- ✅ **All CLAP commands** functioning
 
-### Comandi pronti all'uso:
+### Ready-to-use commands:
 ```bash
-python main.py test      # Test linguaggi  
-python main.py analyze   # Analisi task comuni
-python main.py smart     # Esecuzione intelligente
-python main.py benchmark # Benchmark CO2
-python main.py find      # Ricerca task specifica
-python main.py carbon    # Report CO2
+python main.py test      # Test languages  
+python main.py analyze   # Analyze common tasks
+python main.py smart     # Intelligent execution
+python main.py benchmark # CO2 benchmark
+python main.py find      # Search specific tasks
+python main.py carbon    # CO2 report
 ```
 
-**🚀 Il tuo environment SWAM è pronto per l'analisi multi-linguaggio con monitoraggio CO2!**
+**🚀 Your CLAP environment is ready for multi-language analysis with CO2 monitoring!**

@@ -1,5 +1,5 @@
 """
-Modern Logging System for SWAM Project
+Modern Logging System for CLAP Project
 Single Responsibility: Structured logging with performance tracking and error analysis
 """
 
@@ -15,7 +15,7 @@ from enum import Enum
 
 
 class LogLevel(Enum):
-    """Logging levels for SWAM operations"""
+    """Logging levels for CLAP operations"""
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -58,7 +58,7 @@ class ErrorInfo:
 
 class ModernLogger:
     """
-    Single Responsibility: Centralized logging and metrics collection for SWAM
+    Single Responsibility: Centralized logging and metrics collection for CLAP
     Provides structured logging, error tracking, and performance metrics
     """
     
@@ -170,7 +170,7 @@ class ModernLogger:
         
         self.error_records.append(error_info)
         
-        self.error(f"💥 {error_type} in {language}: {error_message}",
+        self.error(f" {error_type} in {language}: {error_message}",
                    language=language, task_name=task_name, error_type=error_type)
         
         # Save errors immediately
@@ -182,14 +182,14 @@ class ModernLogger:
         deps_str = ", ".join(missing_deps)
         commands_str = "; ".join(suggested_commands)
         
-        self.warning(f"📦 Missing dependencies for {language}: {deps_str}")
-        self.info(f"💡 Suggested fixes: {commands_str}")
+        self.warning(f" Missing dependencies for {language}: {deps_str}")
+        self.info(f" Suggested fixes: {commands_str}")
     
     def log_performance_warning(self, language: str, task_name: str,
                                execution_time: float, threshold: float = 30.0):
         """Log performance warnings for slow executions"""
         if execution_time > threshold:
-            self.warning(f"🐌 Slow execution: {language} - {task_name} "
+            self.warning(f" Slow execution: {language} - {task_name} "
                         f"took {execution_time:.3f}s (threshold: {threshold}s)")
     
     def get_session_summary(self) -> Dict[str, Any]:
@@ -252,7 +252,7 @@ class ModernLogger:
         with open(summary_file, 'w') as f:
             json.dump(summary, f, indent=2)
         
-        self.info(f"📊 Session {self.session_id} completed: "
+        self.info(f" Session {self.session_id} completed: "
                  f"{summary['successful_executions']}/{summary['total_executions']} "
                  f"successful ({summary['success_rate']:.1%})")
         

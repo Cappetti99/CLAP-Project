@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Language Environment Tester - Testa la disponibilità di tutti i linguaggi di programmazione
-Verifica compilatori, interpreti e capacità di esecuzione per 16 linguaggi supportati.
+Language Environment Tester - Test the availability of all programming languages
+Check compilers, interpreters, and execution capabilities for 16 supported languages.
 """
 
 import sys
@@ -16,7 +16,7 @@ from datetime import datetime
 
 class LanguageTester:
     """
-    Testa la disponibilità e funzionalità di tutti i linguaggi supportati dal sistema SWAM.
+    Tests the availability and functionality of all languages supported by the CLAP system.
 
     # OOP: C++, C#, Java
     # Scripting: Python, Ruby, Javascript, typescript
@@ -29,7 +29,7 @@ class LanguageTester:
         self.test_results = {}
         self.temp_dirs = []
 
-        # Configurazione test per ogni linguaggio
+        # Test configuration for each language
         self.test_programs = {
             # === OOP LANGUAGES ===
             'cpp': {
@@ -179,7 +179,7 @@ main = putStrLn "Hello from Haskell!"''',
         }
 
     def check_command_exists(self, command):
-        """Verifica se un comando è disponibile nel sistema"""
+        """Check whether a command is available in the system"""
         try:
             result = subprocess.run(
                 ['which', command] if os.name != 'nt' else ['where', command],
@@ -192,7 +192,7 @@ main = putStrLn "Hello from Haskell!"''',
             return False
 
     def create_test_file(self, language, config):
-        """Crea un file di test per il linguaggio specificato"""
+        """Create a test file for the specified language"""
         try:
             temp_dir = tempfile.mkdtemp(prefix=f"swam_test_{language}_")
 
@@ -214,7 +214,7 @@ main = putStrLn "Hello from Haskell!"''',
 
     def test_language(self, language):
         """
-        Testa un singolo linguaggio di programmazione.
+        Tests a single programming language.
         """
         config = self.test_programs[language]
 
@@ -238,7 +238,7 @@ main = putStrLn "Hello from Haskell!"''',
 
         filepath, temp_dir = self.create_test_file(language, config)
         if not filepath:
-            result['error'] = "Impossibile creare file di test"
+            result['error'] = "Unable to create test file"
             return result
 
         try:
@@ -248,35 +248,35 @@ main = putStrLn "Hello from Haskell!"''',
             self._execute_program(language, config, filepath, temp_dir, result)
 
         except subprocess.TimeoutExpired:
-            result['error'] = "Timeout durante esecuzione"
+            result['error'] = "Timeout during execution"
             print(f" Timeout")
         except Exception as e:
-            result['error'] = f"Errore imprevisto: {str(e)}"
-            print(f" Errore: {e}")
+            result['error'] = f"Unexpected error: {str(e)}"
+            print(f" Error: {e}")
 
         return result
 
     def _check_commands(self, config, result):
-        """Verifica la disponibilità dei comandi necessari"""
+        """Check the availability of required commands"""
         run_command = config['run_cmd'][0]
 
-        # Per i linguaggi compilati che generano binari, non controllare l'esistenza del binario
-        # ma solo del compilatore
+        # For compiled languages that generate binaries, do not check for the existence of the binary
+        # but only for the compiler
         if run_command.startswith('./'):
-            result['interpreter_found'] = True  # Il binario sarà creato dalla compilazione
+            result['interpreter_found'] = True  # The binary will be created by compilation
         else:
             result['interpreter_found'] = self.check_command_exists(run_command)
             if not result['interpreter_found']:
-                result['error'] = f"Comando '{run_command}' non trovato"
-                print(f" {run_command} non disponibile")
+                result['error'] = f"Command '{run_command}' not found"
+                print(f" {run_command} not available")
                 return True
 
         if config['compile_cmd']:
             compile_command = config['compile_cmd'][0]
             result['compiler_found'] = self.check_command_exists(compile_command)
             if not result['compiler_found']:
-                result['error'] = f"Compilatore '{compile_command}' non trovato"
-                print(f" {compile_command} non disponibile")
+                result['error'] = f"Compiler '{compile_command}' not found"
+                print(f" {compile_command} not available")
                 return True
         else:
             result['compiler_found'] = True
@@ -284,12 +284,12 @@ main = putStrLn "Hello from Haskell!"''',
         return False
 
     def _compile_if_needed(self, config, filepath, temp_dir, result):
-        """Compila il codice se necessario"""
+        """Compile the code if needed"""
         if not config['compile_cmd']:
             result['compile_success'] = True
             return True
 
-        print(f" 🔨 Compilazione...")
+        print(f" 🔨 Compiling...")
         compile_cmd = config['compile_cmd'] + [filepath]
 
         compile_result = subprocess.run(
@@ -303,19 +303,19 @@ main = putStrLn "Hello from Haskell!"''',
         result['compile_success'] = compile_result.returncode == 0
 
         if result['compile_success']:
-            print(f" Compilazione riuscita")
+            print(f" Compilation successful")
             return True
         else:
-            result['error'] = f"Errore compilazione: {compile_result.stderr[:200]}"
-            print(f" Compilazione fallita")
+            result['error'] = f"Compilation error: {compile_result.stderr[:200]}"
+            print(f" Compilation failed")
             print(f" {compile_result.stderr[:100]}...")
             return False
 
     def _execute_program(self, language, config, filepath, temp_dir, result):
-        """Esegue il programma compilato o interpretato"""
-        print(f" Esecuzione...")
+        """Execute the compiled or interpreted program"""
+        print(f" Executing...")
 
-        # Per linguaggi compilati che generano binari
+        # For compiled languages that generate binaries
         if config['run_cmd'][0].startswith('./'):
             run_cmd = config['run_cmd']
         elif language == 'matlab':
@@ -341,17 +341,17 @@ main = putStrLn "Hello from Haskell!"''',
 
         if result['run_success']:
             result['available'] = True
-            print(f" Esecuzione riuscita ({result['execution_time']}s): {result['output']}")
+            print(f" Execution successful ({result['execution_time']}s): {result['output']}")
         else:
-            result['error'] = f"Errore esecuzione: {run_result.stderr[:200]}"
-            print(f" Esecuzione fallita")
+            result['error'] = f"Execution error: {run_result.stderr[:200]}"
+            print(f" Execution failed")
             print(f" {run_result.stderr[:100]}...")
 
     def test_all_languages(self):
-        """Esegue il test completo di tutti i linguaggi supportati"""
+        """Execute the complete test of all supported languages"""
         print(" LANGUAGE ENVIRONMENT TESTER")
         print("=" * 50)
-        print("Verifico la disponibilità di tutti i linguaggi...\n")
+        print("Checking the availability of all languages...\n")
 
         by_type = {}
         for lang, config in self.test_programs.items():
@@ -362,7 +362,7 @@ main = putStrLn "Hello from Haskell!"''',
 
         for lang_type in ['oop', 'scripting', 'imperative', 'functional', 'scientific']:
             if lang_type in by_type:
-                print(f"📂 Testing {lang_type.upper()} languages:")
+                print(f" Testing {lang_type.upper()} languages:")
                 for language in by_type[lang_type]:
                     result = self.test_language(language)
                     self.test_results[language] = result
@@ -373,8 +373,8 @@ main = putStrLn "Hello from Haskell!"''',
         self.cleanup()
 
     def print_summary(self):
-        """Stampa un riassunto organizzato dei risultati"""
-        print(" RIASSUNTO RISULTATI")
+        """Print a structured summary of the results"""
+        print(" SUMMARY OF RESULTS")
         print("=" * 50)
 
         available = []
@@ -406,14 +406,14 @@ main = putStrLn "Hello from Haskell!"''',
         total = len(self.test_programs)
         success_rate = len(available) / total * 100
 
-        print(f"\n STATISTICHE GENERALI:")
-        print(f" Totale linguaggi testati: {total}")
-        print(f" Linguaggi disponibili: {len(available)}")
-        print(f" Linguaggi non disponibili: {len(unavailable)}")
-        print(f" Tasso di successo: {success_rate:.1f}%")
+        print(f"\n GENERAL STATISTICS:")
+        print(f" Total languages tested: {total}")
+        print(f" Available languages: {len(available)}")
+        print(f" Unavailable languages: {len(unavailable)}")
+        print(f" Success rate: {success_rate:.1f}%")
 
         if unavailable:
-            print(f"\n SUGGERIMENTI INSTALLAZIONE:")
+            print(f"\n INSTALLATION SUGGESTIONS:")
             missing_commands = set()
             for lang in unavailable:
                 result = self.test_results[lang]
@@ -426,9 +426,9 @@ main = putStrLn "Hello from Haskell!"''',
 
             for cmd in sorted(missing_commands):
                 if cmd == 'matlab':
-                    print(f" {cmd}: Licenza commerciale richiesta")
+                    print(f" {cmd}: Commercial license required")
                 else:
-                    # Suggerimenti platform-aware
+                    # Platform-aware suggestions
                     if os.name == 'posix':  # Linux/Unix
                         if cmd in ['gcc', 'g++']:
                             print(f" {cmd}: sudo apt install build-essential")
@@ -454,7 +454,7 @@ main = putStrLn "Hello from Haskell!"''',
                         print(f" {cmd}: brew install {cmd}")
 
     def save_results(self):
-        """Salva i risultati in formato JSON con timestamp"""
+        """Save results in JSON format with timestamp"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         results_file = f"results/execution/language_test_results_{timestamp}.json"
 
@@ -470,12 +470,12 @@ main = putStrLn "Hello from Haskell!"''',
         try:
             with open(results_file, 'w', encoding='utf-8') as f:
                 json.dump(save_data, f, indent=2)
-            print(f"\n Risultati salvati in: {results_file}")
+            print(f"\n Results saved in: {results_file}")
         except Exception as e:
-            print(f"\n Errore salvataggio: {e}")
+            print(f"\n Error saving: {e}")
 
     def cleanup(self):
-        """Pulisce tutti i file temporanei creati durante i test"""
+        """Clean up all temporary files created during tests"""
         cleaned = 0
         for temp_dir in self.temp_dirs:
             try:
@@ -485,7 +485,7 @@ main = putStrLn "Hello from Haskell!"''',
                 print(f" Errore cleanup {temp_dir}: {e}")
 
         if cleaned > 0:
-            print(f" Puliti {cleaned} directory temporanee")
+            print(f" Cleaned {cleaned} temporary directories")
 
 
 if __name__ == "__main__":

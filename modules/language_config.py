@@ -1,5 +1,5 @@
 """
-Modern Language Configuration Manager for SWAM Project
+Modern Language Configuration Manager for CLAP Project
 Dynamic, conda-aware configuration system with single responsibility principle
 """
 
@@ -15,13 +15,20 @@ class LanguageConfigManager:
     Conda-aware, environment-adaptive configuration system
     """
     
-    def __init__(self, conda_env: Optional[str] = None):
-        # SEMPRE preferisce SWAM se non specificato diversamente
+    def __init__(self, conda_env: Optional[str] = None, use_conda: Optional[bool] = None):
+        # By default prefer the CLAP environment only if explicitly requested via env or flag
+        # use_conda can be set via environment variable CLAP_USE_CONDA ("1"/"true")
+        if use_conda is None:
+            env_val = os.environ.get('CLAP_USE_CONDA', '').lower()
+            use_conda = env_val in ['1', 'true', 'yes']
+
+        self.use_conda = use_conda
+
         if conda_env is None:
-            conda_env = 'SWAM'
-        
+            conda_env = 'CLAP' if self.use_conda else None
+
         self.conda_env = conda_env
-        self.conda_prefix = self._detect_conda_prefix()
+        self.conda_prefix = self._detect_conda_prefix() if self.use_conda else None
         
         # Core configuration constants
         self.DEFAULT_TIMEOUTS = {
@@ -33,21 +40,25 @@ class LanguageConfigManager:
         self.MAX_SNIPPETS_PER_LANGUAGE = 500
         
     def _detect_conda_prefix(self) -> Optional[str]:
-        """Detect conda environment prefix, prioritizing SWAM"""
-        # Se stiamo cercando SWAM, prova i path comuni prima di conda info
-        if self.conda_env == 'SWAM':
+        """Detect conda environment prefix, prioritizing CLAP"""
+        # If no conda env requested, skip detection
+        if not self.conda_env:
+            return None
+
+        # If we are looking for CLAP, try common paths before using conda info
+        if self.conda_env == 'CLAP':
             possible_paths = [
-                '/home/lollo/miniconda3/envs/SWAM',
-                '/Users/lorenzocappetti/miniconda3/envs/SWAM',
-                os.path.expanduser('~/miniconda3/envs/SWAM'),
-                os.path.expanduser('~/anaconda3/envs/SWAM')
+                '/home/lollo/miniconda3/envs/CLAP',
+                '/Users/lorenzocappetti/miniconda3/envs/CLAP',
+                os.path.expanduser('~/miniconda3/envs/CLAP'),
+                os.path.expanduser('~/anaconda3/envs/CLAP')
             ]
             
             for path in possible_paths:
                 if os.path.exists(path):
                     return path
         
-        # Fallback al metodo conda info
+        # Fallback to conda info only if conda_env is set
         if self.conda_env:
             try:
                 result = subprocess.run(
@@ -60,11 +71,12 @@ class LanguageConfigManager:
                         return parts[-1] if len(parts) > 1 else None
             except:
                 pass
-        return os.environ.get('CONDA_PREFIX')
+            return os.environ.get('CONDA_PREFIX')
     
     def get_conda_command(self, command: str) -> str:
         """Get conda-aware command path"""
-        if self.conda_prefix:
+        # Return the binary inside the conda prefix only when use_conda is enabled
+        if self.use_conda and self.conda_prefix:
             conda_bin = Path(self.conda_prefix) / 'bin' / command
             if conda_bin.exists():
                 return str(conda_bin)
@@ -212,8 +224,8 @@ LEGACY_LANGUAGE_CONFIG = {
  "Python": {
  "ext": ".py",
  "compile_cmd": None,
- "run_cmd": "conda run -n SWAM python ",
- "install_deps": "conda run -n SWAM pip install",
+ "run_cmd": "python ",
+ "install_deps": "pip install",
  "common_imports": ["import sys", "import os", "import re", "import math", "import random"],
  "folder": "../data/generated/code_snippets/scripting/python"
  },
@@ -228,16 +240,16 @@ LEGACY_LANGUAGE_CONFIG = {
  "JavaScript": {
  "ext": ".js",
  "compile_cmd": None,
- "run_cmd": "conda run -n SWAM node ",
- "install_deps": "conda run -n SWAM npm install -g",
+ "run_cmd": "node ",
+ "install_deps": "npm install -g",
  "common_imports": [],
  "folder": "../data/generated/code_snippets/scripting/javascript"
  },
  "TypeScript": {
  "ext": ".ts",
- "compile_cmd": ["conda", "run", "-n", "SWAM", "tsc"],
- "run_cmd": "conda run -n SWAM node ",
- "install_deps": "conda run -n SWAM npm install -g typescript",
+ "compile_cmd": ["tsc"],
+ "run_cmd": "node ",
+ "install_deps": "npm install -g typescript",
  "common_imports": [],
  "folder": "../data/generated/code_snippets/scripting/typescript"
  }
@@ -253,17 +265,17 @@ LEGACY_LANGUAGE_CONFIG = {
  },
  "Go": {
  "ext": ".go",
- "compile_cmd": ["conda", "run", "-n", "SWAM", "go", "build"],
+ "compile_cmd": ["go", "build"],
  "run_cmd": "./",
- "install_deps": "conda run -n SWAM go get",
+ "install_deps": "go get",
  "common_imports": ["import \"fmt\""],
  "folder": "../data/generated/code_snippets/imperative/go"
  },
  "Rust": {
  "ext": ".rs",
- "compile_cmd": ["conda", "run", "-n", "SWAM", "rustc"],
+ "compile_cmd": ["rustc"],
  "run_cmd": "./",
- "install_deps": "conda run -n SWAM cargo install",
+ "install_deps": "cargo install",
  "common_imports": [],
  "folder": "../data/generated/code_snippets/imperative/rust"
  },
@@ -298,8 +310,8 @@ LEGACY_LANGUAGE_CONFIG = {
  "R": {
  "ext": ".r",
  "compile_cmd": None,
- "run_cmd": "conda run -n SWAM Rscript ",
- "install_deps": "conda run -n SWAM R -e 'install.packages'",
+ "run_cmd": "Rscript ",
+ "install_deps": "R -e 'install.packages'",
  "common_imports": [],
  "folder": "../data/generated/code_snippets/scientific/r"
  },
@@ -322,7 +334,7 @@ LEGACY_LANGUAGE_CONFIG = {
  }
 }
 
-# Pattern problematici per linguaggio (codici da filtrare)
+# Problematic patterns for language (codes to be filtered)
 PROBLEMATIC_PATTERNS = {
  "Python": [
  r"import\s+tkinter",
@@ -357,7 +369,7 @@ PROBLEMATIC_PATTERNS = {
  ]
 }
 
-# Pacchetti problematici da evitare nell'installazione automatica
+# Problematic packages to avoid in automatic installation
 PROBLEMATIC_PACKAGES = {
  "Python": ["tkinter", "turtle", "pygame", "numpy", "scipy", "matplotlib", "pandas"],
  "Javascript": ["fs", "path", "os", "crypto"],

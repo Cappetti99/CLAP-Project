@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Task Searcher - Sistema di ricerca e esecuzione mirata per task specifiche
-Permette di cercare task per nome, mostrare linguaggi disponibili e misurare CO2
+Task Searcher - Targeted search and execution system for specific tasks
+Allows you to search for tasks by name, display available languages and measure CO2
 """
 
 import os
@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 from collections import defaultdict
 
-# Aggiunge il path per importare i moduli SWAM
+# Adds the path to import CLAP modules
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 modules_path = os.path.join(project_root, 'modules')
@@ -25,44 +25,44 @@ try:
     DEPENDENCIES_AVAILABLE = True
 except ImportError:
     DEPENDENCIES_AVAILABLE = False
-    print(" Alcune dipendenze non disponibili - funzionalità limitata")
+    print(" Some dependencies not available - limited functionality")
 
 
 class TaskSearcher:
     """
-    Single Responsibility: Ricerca e esecuzione mirata di task specifiche
-    Cerca task per nome, mostra linguaggi disponibili e misura impatto CO2
+    Single Responsibility: Targeted search and execution of specific tasks
+    Allows you to search for tasks by name, display available languages and measure CO2
     """
     
     def __init__(self):
         self.code_base_path = "data/generated/code_snippets"
         self.results_dir = "results/task_search"
-        
-        # Carica linguaggi testati e disponibili
+
+        # Load tested and available languages
         self.available_languages = self._load_tested_languages()
-        
-        # Inizializza componenti se disponibili
+
+        # Initialize components if available
         if DEPENDENCIES_AVAILABLE:
             self.executor = SmartExecutor()
         else:
             self.executor = None
-            
-        # Crea directory risultati
+
+        # Create results directory
         os.makedirs(self.results_dir, exist_ok=True)
-        
-        # Mapping linguaggi comuni per la ricerca (nomi standardizzati)
+
+        # Mapping common languages for search (standardized names)
         all_language_mapping = {
             'python': ['python'],
             'java': ['java'],
             'javascript': ['javascript'],
             'c': ['c'],
-            'cpp': ['cpp'],                    # C++ standardizzato su 'cpp'  
+            'cpp': ['cpp'],                    # C++ standardized to 'cpp'
             'c++': ['cpp'],
             'go': ['go'],
             'rust': ['rust'],
             'ruby': ['ruby'],
             'php': ['php'],
-            'csharp': ['csharp'],             # C# standardizzato su 'csharp'
+            'csharp': ['csharp'],             # C# standardized to 'csharp'
             'c#': ['csharp'],
             'haskell': ['haskell'],
             'ocaml': ['ocaml'],
@@ -70,13 +70,13 @@ class TaskSearcher:
             'julia': ['julia'],
             'typescript': ['typescript']
         }
-        
-        # Filtra solo i linguaggi disponibili
-        self.language_mapping = {k: v for k, v in all_language_mapping.items() 
+
+        # Filter only available languages
+        self.language_mapping = {k: v for k, v in all_language_mapping.items()
                                if k.lower() in [lang.lower() for lang in self.available_languages]}
     
     def _load_tested_languages(self) -> List[str]:
-        """Carica la lista dei linguaggi testati e disponibili"""
+        """Load the list of tested and available languages"""
         import json
         from pathlib import Path
         
@@ -84,96 +84,96 @@ class TaskSearcher:
         available_languages = []
         
         if test_results_dir.exists():
-            # Cerca il file di test più recente
+            # Look for the most recent test file
             test_files = list(test_results_dir.glob("language_test_results_*.json"))
             if test_files:
                 latest_test = max(test_files, key=lambda x: x.stat().st_mtime)
                 try:
                     with open(latest_test, 'r') as f:
                         test_data = json.load(f)
-                    
-                    # Carica silenziosamente (l'output dettagliato è già mostrato da SmartExecutor)
-                    
-                    # Mappa nomi del test ai nomi nel dataset
+
+                    # Load silently (detailed output is already shown by SmartExecutor)
+
+                    # Map test names to dataset names
                     test_to_dataset_mapping = {
-                        'cpp': 'cpp',             # C++ standardizzato su 'cpp'
-                        'c++': 'cpp',             # C++ alternativo
-                        'cplusplus': 'cpp',       # C++ forma completa
+                        'cpp': 'cpp',             # C++ standardized to 'cpp'
+                        'c++': 'cpp',             # C++ alternative
+                        'cplusplus': 'cpp',       # C++ full form
                         'java': 'java',
-                        'csharp': 'csharp',       # C# standardizzato su 'csharp'
-                        'c#': 'csharp',           # C# simbolo diretto
-                        'cs': 'csharp',           # C# abbreviazione
+                        'csharp': 'csharp',       # C# standardized to 'csharp'
+                        'c#': 'csharp',           # C# direct symbol
+                        'cs': 'csharp',           # C# abbreviation
                         'python': 'python',
-                        'python3': 'python',      # Python 3 specifico
-                        'py': 'python',           # Python abbreviazione
+                        'python3': 'python',      # Python 3 specific
+                        'py': 'python',           # Python abbreviation
                         'ruby': 'ruby',
-                        'rb': 'ruby',             # Ruby abbreviazione
+                        'rb': 'ruby',             # Ruby abbreviation
                         'javascript': 'javascript',
-                        'js': 'javascript',       # JavaScript abbreviazione
+                        'js': 'javascript',       # JavaScript abbreviation
                         'node': 'javascript',     # Node.js
-                        'nodejs': 'javascript',   # Node.js forma completa
+                        'nodejs': 'javascript',   # Node.js full form
                         'typescript': 'typescript',
-                        'ts': 'typescript',       # TypeScript abbreviazione
+                        'ts': 'typescript',       # TypeScript abbreviation
                         'c': 'c',
                         'go': 'go',
-                        'golang': 'go',           # Go nome completo
+                        'golang': 'go',           # Go full form
                         'rust': 'rust',
-                        'rs': 'rust',             # Rust abbreviazione
+                        'rs': 'rust',             # Rust abbreviation
                         'php': 'php',
                         'haskell': 'haskell',
-                        'hs': 'haskell',          # Haskell abbreviazione
+                        'hs': 'haskell',          # Haskell abbreviation
                         'ocaml': 'ocaml',
-                        'ml': 'ocaml',            # OCaml/ML abbreviazione
+                        'ml': 'ocaml',            # OCaml/ML abbreviation
                         'r': 'r',
-                        'rlang': 'r',             # R linguaggio completo
+                        'rlang': 'r',             # R full form
                         'julia': 'julia',
-                        'jl': 'julia'             # Julia abbreviazione
+                        'jl': 'julia'             # Julia abbreviation
                     }
                     
-                    # Carica solo i linguaggi che hanno passato il test
+                    # Only load languages that have passed the test
                     for lang, result in test_data['results'].items():
                         if result['available'] and lang in test_to_dataset_mapping:
                             dataset_lang = test_to_dataset_mapping[lang]
                             available_languages.append(dataset_lang)
                     
                     if available_languages:
-                        # Output ridotto - dettagli già mostrati da SmartExecutor
+                        # Reduced output - details already shown by SmartExecutor
                         return available_languages
                         
                 except Exception as e:
-                    print(f" Errore caricamento risultati test: {e}")
-        
-        # Fallback: usa tutti i linguaggi principali se non ci sono risultati del test
-        print(" Nessun risultato test trovato, usando linguaggi principali di fallback")
+                    print(f" Error loading test results: {e}")
+
+        # Fallback: use all main languages if no test results are found
+        print(" No test results found, using fallback main languages")
         fallback_languages = ['python', 'java', 'javascript', 'c', 'cplusplus', 'go', 'rust']
-        print(f"Linguaggi fallback: {', '.join(fallback_languages)}")
+        print(f"Fallback languages: {', '.join(fallback_languages)}")
         return fallback_languages
     
     def normalize_task_name(self, task_name: str) -> str:
-        """Normalizza il nome della task per la ricerca"""
-        # Rimuove caratteri speciali e converte in lowercase
+        """Normalizes the task name for search"""
+        # Removes special characters and converts to lowercase
         normalized = re.sub(r'[^a-zA-Z0-9\s]', '', task_name.lower())
-        # Sostituisce spazi con underscore
+        # Replaces spaces with underscores
         normalized = re.sub(r'\s+', '_', normalized.strip())
         return normalized
     
     def _get_file_extensions(self, language: str) -> List[str]:
-        """Ottiene le estensioni file supportate per un linguaggio"""
-        # Mappa linguaggi alle loro estensioni (nomi standardizzati)
+        """Gets the supported file extensions for a language"""
+        # Maps languages to their extensions (standardized names)
         extension_mapping = {
             'python': ['.py', '.txt'],
             'java': ['.java', '.txt'],
             'javascript': ['.js', '.txt'],
             'typescript': ['.ts', '.txt'],
             'c': ['.c', '.txt'],
-            'cpp': ['.cpp', '.cxx', '.cc', '.c++', '.txt'],  # C++ standardizzato su 'cpp'
-            'csharp': ['.cs', '.txt'],                       # C# standardizzato su 'csharp'
+            'cpp': ['.cpp', '.cxx', '.cc', '.c++', '.txt'],  # C++ standardized to 'cpp'
+            'csharp': ['.cs', '.txt'],                       # C# standardized to 'csharp'
             'go': ['.go', '.txt'],
             'rust': ['.rs', '.txt'],
             'ruby': ['.rb', '.txt'],
             'php': ['.php', '.txt'],
-            'haskell': ['.hs', '.lhs', '.txt'],  # .lhs per Literate Haskell
-            'ocaml': ['.ml', '.mli', '.txt'],   # .mli per interface files
+            'haskell': ['.hs', '.lhs', '.txt'],  # .lhs for Literate Haskell
+            'ocaml': ['.ml', '.mli', '.txt'],   # .mli for interface files
             'julia': ['.jl', '.txt'],
             'r': ['.r', '.R', '.txt']
         }
@@ -182,46 +182,46 @@ class TaskSearcher:
     
     def search_tasks(self, task_name: str, fuzzy: bool = True) -> Dict[str, List[str]]:
         """
-        Cerca task per nome nel dataset (solo nei linguaggi testati e disponibili)
-        
+        Searches for tasks by name in the dataset (only in tested and available languages)
+
         Args:
-            task_name: Nome della task da cercare
-            fuzzy: Se True, usa ricerca fuzzy (contenimento), altrimenti esatta
-            
+            task_name: Name of the task to search for
+            fuzzy: If True, use fuzzy search (containment), otherwise exact match
+
         Returns:
-            Dict con linguaggi come chiavi e lista di file come valori
+            Dict with languages as keys and list of files as values
         """
-        print(f"\nRicerca task: '{task_name}' (solo linguaggi testati)")
+        print(f"\nSearching for task: '{task_name}' (only tested languages)")
         print("=" * 50)
         
         normalized_name = self.normalize_task_name(task_name)
         found_tasks = defaultdict(list)
-        
-        # Filtra solo i linguaggi disponibili
+
+        # Filters only available languages
         if not self.available_languages:
-            print(" Nessun linguaggio disponibile - esegui prima 'python main.py test'")
+            print(" No available languages - please run 'python main.py test' first")
             return dict(found_tasks)
-        
-        print(f"Cerco in {len(self.available_languages)} linguaggi testati...")
-        
-        # Cerca in tutte le directory di linguaggi
+
+        print(f"Searching in {len(self.available_languages)} tested languages...")
+
+        # Searches in all language directories
         for category_dir in glob.glob(os.path.join(self.code_base_path, "*")):
             if not os.path.isdir(category_dir):
                 continue
-                
-            # Cerca in ogni linguaggio nella categoria
+
+            # Searches in each language within the category
             for lang_dir in glob.glob(os.path.join(category_dir, "*")):
                 if not os.path.isdir(lang_dir):
                     continue
                     
                 lang_name = os.path.basename(lang_dir).lower()
-                
-                # FILTRO: Considera solo linguaggi testati e disponibili
+
+                # FILTER: Consider only tested and available languages
                 if lang_name not in [lang.lower() for lang in self.available_languages]:
                     continue
-                
-                # Cerca file che corrispondono al nome della task
-                # Supporta multiple estensioni basate sul linguaggio
+
+                # Searches for files matching the task name
+                # Supports multiple extensions based on the language
                 extensions = self._get_file_extensions(lang_name)
                 
                 for ext in extensions:
@@ -229,13 +229,13 @@ class TaskSearcher:
                     for file_path in glob.glob(pattern):
                         file_name = os.path.basename(file_path)
                         file_name_normalized = self.normalize_task_name(file_name)
-                        
-                        # Controllo corrispondenza (esatta o fuzzy)
+
+                        # Check for match (exact or fuzzy)
                         if fuzzy:
                             if normalized_name in file_name_normalized:
                                 found_tasks[lang_name].append(file_path)
                         else:
-                            # Rimuove l'estensione per confronto esatto
+                            # Removes the extension for exact match
                             name_without_ext = file_name_normalized
                             for extension in extensions:
                                 name_without_ext = name_without_ext.replace(extension.lower(), '')
@@ -245,60 +245,60 @@ class TaskSearcher:
         return dict(found_tasks)
     
     def display_search_results(self, found_tasks: Dict[str, List[str]], task_name: str):
-        """Mostra i risultati della ricerca in formato user-friendly"""
+        """Displays the search results in a user-friendly format"""
         if not found_tasks:
-            print(f"Nessuna task trovata per '{task_name}' nei linguaggi testati")
-            print("\n Suggerimenti:")
-            print("   • Prova una ricerca più generica (es: 'sort' invece di 'quicksort')")
-            print("   • Usa parole chiave in inglese")
-            print("   • Verifica che i linguaggi siano stati testati con 'python main.py test'")
+            print(f"No tasks found for '{task_name}' in tested languages")
+            print("\n Suggestions:")
+            print("   • Try a more generic search (e.g., 'sort' instead of 'quicksort')")
+            print("   • Use keywords in English")
+            print("   • Verify that the languages have been tested with 'python main.py test'")
             return
         
         total_tasks = sum(len(files) for files in found_tasks.values())
-        print(f"Trovate {total_tasks} task in {len(found_tasks)} linguaggi testati:")
-        print(f"Su {len(self.available_languages)} linguaggi disponibili dal test")
+        print(f"Found {total_tasks} tasks in {len(found_tasks)} tested languages:")
+        print(f"Available in {len(self.available_languages)} languages from the test")
         print()
         
-        # Raggruppa per linguaggio
+        # Group by language
         for lang, files in sorted(found_tasks.items()):
-            print(f"{lang.upper()} ({len(files)} file):")
-            for file_path in files[:3]:  # Mostra max 3 file per linguaggio
+            print(f"{lang.upper()} ({len(files)} files):")
+            for file_path in files[:3]:  # Show max 3 files per language
                 file_name = os.path.basename(file_path)
                 print(f"   • {file_name}")
             if len(files) > 3:
-                print(f"   • ... e altri {len(files) - 3} file")
+                print(f"   • ... and {len(files) - 3} more files")
             print()
     
     def select_task_for_execution(self, found_tasks: Dict[str, List[str]]) -> Optional[Tuple[str, str]]:
         """
-        Permette all'utente di selezionare una task specifica per l'esecuzione
+        Allows the user to select a specific task for execution
         
         Returns:
-            Tupla (linguaggio, file_path) o None se cancellato
+            Tuple (language, file_path) or None if canceled
         """
         if not found_tasks:
             return None
-        
-        print("Seleziona task da eseguire:")
+
+        print("Select task to execute:")
         print()
-        
-        # Crea lista ordinata di opzioni
+
+        # Create sorted list of options
         options = []
         for lang, files in sorted(found_tasks.items()):
             for file_path in files:
                 file_name = os.path.basename(file_path)
                 options.append((lang, file_path, file_name))
-        
-        # Mostra opzioni
+
+        # Show options
         for i, (lang, file_path, file_name) in enumerate(options, 1):
             print(f"  {i}. [{lang.upper()}] {file_name}")
-        
-        print(f"  0. Cancella")
+
+        print(f"  0. Cancel operation")
         print()
-        
-        # Input utente
+
+        # User input
         try:
-            choice = input(f"Seleziona opzione (1-{len(options)}) [0]: ").strip()
+            choice = input(f"Select option (1-{len(options)}) [0]: ").strip()
             if choice == '' or choice == '0':
                 return None
             
@@ -307,60 +307,60 @@ class TaskSearcher:
                 lang, file_path, _ = options[choice_num - 1]
                 return lang, file_path
             else:
-                print("Scelta non valida")
+                print("Invalid choice")
                 return None
                 
         except (ValueError, KeyboardInterrupt):
-            print("Operazione cancellata")
+            print("Operation canceled")
             return None
     
     def execute_task_with_carbon_tracking(self, language: str, file_path: str) -> bool:
         """
-        Esegue una task specifica con monitoraggio CO2
+        Executes a specific task with CO2 monitoring
         
         Args:
-            language: Nome del linguaggio
-            file_path: Path al file della task
-            
+            language: Name of the programming language
+            file_path: Path to the task file
+
         Returns:
-            True se l'esecuzione ha successo, False altrimenti
+            True if the execution was successful, False otherwise
         """
         if not DEPENDENCIES_AVAILABLE or not self.executor:
-            print("Dipendenze non disponibili per l'esecuzione")
+            print("Dependencies not available for execution")
             return False
         
         task_name = os.path.basename(file_path)
-        print(f"\nEsecuzione task: '{task_name}' in {language.upper()}")
+        print(f"\nExecuting task: '{task_name}' in {language.upper()}")
         print("=" * 50)
         
         try:
-            # Legge il codice
+            # Read the code
             with open(file_path, 'r', encoding='utf-8') as f:
                 code = f.read()
 
             print(f"File: {os.path.basename(file_path)}")
-            print(f"Linguaggio: {language}")
-            print(f"Dimensione: {len(code)} caratteri")
-            
-            # Analisi qualitativa del codice prima dell'esecuzione
-            print("\nANALISI QUALITATIVA")
+            print(f"Language: {language}")
+            print(f"Size: {len(code)} characters")
+
+            # Qualitative analysis of the code before execution
+            print("\nQUALITATIVE ANALYSIS")
             print("-" * 30)
             quality_analysis = self._analyze_code_quality(code, language)
             self._display_quality_results(quality_analysis)
             print()
 
-            # Avvia tracking CO2
+            # Start CO2 tracking
             if CODECARBON_AVAILABLE:
                 carbon_session = start_carbon_tracking(task_name, language)
-                print("Monitoraggio CO2 avviato")
+                print("CO2 monitoring started")
             else:
                 carbon_session = None
-                print("Monitoraggio CO2 non disponibile")
-            
-            print("Esecuzione in corso...")
+                print("CO2 monitoring not available")
+
+            print("Execution in progress...")
             print("-" * 40)
-            
-            # Esegue il codice
+
+            # Execute the code
             result = self.executor.execute_code(
                 code=code,
                 language=language,
@@ -368,37 +368,37 @@ class TaskSearcher:
             )
             
             print("-" * 40)
-            
-            # Ferma tracking CO2
+
+            # Stop CO2 tracking
             emissions = None
             if carbon_session and CODECARBON_AVAILABLE:
                 emissions = stop_carbon_tracking()
                 if emissions:
-                    print(f"Emissioni CO2: {emissions:.6f} kg ({emissions * 1000:.3f} g)")
+                    print(f"CO2 emissions: {emissions:.6f} kg ({emissions * 1000:.3f} g)")
                 else:
-                    print("Dati CO2 non disponibili")
-            
-            # Salva risultati
+                    print("CO2 data not available")
+
+            # Save results
             self._save_execution_results(task_name, language, file_path, result.get('success', False), emissions)
             
             if result.get('success', False):
-                print("Esecuzione completata con successo")
+                print("Execution completed successfully")
                 if result.get('output'):
                     print(f"Output: {result['output'][:100]}...")
             else:
-                print("Esecuzione fallita")
+                print("Execution failed")
                 if result.get('error'):
-                    print(f"Errore: {result['error'][:100]}...")
-            
+                    print(f"Error: {result['error'][:100]}...")
+
             return result.get('success', False)
             
         except Exception as e:
-            print(f"Errore durante l'esecuzione: {e}")
+            print(f"Error during execution: {e}")
             return False
     
     def _save_execution_results(self, task_name: str, language: str, file_path: str, 
                               success: bool, emissions: Optional[float]):
-        """Salva i risultati dell'esecuzione"""
+        """Save execution results"""
         try:
             from datetime import datetime
             
@@ -411,90 +411,90 @@ class TaskSearcher:
                 'timestamp': datetime.now().isoformat(),
                 'execution_type': 'task_search'
             }
-            
-            # Salva in file JSON
+
+            # Save to JSON file
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             result_file = os.path.join(self.results_dir, f"task_execution_{timestamp}.json")
             
             with open(result_file, 'w', encoding='utf-8') as f:
                 json.dump(result, f, indent=2, ensure_ascii=False)
-            
-            print(f" Risultati salvati in: {result_file}")
-            
+
+            print(f" Results saved to: {result_file}")
+
         except Exception as e:
-            print(f" Errore nel salvataggio: {e}")
-    
+            print(f" Error saving results: {e}")
+
     def interactive_task_search(self, initial_query: Optional[str] = None):
         """
-        Interfaccia interattiva per la ricerca e esecuzione di task
+        Interactive interface for searching and executing tasks
         
         Args:
-            initial_query: Query iniziale opzionale
+            initial_query: Optional initial query
         """
-        print("\nTASK SEARCHER - Ricerca e Esecuzione Mirata")
+        print("\nTASK SEARCHER - Targeted Search and Execution")
         print("=" * 50)
-        print(f"Limitato ai {len(self.available_languages)} linguaggi testati e disponibili")
+        print(f"Limited to {len(self.available_languages)} tested and available languages")
         print()
-        
-        # Query iniziale
+
+        # Initial query
         if initial_query:
             query = initial_query
-            print(f"Query iniziale: '{query}'")
+            print(f"Initial query: '{query}'")
         else:
-            query = input(" Inserisci nome task da cercare: ").strip()
+            query = input(" Enter task name to search: ").strip()
         
         if not query:
-            print("Query vuota, operazione cancellata")
+            print("Empty query, operation cancelled")
             return False
-        
-        # Cerca task (solo nei linguaggi testati)
+
+        # Search tasks (only in tested languages)
         found_tasks = self.search_tasks(query, fuzzy=True)
         self.display_search_results(found_tasks, query)
         
         if not found_tasks:
             return False
-        
-        # Selezione per esecuzione
-        print("Vuoi eseguire una di queste task?")
-        execute_choice = input("Conferma [s/N]: ").strip().lower()
-        
-        if execute_choice not in ['s', 'si', 'y', 'yes']:
-            print("Operazione cancellata")
-            print("\nRicerca e esecuzione task completata!")
-            print("Controlla i risultati in results/task_search/")
+
+        # Selection for execution
+        print("Do you want to execute one of these tasks?")
+        execute_choice = input("Confirm [y/N]: ").strip().lower()
+
+        if execute_choice not in ['y', 'yes']:
+            print("Operation cancelled")
+            print("\nTask search and execution completed!")
+            print("Check the results in results/task_search/")
             print("=" * 60)
             return True
-        
-        # Selezione task specifica
+
+        # Specific task selection
         selection = self.select_task_for_execution(found_tasks)
         if not selection:
-            print("Nessuna task selezionata")
-            print("\nRicerca e esecuzione task completata!")
-            print("Controlla i risultati in results/task_search/")
+            print("No task selected")
+            print("\nTask search and execution completed!")
+            print("Check the results in results/task_search/")
             print("=" * 60)
             return True
         
         language, file_path = selection
         
-        # Esecuzione con monitoraggio CO2
+        # Execution with CO2 tracking
         success = self.execute_task_with_carbon_tracking(language, file_path)
-        
-        print("\nRicerca e esecuzione task completata!")
-        print("Controlla i risultati in results/task_search/")
+
+        print("\nTask search and execution completed!")
+        print("Check the results in results/task_search/")
         print("=" * 60)
         
         return success
     
     def _analyze_code_quality(self, code: str, language: str) -> Dict:
         """
-        Analizza la qualità del codice
+        Analyze code quality
         
         Args:
-            code: Codice sorgente da analizzare
-            language: Linguaggio di programmazione
-            
+            code: Source code to analyze
+            language: Programming language
+
         Returns:
-            Dizionario con metriche di qualità
+            Dictionary with quality metrics
         """
         quality_patterns = {
             'comments': [
@@ -551,7 +551,7 @@ class TaskSearcher:
             'non_empty_lines': len([line for line in code.split('\n') if line.strip()])
         }
         
-        # Verifica pattern di qualità
+        # Quality pattern verification
         import re
         for pattern_type, patterns in quality_patterns.items():
             metric_name = f"has_{pattern_type}"
@@ -560,17 +560,17 @@ class TaskSearcher:
                 if re.search(pattern, code, re.MULTILINE | re.DOTALL):
                     quality_metrics[metric_name] = True
                     break
-        
-        # Calcola quality score (0-100)
+
+        # Calculate quality score (0-100)
         score = 0
-        if quality_metrics['has_comments']: score += 25     # Documentazione
-        if quality_metrics['has_functions']: score += 30    # Struttura modulare  
-        if quality_metrics['has_error_handling']: score += 25  # Robustezza
-        if quality_metrics['has_imports']: score += 10     # Uso librerie
-        
-        # Bonus per codice ben strutturato
-        if quality_metrics['non_empty_lines'] > 10: score += 10  # Non triviale
-        
+        if quality_metrics['has_comments']: score += 25     # Documentation
+        if quality_metrics['has_functions']: score += 30    # Modular structure
+        if quality_metrics['has_error_handling']: score += 25  # Robustness
+        if quality_metrics['has_imports']: score += 10     # Library usage
+
+        # Bonus for well-structured code
+        if quality_metrics['non_empty_lines'] > 10: score += 10  # Non-trivial
+
         quality_metrics['quality_score'] = min(score, 100)
         quality_metrics['language'] = language
         
@@ -578,62 +578,62 @@ class TaskSearcher:
     
     def _display_quality_results(self, quality_analysis: Dict):
         """
-        Mostra i risultati dell'analisi qualitativa
+        Show the results of the quality analysis
         
         Args:
-            quality_analysis: Risultati dell'analisi qualitativa
+            quality_analysis: Results of the quality analysis
         """
         score = quality_analysis.get('quality_score', 0)
-        
-        # Testo per il punteggio
+
+        # Text for the score
         if score >= 80:
-            score_text = "ECCELLENTE"
+            score_text = "EXCELLENT"
         elif score >= 60:
-            score_text = "BUONO"
+            score_text = "GOOD"
         elif score >= 40:
-            score_text = "DISCRETO"
+            score_text = "FAIR"
         else:
-            score_text = "MIGLIORABILE"
-        
+            score_text = "NEEDS IMPROVEMENT"
+
         print(f"Quality Score: {score}/100 ({score_text})")
-        print(f"Righe: {quality_analysis['line_count']} (effettive: {quality_analysis['non_empty_lines']})")
-        
-        # Dettagli feature
+        print(f"Lines: {quality_analysis['line_count']} (effective: {quality_analysis['non_empty_lines']})")
+
+        # Feature details
         features = []
-        if quality_analysis.get('has_comments'): features.append("Commenti")
-        if quality_analysis.get('has_functions'): features.append("Funzioni")
+        if quality_analysis.get('has_comments'): features.append("Comments")
+        if quality_analysis.get('has_functions'): features.append("Functions")
         if quality_analysis.get('has_error_handling'): features.append("Error handling")
         if quality_analysis.get('has_imports'): features.append("Import/Include")
         
         if features:
-            print(f"Caratteristiche: {', '.join(features)}")
+            print(f"Features: {', '.join(features)}")
         else:
-            print("Caratteristiche base: nessuna rilevata")
+            print("Basic features: none detected")
 
 
 def search_and_execute_task(task_name: Optional[str] = None) -> bool:
     """
-    Funzione principale per la ricerca e esecuzione di task
-    
+    Main function for searching and executing tasks
+
     Args:
-        task_name: Nome della task da cercare (opzionale, se None chiede input)
-        
+        task_name: Name of the task to search for (optional, if None asks for input)
+
     Returns:
-        True se l'operazione ha successo, False altrimenti
+        True if the operation was successful, False otherwise
     """
     try:
         searcher = TaskSearcher()
         return searcher.interactive_task_search(task_name)
     except KeyboardInterrupt:
-        print("\nOperazione interrotta dall'utente")
+        print("\n Operation interrupted by user")
         return False
     except Exception as e:
-        print(f"Errore nel task searcher: {e}")
+        print(f"Error in task searcher: {e}")
         return False
 
 
 if __name__ == "__main__":
-    # Test del modulo
+    # Test the module
     if len(sys.argv) > 1:
         task_name = " ".join(sys.argv[1:])
         search_and_execute_task(task_name)

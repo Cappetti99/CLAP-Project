@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-SWAM Project - Main Entry Point
-Sistema completo per l'analisi e esecuzione di codici multi-linguaggio con monitoraggio CO2
+CLAP Project - Main Entry Point
+Comprehensive system for analyzing and executing multi-language code with CO2 monitoring
 """
 
 import sys
@@ -11,7 +11,7 @@ import glob
 import shutil
 from pathlib import Path
 
-# Aggiunge il path per importare i moduli SWAM
+# Add the path to import CLAP modules
 script_dir = os.path.dirname(os.path.abspath(__file__))
 modules_path = os.path.join(script_dir, 'modules')
 src_path = os.path.join(script_dir, 'src')
@@ -19,44 +19,44 @@ sys.path.insert(0, modules_path)
 sys.path.insert(0, src_path)
 
 def print_banner():
-    """Stampa il banner del progetto con informazioni di versione"""
+    """Prints the project banner with version information"""
     print("=" * 40)
-    print("SWAM PROJECT")
+    print("CLAP PROJECT")
     print("Author: Lorenzo Cappetti")
     print("=" * 40)
 
 def print_help():
-    """Stampa l'aiuto conciso per l'utilizzo del sistema"""
-    print("\nCOMANDI PRINCIPALI:")
-    print("  test       - Verifica linguaggi disponibili")
-    print("  analyze    - Trova task comuni")
-    print("  smart      - Esecuzione intelligente (RACCOMANDATO)")
-    print("  benchmark  - Misurazione CO2")
-    print("  carbon     - Report emissioni")
+    """Prints concise help for using the system"""
+    print("\nMAIN COMMANDS:")
+    print("  test       - Check available languages")
+    print("  analyze    - Find common tasks")
+    print("  smart      - Smart execution (RECOMMENDED)")
+    print("  benchmark  - CO2 measurement")
+    print("  carbon     - Emissions report")
     
-    print("\nCOMANDI AGGIUNTIVI:")
-    print("  execute    - Esecuzione completa (tutti i linguaggi)")
-    print("  find       - Cerca task + analisi qualità + CO2")
-    print("  quality    - Analisi qualitativa (experimental)")
-    print("  clean      - Pulizia cache")
-    print("  status     - Stato progetto")
+    print("\nADDITIONAL COMMANDS:")
+    print("  execute    - Full execution (all languages)")
+    print("  find       - Search task + quality analysis + CO2")
+    print("  quality    - Qualitative analysis (experimental)")
+    print("  clean      - Cache cleanup")
+    print("  status     - Project status")
     
-    print("\n AVVIO RAPIDO:")
+    print("\n QUICK START:")
     print("  python main.py test && python main.py analyze && python main.py smart")
     
-    print("\n Per dettagli: README.md e SETUP_GUIDE.md")
+    print("\n For details: README.md and SETUP_GUIDE.md")
 
 def analyze_tasks():
-    """Esegue l'analisi delle task comuni"""
-    print("\nANALISI TASK COMUNI")
+    """Performs the analysis of common tasks"""
+    print("\nANALYSIS OF COMMON TASKS")
     print("-" * 40)
     
-    # Prima controlla se ci sono risultati di test recenti
+    # First, check if there are recent test results
     available_languages = []
     test_results_dir = Path("results/execution")
     
     if test_results_dir.exists():
-        # Cerca il file di test più recente
+        # Look for the most recent test file
         test_files = list(test_results_dir.glob("language_test_results_*.json"))
         if test_files:
             latest_test = max(test_files, key=lambda x: x.stat().st_mtime)
@@ -68,44 +68,44 @@ def analyze_tasks():
                         if result['available']:
                             available_languages.append(lang)
                 
-                print(f"Utilizzando risultati test da: {latest_test.name}")
-                print(f"Linguaggi disponibili rilevati: {len(available_languages)}")
-                print(f"Linguaggi: {', '.join(sorted(available_languages))}")
+                print(f"Using test results from: {latest_test.name}")
+                print(f"Detected available languages: {len(available_languages)}")
+                print(f"Languages: {', '.join(sorted(available_languages))}")
                 print()
             except Exception as e:
-                print(f"Errore lettura risultati test: {e}")
+                print(f"Error reading test results: {e}")
                 available_languages = []
     
-    # Verifica che abbiamo linguaggi disponibili
+    # Verify that we have available languages
     if not available_languages:
-        print("  Nessun risultato di test trovato.")
-        print("  AZIONE RICHIESTA: Esegui prima 'python main.py test' per rilevare i linguaggi disponibili.")
-        print("  Il comando 'analyze' richiede risultati del test per funzionare correttamente.")
+        print("  No test results found.")
+        print("  REQUIRED ACTION: Run 'python main.py test' first to detect available languages.")
+        print("  The 'analyze' command requires test results to work properly.")
         return False
     
     try:
         from src.finder import UnifiedTaskFinder
         finder = UnifiedTaskFinder()
         
-        # Usa la logica TOP 10 con linguaggi disponibili
-        print(f"Cercando le TOP 10 task con più linguaggi tra quelli disponibili...")
-        print(f"Linguaggi disponibili: {len(available_languages)}")
+        # Use the TOP 10 logic with available languages
+        print(f"Searching for the TOP 10 tasks with the most languages among those available...")
+        print(f"Available languages: {len(available_languages)}")
         
-        # Usa la nuova logica per TOP 10 task con output ottimizzato
+        # Use the new logic for TOP 10 tasks with optimized output
         common_tasks = finder.find_common_tasks(
             min_languages=1, 
             available_languages=available_languages,
-            verbose=False  # Output conciso per workflow normale
+            verbose=False  # Concise output for normal workflow
         )
         
         if common_tasks:
-            print(f"TOP 10 task con più linguaggi disponibili:")
+            print(f"TOP 10 tasks with the most available languages:")
                 
-            for i, task in enumerate(common_tasks[:10], 1):  # Mostra prime 10
-                lang_info = f"{task['language_count']} linguaggi"
+            for i, task in enumerate(common_tasks[:10], 1):  # Show top 10
+                lang_info = f"{task['language_count']} languages"
                 print(f"  {i:2d}. {task['name']} - {lang_info}")
             
-            # Salva i risultati su file
+            # Save the results to a file
             import json
             import os
             os.makedirs("results/task_analysis", exist_ok=True)
@@ -126,20 +126,20 @@ def analyze_tasks():
                 json.dump(result_data, f, indent=2)
                 
         else:
-            print("Nessuna task comune trovata")
+            print("No common tasks found")
             
     except ImportError as e:
-        print(f"Errore importazione modulo analisi: {e}")
+        print(f"Error importing analysis module: {e}")
         return False
     except Exception as e:
-        print(f"Errore durante analisi: {e}")
+        print(f"Error: {e}")
         return False
     
     return True
 
 def execute_codes():
-    """Esegue i codici delle task comuni"""
-    print("\nESECUZIONE CODICI")
+    """Executes the code of common tasks"""
+    print("\nEXECUTING CODES")
     print("-" * 40)
     
     try:
@@ -147,17 +147,17 @@ def execute_codes():
         executor = SmartExecutor()
         executor.execute_all_common_tasks()
     except ImportError as e:
-        print(f"Errore importazione modulo esecutore: {e}")
+        print(f"Error importing executor module: {e}")
         return False
     except Exception as e:
-        print(f"Errore durante esecuzione: {e}")
+        print(f"Error: {e}")
         return False
     
     return True
 
 def test_languages():
-    """Testa la disponibilità di tutti i linguaggi"""
-    print("\nTEST LINGUAGGI")
+    """Tests the availability of all languages"""
+    print("\nTEST LANGUAGES")
     print("-" * 40)
     
     try:
@@ -165,9 +165,9 @@ def test_languages():
         tester = LanguageTester()
         tester.test_all_languages()
         
-        # Mostra risultati dettagliati
+        # Show detailed results
         print("\n" + "="*60)
-        print(" RISULTATI DETTAGLIATI DEL TEST")
+        print(" DETAILED TEST RESULTS")
         print("="*60)
         
         working = []
@@ -179,31 +179,31 @@ def test_languages():
             else:
                 not_working.append(language)
         
-        # Linguaggi funzionanti
+        # Languages working
         if working:
-            print(f"\n[OK] LINGUAGGI FUNZIONANTI ({len(working)}/{len(tester.test_results)}):")
+            print(f"\n[OK] LANGUAGES WORKING ({len(working)}/{len(tester.test_results)}):")
             for lang in sorted(working):
                 print(f"   [OK] {lang.upper()}")
         
-        # Linguaggi non funzionanti  
+        # Languages not working
         if not_working:
-            print(f"\n[FAIL] LINGUAGGI NON FUNZIONANTI ({len(not_working)}/{len(tester.test_results)}):")
+            print(f"\n[FAIL] LANGUAGES NOT WORKING ({len(not_working)}/{len(tester.test_results)}):")
             for lang in sorted(not_working):
                 result = tester.test_results[lang]
-                error_msg = result.get('error', 'Errore sconosciuto')[:60]
+                error_msg = result.get('error', 'Unknown error')[:60]
                 print(f"   [FAIL] {lang.upper()}: {error_msg}")
         
-        # Statistiche finali
+        # Final statistics
         success_rate = len(working) / len(tester.test_results) * 100
-        print(f"\n STATISTICHE:")
-        print(f"   - Totale testati: {len(tester.test_results)}")
-        print(f"   - Funzionanti: {len(working)}")
-        print(f"   - Non funzionanti: {len(not_working)}")
-        print(f"   - Tasso successo: {success_rate:.1f}%")
+        print(f"\n STATISTICS:")
+        print(f"   - Total tested: {len(tester.test_results)}")
+        print(f"   - Working: {len(working)}")
+        print(f"   - Not working: {len(not_working)}")
+        print(f"   - Success rate: {success_rate:.1f}%")
         
         if not_working:
-            print(f"\n SUGGERIMENTI PER INSTALLAZIONE:")
-            print(f"   Comandi per installare i linguaggi mancanti su Linux:")
+            print(f"\n SUGGESTIONS FOR INSTALLATION:")
+            print(f"   Commands to install missing languages on Linux:")
             
             for lang in sorted(not_working):
                 print(f"   - {lang.upper()}:", end=" ")
@@ -247,36 +247,36 @@ def test_languages():
                 elif lang == 'fortran':
                     print("sudo apt install gfortran")
                 elif lang == 'matlab':
-                    print(" Licenza commerciale richiesta - mathworks.com")
+                    print(" Need license - mathworks.com")
                 elif lang == 'r':
                     print("sudo apt install r-base")
                 elif lang == 'julia':
-                    print("wget https://julialang.org/downloads/ (installazione manuale)")
+                    print("wget https://julialang.org/downloads/ (manual installation)")
                 else:
-                    print(f"sudo apt install {lang} (verificare nome pacchetto)")
+                    print(f"sudo apt install {lang} (verify package name)")
             
-            print(f"\n  Su altri sistemi operativi:")
-            print(f"   • macOS: usa 'brew install <linguaggio>'")
-            print(f"   • Windows: usa Windows Package Manager 'winget install'")
-            print(f"   • Arch Linux: usa 'pacman -S <linguaggio>'")
-            print(f"   • Fedora/RHEL: usa 'dnf install <linguaggio>'")
+            print(f"\n   Other OS:")
+            print(f"   • macOS: use 'brew install <language>'")
+            print(f"   • Windows: use Windows Package Manager 'winget install'")
+            print(f"   • Arch Linux: use 'pacman -S <language>'")
+            print(f"   • Fedora/RHEL: use 'dnf install <language>'")
             
-            print(f"\n  Nota: Alcuni linguaggi potrebbero richiedere riavvio del terminale")
+            print(f"\n  Note: Some languages may require restarting the terminal")
         
         print("\n" + "="*60)
         
     except ImportError as e:
-        print(f"Errore importazione modulo test: {e}")
+        print(f"Error importing module test: {e}")
         return False
     except Exception as e:
-        print(f"Errore durante test: {e}")
+        print(f"Error during test: {e}")
         return False
     
     return True
 
 def smart_execute():
-    """Esegue le TOP 10 task comuni solo nei linguaggi testati e disponibili"""
-    print("\nESECUZIONE ADATTIVA")
+    """Executes the TOP 10 common tasks only in tested and available languages"""
+    print("\nADAPTIVE EXECUTION")
     print("-" * 40)
     
     try:
@@ -284,118 +284,118 @@ def smart_execute():
         executor = SmartExecutor()
         executor.execute_all_common_tasks()
     except ImportError as e:
-        print(f"Errore importazione modulo smart executor: {e}")
+        print(f"Error importing smart executor module: {e}")
         return False
     except Exception as e:
-        print(f"Errore durante esecuzione adattiva: {e}")
+        print(f"Error during adaptive execution: {e}")
         return False
     
     return True
 
 def benchmark_carbon(mode=None):
-    """Esegue benchmark CO2 con ripetizioni multiple con input interattivo"""
-    print("\n CARBON BENCHMARK - Sistema di Misurazione CO2")
+    """Performs CO2 benchmark with multiple repetitions and interactive input"""
+    print("\n CARBON BENCHMARK - CO2 Measurement System")
     print("=" * 55)
     
     try:
         from src.carbon_benchmark import CarbonBenchmark
         
-        # Mostra opzioni disponibili
-        print("Modalità benchmark disponibili:")
+        # Display available options
+        print("Available benchmark modes:")
         print()
-        print("  TOP10 - Analisi Task Principali")
-        print("   • Solo le top 10 task più frequenti")
-        print("   • 30 ripetizioni per task per calcolare la media")
-        print("   • Tempo stimato: ~45-60 minuti")
-        print("   • Ideale per analisi regolari")
+        print("  TOP10 - Main Task Analysis")
+        print("   • Only the top 10 most frequent tasks")
+        print("   • 30 repetitions per task to calculate the average")
+        print("   • Estimated time: ~45-60 minutes")
+        print("   • Ideal for regular analysis")
         print()
-        print("  VELOCE - Test Funzionalità")
-        print("   • Solo 3 task di esempio")
-        print("   • 3 ripetizioni per task")
-        print("   • Tempo stimato: ~3-5 minuti")
-        print("   • Perfetto per verificare che tutto funzioni")
+        print("  FAST - Functionality Test")
+        print("   • Only 3 sample tasks")
+        print("   • 3 repetitions per task")
+        print("   • Estimated time: ~3-5 minutes")
+        print("   • Perfect for verifying everything works")
         print()
-        print("  COMPLETO - Analisi Esaustiva")
-        print("   • TUTTE le task del dataset (1000+ task)")
-        print("   • 3 ripetizioni per task")
-        print("   • Tempo stimato: ~6-8 ore")
-        print("   • Copertura completa per ricerca scientifica")
+        print("  COMPLETE - Exhaustive Analysis")
+        print("   • ALL tasks in the dataset (1000+ tasks)")
+        print("   • 3 repetitions per task")
+        print("   • Estimated time: ~6-8 hours")
+        print("   • Full coverage for scientific research")
         print()
         
-        # Gestione input
+        # Handle input
         if mode is None:
-            print("Seleziona modalità:")
-            choice = input("Inserisci [1/top10] [2/veloce] [3/completo] (default: top10): ").strip().lower()
+            print("Select mode:")
+            choice = input("Enter [1/top10] [2/fast] [3/complete] (default: top10): ").strip().lower()
         else:
             choice = mode.lower()
-            print(f"Modalità selezionata da parametro: {choice}")
+            print(f"Mode selected via parameter: {choice}")
         
-        # Configurazione modalità
-        if choice in ["2", "veloce", "speed", "fast"]:
+        # Configure mode
+        if choice in ["2", "fast", "speed"]:
             iterations = 3
             max_tasks = 3
-            mode_name = "VELOCE"
-            description = "Test funzionalità - 3 task, 3 ripetizioni"
-        elif choice in ["3", "completo", "full", "complete", "tutto"]:
+            mode_name = "FAST"
+            description = "Functionality test - 3 tasks, 3 repetitions"
+        elif choice in ["3", "complete", "full", "all"]:
             iterations = 3
-            max_tasks = None  # Tutte le task disponibili
-            mode_name = "COMPLETO"
-            description = "Analisi esaustiva - tutte le task, 3 ripetizioni"
+            max_tasks = None  # All available tasks
+            mode_name = "COMPLETE"
+            description = "Exhaustive analysis - all tasks, 3 repetitions"
         else:
             # Default: top10
             iterations = 30
             max_tasks = 10
             mode_name = "TOP10"
-            description = "Analisi task principali - 10 task, 30 ripetizioni"
+            description = "Main task analysis - 10 tasks, 30 repetitions"
         
-        # Conferma configurazione
-        print(f"\n MODALITÀ SELEZIONATA: {mode_name}")
+        # Confirm configuration
+        print(f"\n SELECTED MODE: {mode_name}")
         print(f" {description}")
-        print(f" Configurazione: {iterations} iterazioni per task")
-        print(f" Task da testare: {'TUTTE le disponibili' if max_tasks is None else f'Prime {max_tasks} task'}")
+        print(f" Configuration: {iterations} iterations per task")
+        print(f" Tasks to test: {'ALL available' if max_tasks is None else f'Top {max_tasks} tasks'}")
         
-        # Conferma dall'utente
-        if mode is None:  # Solo se interattivo
+        # User confirmation
+        if mode is None:  # Only if interactive
             print()
             try:
-                confirm = input("Procedere con il benchmark? [s/N]: ").strip().lower()
-                if confirm not in ['s', 'si', 'sì', 'y', 'yes']:
-                    print("❌ Benchmark annullato dall'utente")
+                confirm = input("Proceed with the benchmark? [y/N]: ").strip().lower()
+                if confirm not in ['y', 'yes']:
+                    print("❌ Benchmark canceled by user")
                     return False
             except EOFError:
-                # Input non interattivo, procedi automaticamente
-                print(" Modalità non-interattiva rilevata, procedo automaticamente...")
+                # Non-interactive input, proceed automatically
+                print(" Non-interactive mode detected, proceeding automatically...")
                 pass
         
-        print(f"\n Avvio benchmark in modalità {mode_name}...")
-        print(" Usa Ctrl+C per interrompere in qualsiasi momento")
+        print(f"\n Starting benchmark in {mode_name} mode...")
+        print(" Use Ctrl+C to interrupt at any time")
         
-        # Avvia benchmark
+        # Start benchmark
         benchmark = CarbonBenchmark(iterations=iterations)
         
-        # Seleziona il metodo di benchmark in base alla modalità
-        if max_tasks is None:  # Modalità COMPLETO
-            print(" Modalità COMPLETO: utilizzando TUTTE le task del dataset")
+        # Select benchmark method based on mode
+        if max_tasks is None:  # COMPLETE mode
+            print(" COMPLETE mode: using ALL tasks in the dataset")
             benchmark.benchmark_all_tasks()
-        else:  # Modalità TOP10 o VELOCE
-            print(f" Modalità {mode_name}: utilizzando task comuni")
+        else:  # TOP10 or FAST mode
+            print(f" {mode_name} mode: using common tasks")
             benchmark.benchmark_common_tasks(max_tasks=max_tasks)
         
     except ImportError as e:
-        print(f"Errore importazione modulo benchmark: {e}")
+        print(f"Error importing benchmark module: {e}")
         return False
     except KeyboardInterrupt:
-        print("\nBenchmark interrotto dall'utente")
+        print("\nBenchmark interrupted by user")
         return False
     except Exception as e:
-        print(f"Errore durante benchmark: {e}")
+        print(f"Error during benchmark: {e}")
         return False
     
     return True
 
 def clean_project():
-    """Pulisce file temporanei e cache del progetto"""
-    print("\nPULIZIA PROGETTO")
+    """Cleans temporary files and project cache"""
+    print("\nPROJECT CLEANUP")
     print("-" * 40)
     
     try:
@@ -405,7 +405,7 @@ def clean_project():
         cleaned_files = 0
         cleaned_dirs = 0
         
-        # File temporanei da rimuovere
+        # Temporary files to remove
         temp_patterns = [
             "results/execution/temp_*",
             "results/execution/*.class",
@@ -423,7 +423,7 @@ def clean_project():
             "**/*.cmi"
         ]
         
-        print("Rimozione file temporanei...")
+        print("Removing temporary files...")
         
         for pattern in temp_patterns:
             files = glob.glob(pattern, recursive=True)
@@ -432,15 +432,15 @@ def clean_project():
                     if os.path.isfile(file_path):
                         os.remove(file_path)
                         cleaned_files += 1
-                        print(f"  Rimosso: {file_path}")
+                        print(f"  Removed: {file_path}")
                     elif os.path.isdir(file_path):
                         shutil.rmtree(file_path)
                         cleaned_dirs += 1
-                        print(f"  Rimossa directory: {file_path}")
+                        print(f"  Removed directory: {file_path}")
                 except Exception as e:
-                    print(f"  Errore rimozione {file_path}: {e}")
+                    print(f"  Error removing {file_path}: {e}")
         
-        # Pulizia cache specifiche
+        # Cleaning specific caches
         cache_dirs = [
             ".pytest_cache",
             "node_modules",
@@ -449,50 +449,50 @@ def clean_project():
             "_build"   # OCaml
         ]
         
-        print("\nPulizia cache...")
+        print("\nCleaning caches...")
         for cache_dir in cache_dirs:
             if os.path.exists(cache_dir):
                 try:
                     shutil.rmtree(cache_dir)
                     cleaned_dirs += 1
-                    print(f"  Rimossa cache: {cache_dir}")
+                    print(f"  Removed cache: {cache_dir}")
                 except Exception as e:
-                    print(f"  Errore rimozione cache {cache_dir}: {e}")
+                    print(f"  Error removing cache {cache_dir}: {e}")
         
-        print(f"\nPulizia completata!")
-        print(f"File rimossi: {cleaned_files}")
-        print(f" Directory rimosse: {cleaned_dirs}")
+        print(f"\nCleanup completed!")
+        print(f"Files removed: {cleaned_files}")
+        print(f"Directories removed: {cleaned_dirs}")
         
-        # Pulizia duplicati CSV in results/
-        print("\nPulizia duplicati CSV...")
+        # Cleaning duplicate CSV files in results/
+        print("\nCleaning duplicate CSV files...")
         try:
-            # Import del modulo cleaner se esiste
+            # Import the cleaner module if it exists
             if os.path.exists("src/cleaner.py"):
                 sys.path.insert(0, 'src')
                 import cleaner
                 csv_removed = cleaner.cleanup_csv_duplicates()
-                print(f"File CSV duplicati rimossi: {csv_removed}")
+                print(f"Duplicate CSV files removed: {csv_removed}")
             elif os.path.exists("cleaner.py"):
                 import cleaner
                 csv_removed = cleaner.cleanup_csv_duplicates()
-                print(f"File CSV duplicati rimossi: {csv_removed}")
+                print(f"Duplicate CSV files removed: {csv_removed}")
             else:
-                print("Script cleaner.py non trovato")
+                print("Script cleaner.py not found")
         except Exception as e:
-            print(f"Errore pulizia CSV: {e}")
+            print(f"Error cleaning CSV files: {e}")
         
         return True
             
     except Exception as e:
-        print(f"Errore durante pulizia: {e}")
+        print(f"Error during cleanup: {e}")
         return False
 
 def show_status():
-    """Mostra lo stato del progetto"""
-    print("\nSTATO PROGETTO")
+    """Displays the project status"""
+    print("\nPROJECT STATUS")
     print("-" * 40)
     
-    # Verifica directory principali
+    # Check main directories
     directories = [
         "data/generated/code_snippets",
         "results/task_analysis", 
@@ -501,34 +501,34 @@ def show_status():
         "src"
     ]
     
-    print("Directory:")
+    print("Directories:")
     for directory in directories:
         path = Path(directory)
         if path.exists():
             if path.is_dir():
                 file_count = len(list(path.rglob("*")))
-                print(f"  {directory} ({file_count} file)")
+                print(f"  {directory} ({file_count} files)")
             else:
-                print(f"   {directory} (non è una directory)")
+                print(f"   {directory} (not a directory)")
         else:
-            print(f"  {directory} (non trovata)")
+            print(f"  {directory} (not found)")
     
-    # Verifica file di analisi
+    # Check analysis files
     analysis_files = [
         "results/task_analysis/common_tasks.json",
         "results/task_analysis/dependency_analysis.json"
     ]
     
-    print("\nFile di Analisi:")
+    print("\nAnalysis Files:")
     for file_path in analysis_files:
         path = Path(file_path)
         if path.exists():
             size = path.stat().st_size
-            print(f"  {file_path} ({size} byte)")
+            print(f"  {file_path} ({size} bytes)")
         else:
-            print(f"  {file_path} (non trovato)")
+            print(f"  {file_path} (not found)")
     
-    # Conta task disponibili
+    # Count available tasks
     task_count = 0
     common_tasks_file = Path("results/task_analysis/common_tasks.json")
     if common_tasks_file.exists():
@@ -540,39 +540,39 @@ def show_status():
         except:
             pass
     
-    print(f"\nTask Analizzate: {task_count} (esegui 'analyze' prima)")
+    print(f"\nAnalyzed Tasks: {task_count} (run 'analyze' first)")
     
-    # Verifica risultati esecuzione
+    # Check execution results
     exec_dir = Path("results/execution")
     if exec_dir.exists():
         exec_files = list(exec_dir.glob("execution_results_*.json"))
-        print(f"\nEsecuzioni Completate: {len(exec_files)}")
+        print(f"\nCompleted Executions: {len(exec_files)}")
         if exec_files:
             latest = max(exec_files, key=lambda x: x.stat().st_mtime)
-            print(f"  Ultima esecuzione: {latest.name}")
+            print(f"  Latest execution: {latest.name}")
     else:
-        print("\nEsecuzioni Completate: 0 (esegui 'execute' prima)")
+        print("\nCompleted Executions: 0 (run 'execute' first)")
 
 def quality_analysis():
-    """Esegue analisi qualitativa avanzata del dataset"""
-    print("\\nANALISI QUALITATIVA AVANZATA")
+    """Performs advanced qualitative analysis of the dataset"""
+    print("\nADVANCED QUALITATIVE ANALYSIS")
     print("-" * 40)
     
     try:
         from src.finder import UnifiedTaskFinder
         finder = UnifiedTaskFinder()
         
-        print(" Creazione dataset con analisi qualitativa...")
+        print(" Creating dataset with qualitative analysis...")
         
-        # Crea DataFrame con quality analysis (output conciso)
+        # Create DataFrame with quality analysis (concise output)
         finder.create_dataset_dataframe(include_quality_analysis=True, verbose=False)
         
         if finder.df is None or len(finder.df) == 0:
-            print("❌ Nessun dato trovato per l'analisi")
+            print("❌ No data found for analysis")
             return False
         
-        # Analisi task di alta qualità
-        print("\\n TASK DI ALTA QUALITÀ")
+        # Analyze high-quality tasks
+        print("\n HIGH-QUALITY TASKS")
         quality_tasks = finder.find_common_tasks(
             min_languages=5,
             include_quality=True,
@@ -581,44 +581,44 @@ def quality_analysis():
         )
         
         if quality_tasks:
-            print(f"Le migliori {min(5, len(quality_tasks))} task per qualità:")
+            print(f"The top {min(5, len(quality_tasks))} tasks by quality:")
             for i, task in enumerate(quality_tasks[:5], 1):
                 quality_score = task.get('avg_quality_score', 0)
-                print(f"  {i}. {task['name']} - {quality_score:.1f}/100 ({task['language_count']} linguaggi)")
+                print(f"  {i}. {task['name']} - {quality_score:.1f}/100 ({task['language_count']} languages)")
         else:
-            print("  Nessuna task di alta qualità trovata")
+            print("  No high-quality tasks found")
         
-        # Statistiche generali (verbose per dettagli)
-        print("\\n STATISTICHE QUALITATIVE")
+        # General statistics (verbose for details)
+        print("\n QUALITATIVE STATISTICS")
         stats = finder.get_quality_statistics(verbose=True)
         
-        # Suggerimenti per miglioramenti
+        # Suggestions for improvements
         if stats:
             features = stats['feature_coverage']
-            print("\\n SUGGERIMENTI MIGLIORAMENTO:")
+            print("\n SUGGESTIONS FOR IMPROVEMENT:")
             
             if features['has_error_handling_pct'] < 10:
-                print(f"  Error handling molto basso ({features['has_error_handling_pct']:.1f}%) - Considerare task più robuste")
+                print(f"  Very low error handling ({features['has_error_handling_pct']:.1f}%) - Consider more robust tasks")
             
             if features['has_comments_pct'] < 30:
-                print(f"  Documentazione scarsa ({features['has_comments_pct']:.1f}%) - Migliorare commenti")
+                print(f"  Poor documentation ({features['has_comments_pct']:.1f}%) - Improve comments")
             
             if features['has_functions_pct'] < 50:
-                print(f" Codice poco strutturato ({features['has_functions_pct']:.1f}%) - Più funzioni modulari")
+                print(f"  Poorly structured code ({features['has_functions_pct']:.1f}%) - Add more modular functions")
         
-        print("\\n✅ Analisi qualitativa completata!")
+        print("\n✅ Qualitative analysis completed!")
         
     except ImportError as e:
-        print(f"Errore importazione modulo finder: {e}")
+        print(f"Error importing finder module: {e}")
         return False
     except Exception as e:
-        print(f"Errore durante analisi qualitativa: {e}")
+        print(f"Error during qualitative analysis: {e}")
         return False
     
     return True
 
 def main():
-    """Funzione principale"""
+    """Main function"""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -628,18 +628,18 @@ def main():
         nargs='?',
         choices=['analyze', 'execute', 'smart', 'test', 'clean', 'status', 'carbon', 'benchmark', 'quality', 'find', 'help'],
         default='help',
-        help='Comando da eseguire'
+        help='Command to execute'
     )
     
     parser.add_argument(
         '--mode',
-        choices=['veloce', 'top10', 'completo'],
-        help='Modalità per il comando benchmark (veloce/top10/completo)'
+        choices=['fast', 'top10', 'complete'],
+        help='Mode for the benchmark command (fast/top10/complete)'
     )
     
     parser.add_argument(
         '--task',
-        help='Nome della task da cercare (per comando find)'
+        help='Name of the task to search for (for the find command)'
     )
     
     args = parser.parse_args()
@@ -651,83 +651,83 @@ def main():
     elif args.command == 'analyze':
         success = analyze_tasks()
         if success:
-            print("\nAnalisi completata con successo!")
-            print("Ora puoi eseguire 'python main.py execute' per testare i codici")
+            print("\nAnalysis completed successfully!")
+            print("You can now run 'python main.py execute' to test the codes")
         else:
-            print("\nAnalisi fallita")
+            print("\nAnalysis failed")
             sys.exit(1)
     elif args.command == 'execute':
         success = execute_codes()
         if success:
-            print("\nEsecuzione completata!")
-            print("Controlla i risultati in results/execution/")
+            print("\nExecution completed!")
+            print("Check the results in results/execution/")
         else:
-            print("\nEsecuzione fallita")
+            print("\nExecution failed")
             sys.exit(1)
     elif args.command == 'smart':
         success = smart_execute()
         if success:
-            print("\nEsecuzione adattiva completata!")
-            print("Controlla i risultati in results/execution/")
+            print("\nAdaptive execution completed!")
+            print("Check the results in results/execution/")
         else:
-            print("\nEsecuzione adattiva fallita")
+            print("\nAdaptive execution failed")
             sys.exit(1)
     elif args.command == 'find':
-        # Comando per ricerca e esecuzione mirata di task specifiche
+        # Command for searching and targeted execution of specific tasks
         try:
             from src.task_searcher import search_and_execute_task
             success = search_and_execute_task(args.task)
             if not success:
-                print("\nRicerca task fallita o cancellata")
+                print("\nTask search failed or canceled")
         except ImportError:
-            print("Task Searcher non disponibile")
-            print("Verifica che tutti i moduli siano correttamente installati")
+            print("Task Searcher not available")
+            print("Ensure all modules are correctly installed")
     elif args.command == 'test':
         success = test_languages()
         if success:
-            print("\nTest linguaggi completato!")
-            print("Controlla i risultati per vedere quali linguaggi sono disponibili")
+            print("\nLanguage test completed!")
+            print("Check the results to see which languages are available")
         else:
-            print("\nTest linguaggi fallito")
+            print("\nLanguage test failed")
             sys.exit(1)
     elif args.command == 'clean':
         success = clean_project()
         if success:
-            print("\nPulizia completata!")
+            print("\nCleanup completed!")
         else:
-            print("\nPulizia fallita")
+            print("\nCleanup failed")
             sys.exit(1)
     elif args.command == 'status':
         show_status()
     elif args.command == 'carbon':
-        # Comando per visualizzare il report dell'impatto ambientale
+        # Command to display the environmental impact report
         try:
             from src.carbon_tracker import print_carbon_report
             print_carbon_report()
         except ImportError:
-            print("Carbon tracker non disponibile")
-            print("Installa CodeCarbon con: pip install codecarbon")
+            print("Carbon tracker not available")
+            print("Install CodeCarbon with: pip install codecarbon")
     elif args.command == 'benchmark':
-        # Comando per eseguire benchmark CO2 con ripetizioni multiple
+        # Command to perform CO2 benchmark with multiple repetitions
         success = benchmark_carbon(mode=args.mode)
         if success:
-            print("\nBenchmark CO2 completato!")
-            print("Controlla i risultati in results/carbon_benchmark/")
+            print("\nCO2 benchmark completed!")
+            print("Check the results in results/carbon_benchmark/")
         else:
-            print("\nBenchmark CO2 fallito")
+            print("\nCO2 benchmark failed")
             sys.exit(1)
     elif args.command == 'quality':
-        # Comando per analisi qualitativa avanzata
+        # Command for advanced qualitative analysis
         success = quality_analysis()
         if success:
-            print("\nAnalisi qualitativa completata!")
-            print("I risultati mostrano la qualità del codice nel dataset")
+            print("\nQualitative analysis completed!")
+            print("The results show the code quality in the dataset")
         else:
-            print("\nAnalisi qualitativa fallita")
+            print("\nQualitative analysis failed")
             sys.exit(1)
     else:
-        print(f"Comando non riconosciuto: {args.command}")
-        print("Usa 'python main.py help' per vedere i comandi disponibili")
+        print(f"Unrecognized command: {args.command}")
+        print("Use 'python main.py help' to see the available commands")
 
 if __name__ == "__main__":
     main()

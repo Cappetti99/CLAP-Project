@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script per scaricare e organizzare il dataset Rosetta Code
-da Hugging Face nel formato atteso dal sistema SWAM
+Script to download and organize the Rosetta Code dataset
+from Hugging Face in the format expected by the CLAP system
 """
 
 import os
@@ -12,14 +12,14 @@ import re
 from collections import defaultdict
 
 def clean_filename(name):
-    """Pulisce il nome del file per renderlo filesystem-safe"""
-    # Rimuove caratteri speciali e spazi
+    """Cleans the file name to make it filesystem-safe"""
+    # Removes special characters and spaces
     name = re.sub(r'[^\w\s-]', '', name)
     name = re.sub(r'[-\s]+', '_', name)
     return name.strip('_')
 
 def get_file_extension(language):
-    """Mappa il linguaggio all'estensione file"""
+    """Maps the language to the file extension"""
     extensions = {
         'python': '.py',
         'java': '.java',
@@ -43,7 +43,7 @@ def get_file_extension(language):
     return extensions.get(language.lower(), '.txt')
 
 def organize_by_category(task_name):
-    """Organizza le task in categorie"""
+    """Organizes tasks into categories"""
     task_lower = task_name.lower()
     
     if any(word in task_lower for word in ['sort', 'search', 'tree', 'graph', 'hash']):
@@ -60,23 +60,23 @@ def organize_by_category(task_name):
         return 'misc'
 
 def download_rosetta_code():
-    """Scarica e organizza il dataset Rosetta Code"""
-    print(" Scaricamento dataset Rosetta Code da Hugging Face...")
+    """Downloads and organizes the Rosetta Code dataset"""
+    print(" Downloading Rosetta Code dataset from Hugging Face...")
     
     try:
-        # Carica il dataset
+        # Load the dataset
         dataset = load_dataset("christopher/rosetta-code")
-        print(f" Dataset caricato! Esempi trovati: {len(dataset['train'])}")
+        print(f" Dataset loaded! Examples found: {len(dataset['train'])}")
         
-        # Directory di output
+        # Output directory
         output_dir = Path("data/generated/code_snippets")
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Statistiche
+        # Statistics
         stats = defaultdict(lambda: defaultdict(int))
         total_files = 0
         
-        # Processa ogni esempio
+        # Process each example
         for idx, example in enumerate(dataset['train']):
             task_name = example.get('task_name', f'task_{idx}')
             language = example.get('language_name', 'unknown')
@@ -85,23 +85,23 @@ def download_rosetta_code():
             if not code.strip():
                 continue
                 
-            # Pulisce i nomi
+            # Clean names
             clean_task = clean_filename(task_name)
             clean_lang = language.lower().replace(' ', '').replace('+', 'plus')
             
-            # Determina categoria e estensione
+            # Determine category and extension
             category = organize_by_category(task_name)
             extension = get_file_extension(language)
             
-            # Crea la struttura di directory: category/language/
+            # Create directory structure: category/language/
             lang_dir = output_dir / category / clean_lang
             lang_dir.mkdir(parents=True, exist_ok=True)
             
-            # Nome file nel formato atteso: snippet_N_TaskName.ext
+            # File name in the expected format: snippet_N_TaskName.ext
             filename = f"snippet_{stats[category][clean_lang] + 1}_{clean_task}{extension}"
             filepath = lang_dir / filename
             
-            # Scrive il file
+            # Write the file
             try:
                 with open(filepath, 'w', encoding='utf-8') as f:
                     f.write(code)
@@ -110,38 +110,38 @@ def download_rosetta_code():
                 total_files += 1
                 
                 if total_files % 100 == 0:
-                    print(f"   Processati {total_files} file...")
+                    print(f"   Processed {total_files} files...")
                     
             except Exception as e:
-                print(f" Errore scrittura {filepath}: {e}")
+                print(f" Error writing {filepath}: {e}")
                 continue
         
-        # Stampa statistiche finali
-        print(f"\n Download completato!")
-        print(f" Statistiche:")
-        print(f"   Total file creati: {total_files}")
+        # Print final statistics
+        print(f"\n Download completed!")
+        print(f" Statistics:")
+        print(f"   Total files created: {total_files}")
         
         for category, languages in stats.items():
             print(f"    {category}:")
             for lang, count in sorted(languages.items()):
-                print(f"      {lang}: {count} file")
+                print(f"      {lang}: {count} files")
         
         return True
         
     except Exception as e:
-        print(f" Errore durante il download: {e}")
+        print(f" Error during download: {e}")
         return False
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("SWAM - Rosetta Code Dataset Downloader")
+    print("CLAP - Rosetta Code Dataset Downloader")
     print("=" * 50)
     
     success = download_rosetta_code()
     
     if success:
-        print("\n Dataset scaricato e organizzato con successo!")
-        print("Ora puoi eseguire: python main.py analyze")
+        print("\n Dataset downloaded and organized successfully!")
+        print("You can now run: python main.py analyze")
     else:
-        print("\n Download fallito!")
+        print("\n Download failed!")
         sys.exit(1)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Script di pulizia per file di sessione SWAM
-Mantiene solo i file session_*.json degli ultimi 2 giorni
+Cleanup script for CLAP session files
+Keeps only session_*.json files from the last 2 days
 """
 
 import os
@@ -12,41 +12,41 @@ from pathlib import Path
 
 def cleanup_session_files(days_to_keep=2, dry_run=True):
     """
-    Pulisce i file di sessione mantenendo solo quelli degli ultimi N giorni
+    Cleans up session files, keeping only those from the last N days.
     
     Args:
-        days_to_keep (int): Giorni da mantenere (default: 2)
-        dry_run (bool): Se True, mostra solo cosa verrebbe eliminato senza farlo
+        days_to_keep (int): Days to keep (default: 2)
+        dry_run (bool): If True, only shows what would be deleted without actually deleting
     """
     
-    # Directory dei risultati carbon
+    # Directory containing session files
     carbon_dir = "results/carbon"
     
     if not os.path.exists(carbon_dir):
-        print(f" Directory {carbon_dir} non trovata")
+        print(f" Directory {carbon_dir} not found")
         return
     
-    # Calcola la data limite (2 giorni fa)
+    # Calculate cutoff timestamp (2 days ago)
     cutoff_date = datetime.now() - timedelta(days=days_to_keep)
     cutoff_timestamp = cutoff_date.timestamp()
     
-    print(f" PULIZIA FILE SESSIONE SWAM")
-    print(f" Data limite: {cutoff_date.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f" CLEANUP SESSION FILES")
+    print(f" Cutoff date: {cutoff_date.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f" Directory: {carbon_dir}")
     print("=" * 50)
     
-    # Trova tutti i file session_*.json
+    # Find all session_*.json files
     session_pattern = os.path.join(carbon_dir, "session_*.json")
     session_files = glob.glob(session_pattern)
     
-    print(f" File sessione trovati: {len(session_files)}")
+    print(f" Session file found: {len(session_files)}")
     
-    # Categorizza i file
+    # Separate files to keep and delete
     files_to_keep = []
     files_to_delete = []
     
     for file_path in session_files:
-        # Ottieni il timestamp di modifica
+        # Get modification timestamp
         file_mtime = os.path.getmtime(file_path)
         file_date = datetime.fromtimestamp(file_mtime)
         
@@ -55,25 +55,20 @@ def cleanup_session_files(days_to_keep=2, dry_run=True):
         else:
             files_to_delete.append((file_path, file_date))
     
-    # Mostra statistiche
+    # Report
     print(f" File da mantenere: {len(files_to_keep)}")
     print(f"  File da eliminare: {len(files_to_delete)}")
     
     if not files_to_delete:
-        print("\n Nessun file da eliminare! Tutto pulito.")
+        print("\n No file to delete. Cleanup not needed.")
         return 0
     
-    # Mostra alcuni esempi di file da eliminare
-    print(f"\n Esempi file da eliminare:")
-    for i, (file_path, file_date) in enumerate(files_to_delete[:5]):
-        filename = os.path.basename(file_path)
-        print(f"  • {filename} ({file_date.strftime('%Y-%m-%d %H:%M')})")
     
     if len(files_to_delete) > 5:
-        print(f"  ... e altri {len(files_to_delete) - 5} file")
+        print(f"  ... and {len(files_to_delete) - 5} more files")
     
-    # Mostra alcuni esempi di file da mantenere
-    print(f"\n Esempi file da mantenere:")
+    # Show some examples of files to keep
+    print(f"\n Examples of files to keep:")
     for i, (file_path, file_date) in enumerate(files_to_keep[:5]):
         filename = os.path.basename(file_path)
         print(f"  • {filename} ({file_date.strftime('%Y-%m-%d %H:%M')})")
@@ -81,7 +76,7 @@ def cleanup_session_files(days_to_keep=2, dry_run=True):
     if len(files_to_keep) > 5:
         print(f"  ... e altri {len(files_to_keep) - 5} file")
     
-    # Calcola spazio liberato (approssimativo)
+    # Calculate total size to be freed
     total_size = 0
     for file_path, _ in files_to_delete:
         try:
@@ -90,47 +85,46 @@ def cleanup_session_files(days_to_keep=2, dry_run=True):
             pass
     
     size_mb = total_size / (1024 * 1024)
-    print(f"\n Spazio da liberare: ~{size_mb:.1f} MB")
+    print(f"\n Total size to be freed: ~{size_mb:.1f} MB")
     
     if dry_run:
-        print("\n  MODALITÀ DRY-RUN: Nessun file eliminato")
-        print(" Per eliminare effettivamente, usa: --execute")
+        print("\n  DRY-RUN MODE: No files were deleted")
+        print(" To actually delete files, use: --execute")
         return len(files_to_delete)
     
-    # Eliminazione effettiva
-    print(f"\n Eliminazione {len(files_to_delete)} file...")
+    # Effectively delete files
+    print(f"\n Deleting {len(files_to_delete)} files...")
     deleted_count = 0
     
     for file_path, file_date in files_to_delete:
         try:
             os.remove(file_path)
             deleted_count += 1
-            if deleted_count % 100 == 0:  # Progress ogni 100 file
-                print(f"   Eliminati {deleted_count}/{len(files_to_delete)} file...")
+            if deleted_count % 100 == 0:  # Progress every 100 files
+                print(f"   Deleted {deleted_count}/{len(files_to_delete)} files...")
         except Exception as e:
-            print(f" Errore eliminando {os.path.basename(file_path)}: {e}")
+            print(f" Error deleting {os.path.basename(file_path)}: {e}")
     
-    print(f"\n Pulizia completata!")
-    print(f" File eliminati: {deleted_count}")
-    print(f" File mantenuti: {len(files_to_keep)}")
-    print(f" Spazio liberato: ~{size_mb:.1f} MB")
+    print(f"\n Cleanup completed!")
+    print(f" Files deleted: {deleted_count}")
+    print(f" Files kept: {len(files_to_keep)}")
+    print(f" Space freed: ~{size_mb:.1f} MB")
     
     return deleted_count
 
 def show_file_distribution():
-    """Mostra la distribuzione temporale dei file"""
+    """ Shows the distribution of session files over time"""
     carbon_dir = "results/carbon"
     session_pattern = os.path.join(carbon_dir, "session_*.json")
     session_files = glob.glob(session_pattern)
     
     if not session_files:
-        print(" Nessun file sessione trovato")
+        print(" No session files found.")
         return
-    
-    print(f" DISTRIBUZIONE TEMPORALE FILE SESSIONE")
+    print(f" SESSION FILE TIME DISTRIBUTION")
     print("=" * 50)
     
-    # Raggruppa per data
+    # Group by date
     dates = {}
     for file_path in session_files:
         file_mtime = os.path.getmtime(file_path)
@@ -141,58 +135,58 @@ def show_file_distribution():
             dates[date_key] = 0
         dates[date_key] += 1
     
-    # Mostra distribuzione
+    # Display distribution
     total_files = len(session_files)
     for date_key in sorted(dates.keys(), reverse=True):
         count = dates[date_key]
         percentage = (count / total_files) * 100
-        print(f" {date_key}: {count:4d} file ({percentage:5.1f}%)")
+        print(f" {date_key}: {count:4d} files ({percentage:5.1f}%)")
     
-    print(f"\n Totale: {total_files} file")
+    print(f"\n Total: {total_files} file")
     
-    # Suggerisce pulizia
+    # Suggestion
     if len(dates) > 3:
         oldest_dates = sorted(dates.keys())[:-2]  # Tutte tranne le ultime 2
         files_to_clean = sum(dates[date] for date in oldest_dates)
-        print(f"\n Suggerimento: mantenendo 2 giorni, elimineresti {files_to_clean} file")
+        print(f"\n Suggestion: keeping 2 days would delete {files_to_clean} files")
 
 def main():
-    """Funzione principale"""
+    """Main function"""
     import sys
     
-    # Controlla argomenti
+    # Check arguments
     dry_run = True
     days_to_keep = 2
     show_stats = False
     
     if "--execute" in sys.argv:
         dry_run = False
-        print(" MODALITÀ ESECUZIONE: I file verranno eliminati!")
+        print(" EXECUTION MODE: Files will be deleted!")
     
     if "--stats" in sys.argv:
         show_stats = True
     
     if "--help" in sys.argv or "-h" in sys.argv:
-        print(" SCRIPT PULIZIA SESSIONI SWAM")
+        print(" SCRIPT CLEANUP SESSION SWAM")
         print("=" * 40)
-        print("Mantiene solo i file session_*.json degli ultimi N giorni")
+        print("Keeps only session_*.json files from the last N days")
         print()
-        print("Opzioni:")
-        print("  --stats              Mostra distribuzione temporale file")
-        print("  --days N             Giorni da mantenere (default: 2)")
-        print("  --execute            Esegue effettivamente la pulizia")
-        print("  --help, -h           Mostra questo aiuto")
+        print("Options:")
+        print("  --stats              Show file time distribution")
+        print("  --days N             Days to keep (default: 2)")
+        print("  --execute            Actually perform the cleanup")
+        print("  --help, -h           Show this help message")
         print()
-        print("Esempi:")
-        print("  python cleanup_sessions.py                    # Dry-run con 2 giorni")
-        print("  python cleanup_sessions.py --stats            # Mostra statistiche")
-        print("  python cleanup_sessions.py --days 1           # Dry-run con 1 giorno")
-        print("  python cleanup_sessions.py --days 3 --execute # Elimina mantenendo 3 giorni")
+        print("Examples:")
+        print("  python cleanup_sessions.py                    # Dry-run with 2 days")
+        print("  python cleanup_sessions.py --stats            # Show statistics")
+        print("  python cleanup_sessions.py --days 1           # Dry-run with 1 day")
+        print("  python cleanup_sessions.py --days 3 --execute # Delete keeping 3 days")
         print()
-        print("  SICUREZZA:")
-        print("• Modalità dry-run di default (nessuna eliminazione)")
-        print("• Mantiene SEMPRE file benchmark e analisi")
-        print("• Elimina SOLO file session_*.json più vecchi")
+        print("  SAFETY:")
+        print("• Default dry-run mode (no deletion)")
+        print("• ALWAYS keeps benchmark and analysis files")
+        print("• ONLY deletes older session_*.json files")
         return
     
     if "--days" in sys.argv:
@@ -200,15 +194,15 @@ def main():
             idx = sys.argv.index("--days")
             days_to_keep = int(sys.argv[idx + 1])
         except (IndexError, ValueError):
-            print(" Errore: --days richiede un numero")
+            print(" Error: specify a valid number of days after --days")
             sys.exit(1)
     
-    # Controlla se siamo nella directory corretta
+    # Check we are in the right directory
     if not os.path.exists("main.py") or not os.path.exists("results"):
-        print(" Errore: Esegui lo script dalla directory SWAM-Project")
+        print(" Error: Run the script from the CLAP-Project directory")
         sys.exit(1)
     
-    # Mostra statistiche se richiesto
+    # Show stats or perform cleanup
     if show_stats:
         show_file_distribution()
         return
@@ -217,20 +211,20 @@ def main():
         deleted_count = cleanup_session_files(days_to_keep=days_to_keep, dry_run=dry_run)
         
         if dry_run and deleted_count > 0:
-            print(f"\n Per eseguire la pulizia:")
+            print(f"\n To perform the cleanup:")
             print(f"   python cleanup_sessions.py --execute")
-            print(f"\n Per cambiare giorni da mantenere:")
+            print(f"\n To change days to keep:")
             print(f"   python cleanup_sessions.py --days 3 --execute")
         elif dry_run and deleted_count == 0:
-            print(f"\n Opzioni disponibili:")
-            print(f"   python cleanup_sessions.py --stats          # Mostra distribuzione file")
-            print(f"   python cleanup_sessions.py --days 1         # Testa con 1 giorno") 
-            print(f"   python cleanup_sessions.py --help           # Mostra aiuto")
+            print(f"\n Available options:")
+            print(f"   python cleanup_sessions.py --stats          # Show file distribution")
+            print(f"   python cleanup_sessions.py --days 1         # Test with 1 day") 
+            print(f"   python cleanup_sessions.py --help           # Show help")
             
     except KeyboardInterrupt:
-        print("\n  Operazione annullata dall'utente")
+        print("\n  Process interrupted by user")
     except Exception as e:
-        print(f" Errore imprevisto: {e}")
+        print(f" Unexpected error: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

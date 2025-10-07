@@ -1,7 +1,7 @@
-# SWAM Project - Python Dependencies
-# File requirements.txt per installazione via pip
+# CLAP – Cross-Language Analysis Project
+# requirements.txt file for installation via pip
 
-# Dataset e Machine Learning
+# Dataset and Machine Learning
 datasets>=2.14.0
 huggingface-hub>=0.16.0
 
@@ -9,24 +9,24 @@ huggingface-hub>=0.16.0
 pandas>=2.0.0
 numpy>=1.24.0
 
-# Progress bars e UI
+# Progress bars and UI
 tqdm>=4.65.0
 colorama>=0.4.6
 
 # System utilities
 psutil>=5.9.0
 
-# Carbon footprint tracking (NOVITÀ!)
+# Carbon footprint tracking (NEW!)
 codecarbon>=3.0.0
 
-# Statistiche per benchmark CO2 (built-in Python)
+# Statistics for CO2 benchmarking (built-in Python)
 # statistics (built-in)
 # datetime (built-in)
 # re (built-in)
 
-# Optional: per migliorare performance
+# Optional: to improve performance
 pyarrow>=12.0.0
 
-# Development e debugging (opzionali)
+# Development and debugging (optional)
 # ipython>=8.12.0
 # jupyter>=1.0.0

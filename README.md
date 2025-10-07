@@ -1,207 +1,207 @@
 # CLAP – Cross-Language Analysis Project
 
 <div align="center">
-  <img src="logoSWAM.png" alt="SWAM Project Logo" width="300"/>
+    <img src="logoSWAM.png" alt="CLAP Project Logo" width="300"/>
 </div>
 
-Sistema Modulare Avanzato per Analisi e Esecuzione Multi-Linguaggio con tracciamento emissioni CO2.
+Advanced modular system for multi-language code analysis and execution with CO2 emission tracking.
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
-[![Languages](https://img.shields.io/badge/Languages-15+-green.svg)](#linguaggi-supportati)
+[![Languages](https://img.shields.io/badge/Languages-15+-green.svg)](#supported-languages)
 [![CodeCarbon](https://img.shields.io/badge/CodeCarbon-Enabled-green.svg)](https://codecarbon.io)
 [![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)](https://github.com)
 
-## 📖 Descrizione
+## 📖 Description
 
-SWAM Project è un sistema avanzato per l'analisi automatica e l'esecuzione di codice in 15+ linguaggi di programmazione diversi. Il progetto risolve il problema della comparazione cross-linguaggio di algoritmi e implementazioni, fornendo strumenti per:
+**CLAP Project** is an advanced system for automated analysis and execution of code across 15+ programming languages. The project addresses cross-language comparison of algorithms and implementations and provides tools for:
 
-- **Ricerca mirata**: Trova implementazioni specifiche di algoritmi nel dataset
-- **Esecuzione automatica**: Testa codice in multiple lingue simultaneamente  
-- **Analisi delle emissioni**: Traccia il consumo energetico e le emissioni CO2 del codice
-- **Benchmarking**: Confronta performance ed efficienza energetica tra linguaggi
+- **Targeted search**: Find specific algorithm implementations in the dataset
+- **Automated execution**: Run code across multiple languages simultaneously
+- **Emissions analysis**: Track energy consumption and CO2 emissions of code
+- **Benchmarking**: Compare performance and energy efficiency across languages
 
-**Contesto d'uso**: Ricerca accademica, didattica, analisi comparative di linguaggi di programmazione, ottimizzazione energetica del software.
+**Use cases**: academic research, teaching, comparative language analysis, and software energy optimization.
 
-## 📑 Indice
+## 📑 Table of Contents
 
-1. [Descrizione](#-descrizione)
-2. [Installazione](#️-installazione)
-3. [Utilizzo](#-utilizzo)
-4. [Configurazione](#️-configurazione)
-5. [Struttura del progetto](#-struttura-del-progetto)
+1. [Description](#-description)
+2. [Installation](#️-installation)
+3. [Usage](#-usage)
+4. [Configuration](#️-configuration)
+5. [Project Structure](#-project-structure)
 
-## 🛠️ Installazione
+## 🛠️ Installation
 
-### Setup Rapido (3 minuti)
+### Quick Setup (3 minutes)
 
 ```bash
-# 1. Clone e setup base
+# 1. Clone and initial setup
 git clone https://github.com/Cappetti99/SWAM-Project.git
 cd SWAM-Project
 
-# 2. Environment Python
+# 2. Python virtual environment
 python3 -m venv swam_env
 source swam_env/bin/activate  # Linux/macOS
 # swam_env\Scripts\activate   # Windows
 
-# 3. Dipendenze Python
+# 3. Python dependencies
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# 4. Test sistema
+# 4. System check
 python main.py test
 ```
 
-Il sistema **si adatta automaticamente** ai linguaggi disponibili!
+The system **automatically adapts** to available languages.
 
-### Setup Completo (Tutti i 16 linguaggi)
+### Full Setup (All 16 languages)
 
-Per massima funzionalità, installa tutti i linguaggi supportati:
+For full functionality, install all supported languages:
 
 **🐧 Ubuntu/Debian - One-liner:**
 ```bash
 sudo apt update && sudo apt install -y build-essential openjdk-11-jdk nodejs npm golang-go php-cli ruby-full r-base ghc ocaml mono-complete && sudo npm install -g typescript && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh && sudo snap install julia --classic
 ```
 
-**🍎 macOS (con Homebrew):**
+**🍎 macOS (Homebrew):**
 ```bash
 brew install gcc openjdk node go php ruby r ghc ocaml mono julia && npm install -g typescript && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-### Guide Dettagliate
+### Detailed Guides
 
-- **📚 [SETUP_GUIDE.md](SETUP_GUIDE.md)** - Guida completa step-by-step con troubleshooting
-- **💻 [SYSTEM_REQUIREMENTS.md](SYSTEM_REQUIREMENTS.md)** - Comandi specifici per ogni OS
-- **📋 [requirements.txt](requirements.txt)** - Dipendenze Python documentate
+- **📚 [SETUP_GUIDE.md](SETUP_GUIDE.md)** - Full step-by-step guide with troubleshooting
+- **💻 [SYSTEM_REQUIREMENTS.md](SYSTEM_REQUIREMENTS.md)** - OS-specific installation commands
+- **📋 [requirements.txt](requirements.txt)** - Python dependencies
 
-### Verifica Installazione
+### Verify Installation
 
 ```bash
 python main.py test
-# Obiettivo: 15-16/16 linguaggi (MATLAB è opzionale)
+# Target: 15-16/16 languages (MATLAB is optional)
 ```
 
-## 🚀 Utilizzo
+## 🚀 Usage
 
-### Comandi Principali
+### Main Commands
 
-| Comando | Descrizione | Quando Usarlo |
-|---------|-------------|---------------|
-| `find` | Ricerca mirata task specifiche | Per trovare implementazioni di algoritmi |
-| `test` | Verifica linguaggi disponibili | Setup iniziale e troubleshooting |
-| `smart` | Esecuzione intelligente TOP 10 task | Test rapidi multi-linguaggio |
-| `carbon` | Analisi dati CO2 esistenti | Visualizzazione risultati |
-| `benchmark` | Benchmark emissioni CO2 | Raccolta dati scientifici |
-| `analyze` | Analisi completa task comuni | Ricerca approfondita |
-| `clean` | Pulizia file temporanei | Manutenzione sistema |
+| Command | Description | When to use |
+|---------|-------------|-------------|
+| `find` | Targeted task search | To find algorithm implementations |
+| `test` | Check available languages | Initial setup and troubleshooting |
+| `smart` | Smart execution of TOP 10 tasks | Quick multi-language testing |
+| `carbon` | Analyze existing CO2 data | View results |
+| `benchmark` | CO2 benchmarking | Gather scientific data |
+| `analyze` | Full analysis of common tasks | Deep research |
+| `clean` | Clean temporary files | Maintenance |
 
-### Esempi Pratici
+### Practical Examples
 
-**1. Ricerca Mirata (Raccomandato):**
+**1. Targeted Search (Recommended):**
 ```bash
-# Trova implementazioni di bubble sort
+# Find bubble sort implementations
 python main.py find --task "bubble"
 
-# Output:
-# 🔍 Ricerca task: 'bubble' (solo linguaggi testati)
-# ✅ Trovate 14 task in 14 linguaggi testati:
+# Example output:
+# 🔍 Searching for task: 'bubble' (tested languages only)
+# ✅ Found 14 tasks in 14 tested languages:
 # 📁 PYTHON (1 file): snippet_39_Sorting_algorithmsBubble_sort.py
 # 📁 JAVA (1 file): snippet_36_Sorting_algorithmsBubble_sort.java
-# 🤔 Vuoi eseguire una di queste task? [s/N]
+# 🤔 Do you want to run one of these tasks? [y/N]
 
-# Cerca algoritmi fibonacci
+# Search for fibonacci algorithms
 python main.py find --task "fibonacci"
 
-# Cerca tutti gli algoritmi di sorting
+# Search all sorting algorithms
 python main.py find --task "sort"
 ```
 
-**2. Test e Verifica Sistema:**
+**2. System Check:**
 ```bash
-# Verifica linguaggi disponibili
+# Verify available languages
 python main.py test
 
-# Output atteso:
+# Expected output:
 # 📋 Testing 16 languages...
-# ✅ Linguaggi disponibili: 15/16 (93.8%)
-# [FAIL] MATLAB: Comando 'matlab' non trovato
+# ✅ Available languages: 15/16 (93.8%)
+# [FAIL] MATLAB: command 'matlab' not found
 ```
 
-**3. Esecuzione Intelligente:**
+**3. Smart Execution:**
 ```bash
-# Esegue TOP 10 task comuni sui linguaggi funzionanti
+# Run TOP 10 common tasks on available languages
 python main.py smart
 
-# Output:
-# 🧠 ESECUZIONE INTELLIGENTE
-# Linguaggi disponibili: 15
-# 🎉 TOTALE: 45/150 (30.0%) esecuzioni riuscite
+# Example output:
+# 🧠 SMART EXECUTION
+# Available languages: 15
+# 🎉 TOTAL: 45/150 (30.0%) successful runs
 ```
 
-**4. Analisi Emissioni CO2:**
+**4. CO2 Emissions Analysis:**
 ```bash
-# Visualizza dati CO2 esistenti
+# Show existing CO2 data
 python main.py carbon
 
-# Output:
-# 📊 VISUALIZZAZIONE DATI CO2
-# 🔍 Trovati 127 file di sessione CO2
-# 🌍 Emissioni totali: 2.45 kg CO2eq
-# ⚡ Energia totale: 15.67 Wh
+# Example output:
+# 📊 CO2 DATA OVERVIEW
+# 🔍 Found 127 CO2 session files
+# 🌍 Total emissions: 2.45 kg CO2eq
+# ⚡ Total energy: 15.67 Wh
 
-# Raccogli nuovi dati CO2
+# Collect new CO2 data
 python main.py benchmark
 ```
 
-### Input/Output Attesi
+### Expected I/O
 
-**Input tipici:**
-- Comandi da terminale con parametri opzionali
-- Selezioni interattive durante l'esecuzione (s/N, numeri)
-- Nessun file di input richiesto (usa dataset interno)
+**Common inputs:**
+- Command-line arguments and optional flags
+- Interactive selections during runs (y/N, numeric choices)
+- No external input files required (uses internal dataset)
 
-**Output generati:**
-- Risultati in `results/` organizzati per tipologia
-- Log dettagliati per debug e analisi
-- File JSON con dati strutturati per analisi successive
-- Report CSV per analisi statistica
+**Generated outputs:**
+- Result files in `results/` organized by type
+- Detailed logs for debugging and analysis
+- JSON files with structured data for further processing
+- CSV reports for statistical analysis
 
-## ⚙️ Configurazione
+## ⚙️ Configuration
 
-### Variabili d'Ambiente
+### Environment Variables
 
-Il sistema è progettato per funzionare **senza configurazione** nella maggior parte dei casi, adattandosi automaticamente al sistema disponibile.
+The system is designed to work with no configuration in most cases and adapts automatically to the host environment.
 
-**Opzionali (per customizzazioni avanzate):**
+**Optional (advanced customization):**
 ```bash
-# Percorso dataset personalizzato (default: ./data/generated/)
+# Custom dataset path (default: ./data/generated/)
 export SWAM_DATASET_PATH="/path/to/custom/dataset"
 
-# Directory output personalizzata (default: ./results/)
+# Custom output directory (default: ./results/)
 export SWAM_OUTPUT_PATH="/path/to/custom/results"
 
-# Livello logging (default: INFO)
-export SWAM_LOG_LEVEL="DEBUG"  # Per troubleshooting dettagliato
+# Logging level (default: INFO)
+export SWAM_LOG_LEVEL="DEBUG"  # For detailed troubleshooting
 ```
 
-### File di Configurazione
+### Configuration Files
 
-**1. requirements.txt** - Dipendenze Python:
+**1. `requirements.txt`** - Python dependencies:
 ```
-codecarbon>=3.0.0     # Tracciamento CO2
-datasets>=2.14.0      # Gestione dataset
-pandas>=2.0.0         # Analisi dati  
-numpy>=1.24.0         # Calcoli numerici
+codecarbon>=3.0.0     # CO2 tracking
+datasets>=2.14.0      # Dataset handling
+pandas>=2.0.0         # Data analysis
+numpy>=1.24.0         # Numerical computations
 tqdm>=4.65.0          # Progress bars
-colorama>=0.4.6       # Output colorato
-psutil>=5.9.0         # Informazioni sistema
-pyarrow>=12.0.0       # Performance I/O
+colorama>=0.4.6       # Colored terminal output
+psutil>=5.9.0         # System information
+pyarrow>=12.0.0       # Fast I/O
 ```
 
-**2. modules/language_config.py** - Configurazione linguaggi:
-- Comandi di compilazione ed esecuzione per ogni linguaggio
-- Estensioni file supportate
-- Timeout e parametri di sicurezza
+**2. `modules/language_config.py`** - Language configuration:
+- Compilation and execution commands for each language
+- Supported file extensions
+- Timeouts and safety parameters
 
 ### Personalizzazioni Disponibili
 
@@ -727,12 +727,12 @@ carbon_summary_2025-10.json     # Riassunto mensile
 
 ### Dataset Organizzazione
 
-Il dataset in `data/generated/code_snippets/` è organizzato per:
-- **Categoria**: algorithms/, basic/, strings/, mathematics/
-- **Linguaggio**: python/, java/, cpp/, go/, rust/, etc.
-- **Task**: Con naming pattern `snippet_ID_Category_TaskName.ext`
+The dataset in `data/generated/code_snippets/` is organized by:
+- **Category**: algorithms/, basic/, strings/, mathematics/
+- **Language**: python/, java/, cpp/, go/, rust/, etc.
+- **Task**: Using the naming pattern `snippet_ID_Category_TaskName.ext`
 
-Esempio:
+Example:
 ```
 data/generated/code_snippets/algorithms/python/
 ├── snippet_39_Sorting_algorithmsBubble_sort.py
@@ -742,46 +742,46 @@ data/generated/code_snippets/algorithms/python/
 
 ---
 
-## � Informazioni Aggiuntive
+## Additional Information
 
-### Linguaggi Supportati (Sistema Adattivo)
+### Supported Languages (Adaptive System)
 
-Il sistema rileva automaticamente i linguaggi disponibili e si adatta di conseguenza.
+The system automatically detects available languages and adapts accordingly.
 
-**Tipicamente Disponibili (15/16):**
-| Categoria | Linguaggi | Disponibilità |
+**Typically Available (15/16):**
+| Category | Languages | Availability |
 |-----------|-----------|---------------|
-| **Interpretati** | Python, JavaScript, Ruby, PHP, R, Julia | 6/6 (100%) |
-| **Compilati** | C, C++, Java, Go, Rust, Haskell, OCaml, TypeScript | 8/8 (100%) |
+| **Interpreted** | Python, JavaScript, Ruby, PHP, R, Julia | 6/6 (100%) |
+| **Compiled** | C, C++, Java, Go, Rust, Haskell, OCaml, TypeScript | 8/8 (100%) |
 | **VM-based** | C# (Mono) | 1/1 (100%) |
-| **Commerciali** | MATLAB* | 0/1 (0%) |
+| **Commercial** | MATLAB* | 0/1 (0%) |
 
-*Solo MATLAB richiede licenza commerciale
+*MATLAB requires a commercial license
 
-### Performance Tipiche
+### Typical Performance
 
-| Operazione | Tempo | Note |
+| Operation | Time | Notes |
 |------------|-------|------|
-| Test linguaggi | 2-5 secondi | 15-16 linguaggi |
-| Ricerca task | <1 secondo | Pattern matching |
-| Esecuzione singola | 0.01-2.0s | Dipende da linguaggio |
-| Benchmark CO2 | 5-10 minuti | Per dataset completo |
+| Language test | 2-5 seconds | 15-16 languages |
+| Task search | <1 second | Pattern matching |
+| Single execution | 0.01-2.0s | Depends on language |
+| CO2 benchmark | 5-10 minutes | For the full dataset |
 
 ### Troubleshooting
 
-**Linguaggio non disponibile:**
+**Language missing:**
 ```bash
-python main.py test  # Mostra linguaggi mancanti
-# Il sistema continua con quelli disponibili
+python main.py test  # Shows missing languages
+# The system continues with available languages
 ```
 
-**Errori di compilazione:**
+**Compilation errors:**
 ```bash
-python main.py smart  # Usa solo linguaggi funzionanti
-python main.py clean  # Pulisce file temporanei
+python main.py smart  # Uses only functioning languages
+python main.py clean  # Cleans temporary files
 ```
 
 ---
 
-**SWAM Project** © 2025 - Sistema Multi-linguaggio per Analisi Codice  
-Autore: Lorenzo Cappetti
+**CLAP Project** © 2025 - Cross-Language Code Analysis System  
+Author: Lorenzo Cappetti

@@ -46,7 +46,7 @@ class EnhancedDependencyInstaller:
                 ]
             },
             'java': {
-                'installer': 'maven',  # Sistema automatico: crea pom.xml temporaneo e gestisce dipendenze
+                'installer': 'maven',  # Automatic system: creates temporary pom.xml and manages dependencies
                 'command': ['mvn', 'dependency:resolve'],
                 'import_patterns': [
                     r'import\s+([\w\.]+);'
@@ -77,8 +77,8 @@ class EnhancedDependencyInstaller:
                 ]
             }
         }
-        
-        # Librerie standard che non vanno installate
+
+        # Standard libraries that should not be installed
         self.standard_libraries = {
             'python': {
                 'os', 'sys', 'json', 'time', 'datetime', 'math', 're', 
@@ -96,8 +96,8 @@ class EnhancedDependencyInstaller:
                 'date', 'time', 'json', 'fileutils', 'pathname'
             }
         }
-        
-        # Mapping da import Java a coordinate Maven (groupId:artifactId)
+
+        # Mapping from Java import to Maven coordinates (groupId:artifactId)
         self.java_import_to_maven = {
             'com.google.gson': 'com.google.code.gson:gson:2.10.1',
             'org.apache.commons.lang3': 'org.apache.commons:commons-lang3:3.12.0',
@@ -117,7 +117,7 @@ class EnhancedDependencyInstaller:
         }
     
     def extract_dependencies(self, code, language):
-        """Estrae dipendenze dal codice sorgente"""
+        """Extract dependencies from source code"""
         if language not in self.supported_installers:
             return []
         
@@ -127,20 +127,20 @@ class EnhancedDependencyInstaller:
         for pattern in patterns:
             matches = re.findall(pattern, code, re.MULTILINE)
             dependencies.update(matches)
-        
-        # Filtra librerie standard
+
+        # Filter out standard libraries
         standard_libs = self.standard_libraries.get(language, set())
         external_deps = [dep for dep in dependencies if dep not in standard_libs]
         
         return external_deps
     
     def map_java_import_to_maven(self, java_import):
-        """Mappa un import Java alla sua coordinata Maven"""
-        # Cerca match esatto
+        """Map a Java import to its Maven coordinates"""
+        # Look for exact match
         if java_import in self.java_import_to_maven:
             return self.java_import_to_maven[java_import]
-        
-        # Cerca match per prefisso (es: com.google.gson.JsonObject -> com.google.gson)
+
+        # Look for prefix match (e.g., com.google.gson.JsonObject -> com.google.gson)
         for import_prefix, maven_coord in self.java_import_to_maven.items():
             if java_import.startswith(import_prefix):
                 return maven_coord
@@ -148,19 +148,19 @@ class EnhancedDependencyInstaller:
         return None
     
     def create_temp_maven_project(self, dependencies):
-        """Crea un progetto Maven temporaneo con le dipendenze specificate"""
+        """Create a temporary Maven project with the specified dependencies"""
         import tempfile
         import uuid
-        
-        # Crea directory temporanea
+
+        # Create temporary directory
         temp_dir = Path(tempfile.gettempdir()) / f"swam_java_{uuid.uuid4().hex[:8]}"
         temp_dir.mkdir(exist_ok=True)
-        
-        # Crea struttura Maven
+
+        # Create Maven structure
         src_main_java = temp_dir / "src" / "main" / "java"
         src_main_java.mkdir(parents=True, exist_ok=True)
-        
-        # Genera pom.xml
+
+        # Generate pom.xml
         pom_content = self.generate_pom_xml(dependencies)
         pom_file = temp_dir / "pom.xml"
         
@@ -170,7 +170,7 @@ class EnhancedDependencyInstaller:
         return temp_dir, pom_file
     
     def generate_pom_xml(self, maven_dependencies):
-        """Genera contenuto pom.xml con le dipendenze specificate"""
+        """Generate pom.xml content with the specified dependencies"""
         dependencies_xml = ""
         
         for dep in maven_dependencies:
@@ -224,7 +224,7 @@ class EnhancedDependencyInstaller:
         return pom_template
     
     def install_dependency(self, dependency, language):
-        """Installa una singola dipendenza"""
+        """Install a single dependency"""
         if language not in self.supported_installers:
             return False
         
@@ -253,36 +253,36 @@ class EnhancedDependencyInstaller:
                 return result.returncode == 0
                 
             elif language == 'java':
-                # Usa il sistema Maven automatico
+                # Use the automatic Maven system
                 return self.install_java_dependency(dependency)
-                
-            # Altri linguaggi richiedono setup più complesso
+
+            # Other languages require more complex setup
             return False
             
         except Exception as e:
-            print(f"Errore installazione {dependency} per {language}: {e}")
+            print(f"Error installing {dependency} for {language}: {e}")
             return False
     
     def install_java_dependency(self, java_import):
-        """Installa dipendenza Java usando Maven temporaneo"""
+        """Install a Java dependency using a temporary Maven"""
         try:
-            # Mappa import a coordinata Maven
+            # Map import to Maven coordinates
             maven_coord = self.map_java_import_to_maven(java_import)
             if not maven_coord:
-                print(f"  Mapping non trovato per: {java_import}")
+                print(f"  Mapping not found for: {java_import}")
                 return False
             
             print(f" Mapped: {java_import} -> {maven_coord}")
-            
-            # Crea progetto Maven temporaneo
+
+            # Create temporary Maven project
             temp_dir, pom_file = self.create_temp_maven_project([maven_coord])
-            
-            # Esegui Maven dependency:resolve
+
+            # Run Maven dependency:resolve
             cmd = ['mvn', 'dependency:resolve', '-f', str(pom_file)]
             result = subprocess.run(
                 cmd, 
                 capture_output=True, 
-                timeout=300,  # 5 minuti per download
+                timeout=300,  # 5 minutes for download
                 cwd=temp_dir,
                 text=True
             )
@@ -291,65 +291,65 @@ class EnhancedDependencyInstaller:
             
             if success:
                 print(f"   ✅ Maven dependency resolved successfully")
-                # Opzionale: copia JAR in una cache locale
+                # Optional: copy JAR to local cache
                 self._cache_maven_dependency(temp_dir, maven_coord)
             else:
                 print(f"   ❌ Maven failed: {result.stderr[:200]}")
-            
-            # Cleanup del progetto temporaneo
+
+            # Cleanup temporary project
             import shutil
             shutil.rmtree(temp_dir, ignore_errors=True)
             
             return success
             
         except subprocess.TimeoutExpired:
-            print(f"  Timeout durante download Maven")
+            print(f"  Timeout during Maven download")
             return False
         except Exception as e:
-            print(f" Errore Java dependency: {e}")
+            print(f" Error installing Java dependency: {e}")
             return False
     
     def _cache_maven_dependency(self, temp_dir, maven_coord):
-        """Opzionale: copia dependency in cache locale SWAM"""
+        """Optional: copy dependency to local SWAM cache"""
         try:
-            # Crea cache directory
+            # Create cache directory
             cache_dir = Path.home() / ".swam" / "java_deps"
             cache_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Trova JAR nella repository locale Maven
+
+            # Find JAR in local Maven repository
             m2_repo = temp_dir / ".m2" / "repository"
             if not m2_repo.exists():
                 m2_repo = Path.home() / ".m2" / "repository"
-            
-            # Cerca JAR files
+
+            # Find JAR files
             jar_files = list(m2_repo.rglob("*.jar"))
             
             for jar_file in jar_files:
                 if jar_file.name not in ['maven-metadata-local.xml']:
-                    # Copia in cache SWAM
+                    # Copy to SWAM cache
                     cache_jar = cache_dir / jar_file.name
                     import shutil
                     shutil.copy2(jar_file, cache_jar)
                     print(f" Cached: {jar_file.name}")
                     
         except Exception as e:
-            # Cache failure non è critico
+            # Cache failure is not critical
             pass
     
     def install_all_dependencies(self, code, language):
-        """Installa tutte le dipendenze rilevate nel codice"""
+        """Install all detected dependencies in the code"""
         dependencies = self.extract_dependencies(code, language)
         
         if not dependencies:
             return True, []
-        
-        print(f" Dipendenze rilevate per {language}: {dependencies}")
-        
+
+        print(f" Detected dependencies for {language}: {dependencies}")
+
         installed = []
         failed = []
         
         for dep in dependencies:
-            print(f"   Installando {dep}...", end=' ')
+            print(f"   Installing {dep}...", end=' ')
             
             if self.install_dependency(dep, language):
                 print("✅")
@@ -362,42 +362,42 @@ class EnhancedDependencyInstaller:
         return success, {'installed': installed, 'failed': failed}
 
 
-# Integrazione con SmartExecutor
+# Integration with SmartExecutor
 class EnhancedSmartExecutor:
-    """SmartExecutor con installazione automatica dipendenze"""
+    """SmartExecutor with automatic dependency installation"""
     
     def __init__(self):
-        # Importa SmartExecutor originale
+        # Import original SmartExecutor
         from src.smart_executor import SmartExecutor
         self.base_executor = SmartExecutor()
         self.auto_installer = AutoDependencyInstaller()
         
     def execute_code_with_auto_install(self, code, language, task_name):
-        """Esegue codice con installazione automatica dipendenze"""
-        
-        # Prima tentativo di esecuzione normale
+        """Execute code with automatic dependency installation"""
+
+        # First attempt normal execution
         result = self.base_executor.execute_code(code, language, task_name)
-        
-        # Se fallisce per import/require errors, prova installazione automatica
+
+        # If it fails due to import/require errors, try automatic installation
         if not result['success'] and self.is_dependency_error(result['error']):
-            print(f" Rilevato errore dipendenze per {language}")
-            
-            # Installa dipendenze automaticamente
+            print(f" Detected dependency error for {language}")
+
+            # Install dependencies automatically
             install_success, install_result = self.auto_installer.install_all_dependencies(code, language)
             
             if install_success:
-                print(f"✅ Dipendenze installate, nuovo tentativo...")
-                # Riprova esecuzione
+                print(f"✅ Dependencies installed, retrying...")
+                # Retry execution
                 result = self.base_executor.execute_code(code, language, task_name)
                 result['auto_install'] = install_result
             else:
-                print(f"❌ Installazione dipendenze fallita: {install_result['failed']}")
+                print(f"❌ Dependency installation failed: {install_result['failed']}")
                 result['auto_install'] = install_result
         
         return result
     
     def is_dependency_error(self, error_message):
-        """Determina se l'errore è dovuto a dipendenze mancanti"""
+        """Determine if the error is due to missing dependencies"""
         dependency_indicators = [
             'ModuleNotFoundError',
             'ImportError',
@@ -418,11 +418,11 @@ AutoDependencyInstaller = EnhancedDependencyInstaller
 if __name__ == "__main__":
     print(" AUTO DEPENDENCY INSTALLER")
     print("=" * 40)
-    
-    # Test del sistema
+
+    # Test the system
     installer = AutoDependencyInstaller()
-    
-    # Esempio Python
+
+    # Python example
     python_code = """
 import numpy as np
 import pandas as pd
@@ -433,7 +433,7 @@ print("Testing auto installation")
     
     deps = installer.extract_dependencies(python_code, 'python')
     print(f"Dipendenze Python rilevate: {deps}")
-    
-    # Test installazione (commenta se non vuoi installare davvero)
+
+    # Test installation (comment out if you don't want to actually install)
     # success, result = installer.install_all_dependencies(python_code, 'python')
-    # print(f"Installazione: {success}, Risultato: {result}")
+    # print(f"Installation: {success}, Result: {result}")
