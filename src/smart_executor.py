@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Smart Executor - Esecutore intelligente che si adatta ai linguaggi disponibili
+Smart Executor - Intelligent executor that adapts to available languages
 """
 
 import sys
@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 from datetime import datetime
 
-# Aggiunge il path per importare i moduli SWAM
+# Adds the path to import CLAP modules
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 modules_path = os.path.join(project_root, 'modules')
@@ -27,10 +27,10 @@ try:
     MODULAR_COMPONENTS_AVAILABLE = True
 except ImportError:
     MODULAR_COMPONENTS_AVAILABLE = False
-    print("⚠️ Modular components not available, using fallback configuration")
+    print(" Modular components not available, using fallback configuration")
 
-# Importa il carbon tracker per monitorare l'impatto ambientale (lazy import)
-CARBON_TRACKING_AVAILABLE = False  # Temporaneamente disabilitato per debug
+# Import the carbon tracker to monitor environmental impact (lazy import)
+CARBON_TRACKING_AVAILABLE = False  # Temporarily disabled for debugging
 start_carbon_tracking = None
 stop_carbon_tracking = None
 
@@ -44,7 +44,7 @@ def _lazy_import_carbon():
             CARBON_TRACKING_AVAILABLE = False
 
 class SmartExecutor:
-    """Esecutore intelligente con componenti modulari che rileva automaticamente i linguaggi disponibili"""
+    """Intelligent executor with modular components that automatically detects available languages"""
 
     def __init__(self):
         self.results_dir = "results/execution"
@@ -54,23 +54,23 @@ class SmartExecutor:
         
         # Initialize modular components
         if MODULAR_COMPONENTS_AVAILABLE:
-            self.config_manager = LanguageConfigManager('SWAM')
+            self.config_manager = LanguageConfigManager('CLAP')
             self.logger = get_logger(session_id=f"smart_executor_{int(time.time())}")
             self.dependency_analyzer = ModernDependencyAnalyzer()
-            self.logger.info("🚀 SmartExecutor initialized with modular components")
+            self.logger.info(" SmartExecutor initialized with modular components")
             print("✅ MODULAR: Using modern language configuration and logging systems")
         else:
             self.config_manager = None
             self.logger = None
             self.dependency_analyzer = None
-            print("⚠️ LEGACY: Using fallback configuration (modular components not available)")
+            print(" LEGACY: Using fallback configuration (modular components not available)")
         
-        # Aggiungi homebrew al PATH per trovare tutti i compilatori
+        # Add homebrew to PATH to locate all compilers
         homebrew_path = "/opt/homebrew/bin"
         if homebrew_path not in os.environ.get("PATH", ""):
             os.environ["PATH"] = homebrew_path + ":" + os.environ.get("PATH", "")
 
-        # Configurazione completa per tutti i linguaggi supportati (aligned con LanguageTester)
+        # Full configuration for all supported languages (aligned with LanguageTester)
         self.language_config = {
             'python': {
                 'extension': '.py',
@@ -121,13 +121,13 @@ class SmartExecutor:
             },
             'matlab': {
                 'extension': '.m',
-                'executor': ['matlab', '-batch'],  # MATLAB non via conda
+                'executor': ['matlab', '-batch'],  
                 'timeout': 30,
                 'test_code': 'fprintf("test\\n");'
             },
             'csharp': {
                 'extension': '.cs',
-                'compiler': ['mcs'],  # Usa mcs (Mono C# compiler)
+                'compiler': ['mcs'], 
                 'executor': ['mono'],
                 'timeout': 30,
                 'test_code': '''using System;
@@ -200,7 +200,7 @@ func main() {
             }
         }
 
-        # Rileva linguaggi disponibili dai risultati del test o fallback
+        # Detect available languages from test results or fallback
         self.load_available_languages_from_test()
 
     def get_modular_config(self, language):
@@ -234,26 +234,26 @@ func main() {
         return []
 
     def get_swam_env(self, language=None):
-        """Ottiene l'ambiente modificato per includere i binari dell'ambiente SWAM"""
+        """Gets the modified environment to include the binaries of the CLAP environment"""
         env = os.environ.copy()
         
-        # Path tipici per miniconda/conda
+        # Typical paths for miniconda/conda
         conda_base = os.path.expanduser("~/miniconda3")
         swam_env_path = os.path.join(conda_base, "envs", "SWAM", "bin")
         
         if os.path.exists(swam_env_path):
-            # Aggiungi il path dell'ambiente SWAM all'inizio del PATH
+            # Add the SWAM environment path at the beginning of the PATH
             current_path = env.get('PATH', '')
             env['PATH'] = f"{swam_env_path}:{current_path}"
         
-        # Rimuovi LD_LIBRARY_PATH per linguaggi che hanno problemi con libtinfo
+        # Remove LD_LIBRARY_PATH for languages that have issues with libtinfo
         if language in ['java', 'haskell', 'python', 'r', 'julia', 'javascript', 'php', 'ruby']:
             env.pop('LD_LIBRARY_PATH', None)
         
         return env
 
     def check_command_available(self, command):
-        """Verifica se un comando è disponibile"""
+        """Checks if a command is available"""
         try:
             env = self.get_swam_env()
             result = subprocess.run(
@@ -267,16 +267,16 @@ func main() {
             return False
 
     def test_language_execution(self, language, config):
-        """Testa se un linguaggio può essere eseguito"""
+        """Tests if a language can be executed"""
         try:
-            # Crea file temporaneo
+            # Create temporary file
             with tempfile.NamedTemporaryFile(
                 mode='w',
                 suffix=config['extension'],
                 delete=False
             ) as f:
                 if language == 'java':
-                    # Per Java, usa nome specifico per la classe
+                    # For Java, use a specific name for the class
                     f.close()
                     os.unlink(f.name)
                     temp_file = f.name.replace(os.path.basename(f.name), 'Test.java')
@@ -289,10 +289,10 @@ func main() {
             temp_dir = os.path.dirname(temp_file)
 
             try:
-                # Compilazione se necessaria
+                # Compilation if necessary
                 if 'compiler' in config:
                     if language in ['c', 'cpp']:
-                        # Per C/C++, aggiungi il nome del file di output
+                        # For C/C++, add the name of the output file
                         output_file = os.path.join(temp_dir, 'test')
                         compile_cmd = config['compiler'] + [output_file, temp_file]
                     else:
@@ -308,7 +308,7 @@ func main() {
                     if compile_result.returncode != 0:
                         return False
 
-                # Esecuzione
+                # Execution
                 if 'compiler' in config:
                     if language == 'java':
                         run_cmd = config['executor'] + ['Test']
@@ -318,7 +318,7 @@ func main() {
                         run_cmd = config['executor']
                 else:
                     if language == 'matlab':
-                        # MATLAB richiede solo il nome dello script
+                        # MATLAB requires only the script name
                         script_name = 'Test'
                         run_cmd = config['executor'] + [script_name]
                     else:
@@ -353,14 +353,14 @@ func main() {
             return False
 
     def load_available_languages_from_test(self):
-        """Carica i linguaggi disponibili dai risultati del test linguaggi"""
+        """Loads the available languages from the language test results"""
         import json
         from pathlib import Path
         
         test_results_dir = Path("results/execution")
         
         if test_results_dir.exists():
-            # Cerca il file di test più recente
+            # Search for the most recent test file
             test_files = list(test_results_dir.glob("language_test_results_*.json"))
             if test_files:
                 latest_test = max(test_files, key=lambda x: x.stat().st_mtime)
@@ -368,9 +368,10 @@ func main() {
                     with open(latest_test, 'r') as f:
                         test_data = json.load(f)
                         
-                    print(f" Caricando linguaggi da test: {latest_test.name}")
+                    print(f" Loading languages from test: {latest_test.name}")
                     
-                    # Mappa nomi dal test ai nomi del SmartExecutor (sono già identici)
+                    # Map names from the test to the SmartExecutor names (they are already identical)
+
                     test_to_executor_mapping = {
                         'cpp': 'cpp',
                         'java': 'java', 
@@ -390,62 +391,62 @@ func main() {
                         'julia': 'julia'
                     }
                     
-                    # Carica solo i linguaggi che hanno passato il test
+                    # Load only lenguage that passed the test
                     for lang, result in test_data['results'].items():
                         if result['available'] and lang in test_to_executor_mapping:
                             executor_lang = test_to_executor_mapping[lang]
                             if executor_lang in self.language_config:
                                 self.available_languages[executor_lang] = self.language_config[executor_lang]
                     
-                    print(f" Linguaggi caricati dal test: {len(self.available_languages)}")
+                    print(f" Languages loaded from test: {len(self.available_languages)}")
                     for lang in sorted(self.available_languages.keys()):
                         print(f" • {lang.upper()}")
                     
                     return True
                     
                 except Exception as e:
-                    print(f" Errore caricamento risultati test: {e}")
+                    print(f" Error loading test results: {e}")
         
-        # Fallback: usa il rilevamento tradizionale se non ci sono risultati del test
-        print(" Nessun risultato test trovato, usando rilevamento tradizionale...")
+        # Fallback: use traditional detection if no test results are found
+        print(" No test results found, using traditional detection...")
         self.detect_available_languages()
         return False
 
     def detect_available_languages(self):
-        """Rileva automaticamente i linguaggi disponibili"""
-        print(" Rilevamento linguaggi disponibili...")
+        """Automatically detects available languages"""
+        print(" Detecting available languages...")
 
         for language, config in self.language_config.items():
-            print(f" Testando {language}...", end=' ')
+            print(f" Testing {language}...", end=' ')
 
-            # Per linguaggi compilati, verifica il compilatore
+            # For compiled languages, check the compiler
             if 'compiler' in config:
                 compiler_cmd = config['compiler'][0]
                 if not self.check_command_available(compiler_cmd):
-                    print(" (comando non trovato)")
+                    print(" (command not found)")
                     continue
             else:
-                # Per linguaggi interpretati, verifica l'executor
+                # For interpreted languages, check the executor
                 main_cmd = config['executor'][0]
                 if not self.check_command_available(main_cmd):
-                    print(" (comando non trovato)")
+                    print(" (command not found)")
                     continue
 
-            # Test di esecuzione rapido
+            # Quick execution test
             if self.test_language_execution(language, config):
                 self.available_languages[language] = config
                 print("")
             else:
-                print(" (test esecuzione fallito)")
+                print(" (execution test failed)")
 
-        print(f"\n Linguaggi disponibili: {len(self.available_languages)}")
+        print(f"\n Available languages: {len(self.available_languages)}")
         for lang in sorted(self.available_languages.keys()):
             print(f" • {lang.upper()}")
 
     def execute_code(self, code, language, task_name):
-        """Esegue il codice se il linguaggio è disponibile"""
+        """Executes the given code in the specified language and tracks emissions"""
 
-        # Avvia tracking CO2 per questa esecuzione (solo se non disabilitato)
+        # Start CO2 tracking for this execution (only if not disabled)
         should_track = CARBON_TRACKING_AVAILABLE and not getattr(self, 'disable_carbon_tracking', False)
         if should_track:
             _lazy_import_carbon()
@@ -457,7 +458,7 @@ func main() {
                 stop_carbon_tracking()
             return {
                 'success': False,
-                'error': f'Linguaggio {language} non disponibile su questo sistema',
+                'error': f'Language {language} is not available on this system',
                 'output': '',
                 'execution_time': 0
             }
@@ -467,32 +468,32 @@ func main() {
         try:
             start_time = time.time()
 
-            # Crea file temporaneo
+            # Create temporary file
             temp_file = self.create_temp_file(code, config['extension'], task_name, language)
             if not temp_file:
                 if should_track and stop_carbon_tracking:
                     stop_carbon_tracking()
                 return {
                     'success': False,
-                    'error': 'Impossibile creare file temporaneo',
+                    'error': 'Unable to create temporary file',
                     'output': '',
                     'execution_time': 0
                 }
 
             temp_dir = os.path.dirname(temp_file)
 
-            # Compilazione se necessaria
+            # Compilation if necessary
             if 'compiler' in config:
                 compile_result = self.compile_code(temp_file, config, language)
                 if not compile_result['success']:
                     return {
                         'success': False,
-                        'error': f'Errore compilazione: {compile_result["error"]}',
+                        'error': f'Compilation error: {compile_result["error"]}',
                         'output': '',
                         'execution_time': time.time() - start_time
                     }
 
-            # Esecuzione
+            # Execution
             exec_result = self.run_code(temp_file, config, language, temp_dir)
             execution_time = time.time() - start_time
 
@@ -503,20 +504,20 @@ func main() {
                 'execution_time': execution_time
             }
 
-            # Ferma tracking CO2
+            # Stop CO2 tracking
             if should_track and stop_carbon_tracking:
                 stop_carbon_tracking()
 
             return result
 
         except Exception as e:
-            # Ferma tracking CO2 anche in caso di errore
+            # Stop CO2 tracking even in case of error
             if should_track and stop_carbon_tracking:
                 stop_carbon_tracking()
 
             return {
                 'success': False,
-                'error': f'Errore esecuzione: {str(e)}',
+                'error': f'Execution error: {str(e)}',
                 'output': '',
                 'execution_time': time.time() - start_time if 'start_time' in locals() else 0
             }
@@ -525,53 +526,53 @@ func main() {
             self.cleanup_temp_files([temp_file] if 'temp_file' in locals() else [])
 
     def clean_code(self, code, language):
-        """Pulisce il codice rimuovendo sintassi interattiva e problemi comuni"""
-        # Prima di tutto, rimuove caratteri Unicode problematici
+        """Cleans the code by removing interactive syntax and common issues"""
+        # First of all, removes problematic Unicode characters
         cleaned = self.clean_code_content(code)
         
-        # Rimuove token interattivi >>> e ... all'inizio delle righe
+        # Remove interactive prompts
         cleaned = re.sub(r'^\s*>>>?\s*', '', cleaned, flags=re.MULTILINE)
         cleaned = re.sub(r'^\s*\.\.\.\s*', '', cleaned, flags=re.MULTILINE)
         
-        # Correzioni specifiche per linguaggio
+        # Language-specific cleaning
         if language == 'python':
-            # Aggiunge parentesi a print statements Python 2
+            # Adds parentheses to Python 2 print statements
             cleaned = re.sub(r'\bprint\s+([^(][^\n]*)', r'print(\1)', cleaned)
             
         elif language == 'javascript':
-            # Rimuove riferimenti a window/DOM per Node.js
+            # Removes references to window/DOM for Node.js
             cleaned = re.sub(r'if\s*\(\s*window\.DOMParser\s*\)', 'if (false)', cleaned)
             cleaned = re.sub(r'window\.', '', cleaned)
-            # Aggiunge dichiarazioni mancanti
+            # Adds missing declarations
             if 'Matrix' in cleaned and 'function Matrix' not in cleaned:
                 cleaned = 'function Matrix() {}\n' + cleaned
                 
         elif language == 'typescript':
-            # Corregge opzioni compilatore
+            # Fixes compiler options
             cleaned = re.sub(r'-o\s+', '--outFile ', cleaned)
             
         elif language == 'java':
-            # Se non c'è una classe definita, crea una classe Main
+            # If no class is defined, create a Main class
             if 'class' not in cleaned.lower():
-                # Controlla se ci sono metodi/funzioni da wrappare
+                # Check if there are methods/functions to wrap
                 has_methods = ('public static' in cleaned or 
                               'private static' in cleaned or
                               'static' in cleaned or
                               'public' in cleaned and ('(' in cleaned and ')' in cleaned))
                 
                 if has_methods:
-                    # Aggiungi main method se manca
+                    # Adds main method if missing
                     if 'main(' not in cleaned and 'main (' not in cleaned:
-                        # Crea una classe con main che chiama il metodo principale se identificabile
+                        # Creates a class with main that calls the main method if identifiable
                         cleaned = f'public class Main {{\n{cleaned}\n\n    public static void main(String[] args) {{\n        // Generated main method\n        System.out.println("Execution completed");\n    }}\n}}'
                     else:
                         cleaned = f'public class Main {{\n{cleaned}\n}}'
                 else:
-                    # Codice semplice, wrappa in main
+                    # Simple code, wrap in main
                     cleaned = f'public class Main {{\n    public static void main(String[] args) {{\n{cleaned}\n    }}\n}}'
                     
         elif language == 'go':
-            # Rimuove import di librerie esterne non standard
+            # Removes imports of non-standard external libraries
             lines = cleaned.split('\n')
             filtered_lines = []
             in_import_block = False
@@ -581,7 +582,7 @@ func main() {
             for line in lines:
                 line_stripped = line.strip()
                 
-                # Gestisce dichiarazioni package (mantieni solo la prima)
+                # Handles package declarations (keep only the first one)
                 if line_stripped.startswith('package '):
                     if not package_declared:
                         if 'package main' not in line_stripped:
@@ -591,7 +592,7 @@ func main() {
                         package_declared = True
                     continue
                 
-                # Gestisce blocchi di import
+                # Handles import blocks
                 elif line_stripped.startswith('import ('):
                     in_import_block = True
                     filtered_lines.append(line)
@@ -601,17 +602,17 @@ func main() {
                     filtered_lines.append(line)
                     continue
                 elif in_import_block:
-                    # Mantieni solo import standard
+                    # Keeps only standard imports
                     if any(std_pkg in line_stripped for std_pkg in ['"fmt"', '"os"', '"strings"', '"strconv"', '"math"', '"time"', '"io"', '"sort"', '"net"']):
                         filtered_lines.append(line)
                     else:
-                        # Traccia i package rimossi per pulire il codice
+                        # Tracks removed packages for code cleanup
                         if '"' in line_stripped:
                             pkg_name = line_stripped.split('"')[1].split('/')[-1]
                             removed_packages.append(pkg_name)
                     continue
                 elif line_stripped.startswith('import "') and not any(std_pkg in line_stripped for std_pkg in ['"fmt"', '"os"', '"strings"', '"strconv"', '"math"', '"time"', '"io"', '"sort"', '"net"']):
-                    # Traccia e salta import singoli di librerie esterne
+                    # Tracks and skips individual imports of external libraries
                     if '"' in line_stripped:
                         pkg_name = line_stripped.split('"')[1].split('/')[-1]
                         removed_packages.append(pkg_name)
@@ -621,16 +622,16 @@ func main() {
             
             cleaned = '\n'.join(filtered_lines)
             
-            # Rimuovi codice che usa i package rimossi e semplifica
+            # Cleans code from references to removed packages
             for pkg in removed_packages:
-                # Rimuove chiamate al package (es. mat.NewDense, mat.Formatted)
+                # Removes calls to the package (e.g. mat.NewDense, mat.Formatted)
                 cleaned = re.sub(rf'\b{pkg}\.\w+\([^)]*\)', 'nil', cleaned)
                 cleaned = re.sub(rf'\*{pkg}\.\w+', 'interface{}', cleaned)
                 cleaned = re.sub(rf'\b{pkg}\.\w+', 'nil', cleaned)
             
-            # Semplifica funzioni problematiche con versioni basic
+            # Simplify problematic functions with basic versions
             if 'mat.Dense' in cleaned or 'mat.NewDense' in cleaned:
-                # Sostituisce con implementazione semplice senza dipendenze esterne
+                # Replaces with simple implementation without external dependencies
                 cleaned = re.sub(r'func eye\([^}]*\}', '''func eye(n int) [][]int {
     matrix := make([][]int, n)
     for i := range matrix {
@@ -640,27 +641,27 @@ func main() {
     return matrix
 }''', cleaned, flags=re.DOTALL)
                 
-            # Pulisce il main da chiamate a funzioni esterne
+            # Cleans the main function from calls to external functions
             cleaned = re.sub(r'fmt\.Println\(mat\.Formatted\([^)]*\)\)', 'fmt.Println("Identity matrix created")', cleaned)
             
             cleaned = '\n'.join(filtered_lines)
             
-            # Assicura che ci sia package main
+            # Ensure there is a package main
             if 'package main' not in cleaned:
                 cleaned = 'package main\n\n' + cleaned
                 
-            # Assicura che ci sia una funzione main
+            # Ensure there is a main function
             if 'func main()' not in cleaned:
                 cleaned += '\n\nfunc main() {\n    // Generated main function\n}\n'
                 
         elif language == 'haskell':
-            # Rimuove import di moduli esterni non standard
+            # Removes imports of non-standard external modules
             lines = cleaned.split('\n')
             filtered_lines = []
             
             for line in lines:
                 line_stripped = line.strip()
-                # Mantieni solo import standard di Haskell
+                # Keeps only standard Haskell imports
                 if line_stripped.startswith('import ') and not any(std_mod in line_stripped for std_mod in ['Prelude', 'Data.List', 'Data.Char', 'System.IO']):
                     continue
                 else:
@@ -668,9 +669,9 @@ func main() {
             
             cleaned = '\n'.join(filtered_lines)
             
-            # Assicura che ci sia una funzione main
+            # Ensure there is a main function
             if 'main =' not in cleaned and 'main::' not in cleaned:
-                # Trova la prima funzione definita per chiamarla in main
+                # Find the first defined function to call it in main
                 function_match = re.search(r'^(\w+)\s+', cleaned, re.MULTILINE)
                 if function_match:
                     func_name = function_match.group(1)
@@ -679,53 +680,53 @@ func main() {
                     cleaned += '\n\nmain = putStrLn "Haskell execution completed"'
                 
         elif language == 'rust':
-            # Rimuove extern crate che possono causare problemi
+            # Removes extern crate statements that may cause issues
             cleaned = re.sub(r'extern\s+crate\s+\w+;\s*\n?', '', cleaned)
             
-            # Rimuove use statements di crate esterni
+            # Removes use statements of external crates
             cleaned = re.sub(r'use\s+\w+::\w+;\s*\n?', '', cleaned)
             
-            # Sostituisce trait esterni con trait standard
+            # Replaces external traits with standard traits
             cleaned = re.sub(r'num::\w+', 'Copy + Clone + Default', cleaned)
             cleaned = re.sub(r'T::\w+\(\)', 'T::default()', cleaned)
             
-            # Semplifica struct con generics problematici
+            # Simplify structs with problematic generics
             if 'num::' in cleaned or 'extern crate' in cleaned:
-                # Sostituisce con implementazione più semplice
+                # Replace with a simpler implementation
                 cleaned = re.sub(r'struct Matrix<T>.*?where.*?\{', 'struct Matrix {\n    data: Vec<i32>,\n    size: usize,\n}\n\nimpl Matrix {', cleaned, flags=re.DOTALL)
                 cleaned = re.sub(r'T::[a-zA-Z_]\w*\(\)', '0', cleaned)
                 cleaned = re.sub(r'\bT\b', 'i32', cleaned)
             
-            # Assicura che ci sia una funzione main
+            # Ensure there is a main function
             if 'fn main()' not in cleaned:
                 cleaned += '\n\nfn main() {\n    println!("Rust execution completed");\n}\n'
                 
         return cleaned
     
     def create_temp_file(self, code, extension, task_name, language):
-        """Crea un file temporaneo per il codice"""
+        """Creates a temporary file with the given code and extension"""
         try:
-            # Pulisce il codice prima di scriverlo
+            # Cleans the code before writing it
             cleaned_code = self.clean_code(code, language)
             
-            # Sanitizza il nome del task
+            # Sanitizes the task name for filename
             safe_task = re.sub(r'[^\w\s-]', '', task_name).strip()
             safe_task = re.sub(r'[-\s/]+', '_', safe_task)
 
             if language == 'java':
-                # Per Java, cerca il nome della classe nel codice (sia public che non public)
+                # For Java, find the class name in the code (both public and non-public)
                 class_match = re.search(r'(?:public\s+)?class\s+(\w+)', cleaned_code)
                 if class_match:
                     class_name = class_match.group(1)
                     filename = f"{class_name}.java"
-                    print(f" Creando file Java: {filename}")
+                    print(f" Creating Java file: {filename}")
                 else:
                     filename = f"Main.java"
-                    print(f" Nessuna classe trovata, usando: {filename}")
+                    print(f" No class found, using: {filename}")
             else:
                 filename = f"temp_{safe_task}_{language}{extension}"
 
-            # Crea directory se necessaria
+            # Creates directory if necessary
             abs_results_dir = os.path.abspath(self.results_dir)
             os.makedirs(abs_results_dir, exist_ok=True)
 
@@ -738,13 +739,13 @@ func main() {
             return filepath
 
         except Exception as e:
-            print(f" Errore creazione file temporaneo: {e}")
+            print(f" Error creating temporary file: {e}")
             return None
 
 
 
     def compile_code(self, filepath, config, language):
-        """Compila il codice se necessario"""
+        """Compiles the code if necessary"""
         try:
             temp_dir = os.path.dirname(filepath)
             base_name = Path(filepath).stem
@@ -754,40 +755,40 @@ func main() {
             elif language == 'csharp':
                 cmd = config['compiler'] + [filepath]
             elif language == 'go':
-                # Go: rinomina il file in main.go e compila nell'output specifico
+                # Go: renames the file to main.go and compiles to the specific output
                 main_go = os.path.join(temp_dir, 'main.go')
                 os.rename(filepath, main_go)
                 executable_path = os.path.join(temp_dir, 'test')
                 cmd = config['compiler'] + ['-o', executable_path, 'main.go']
             elif language == 'rust':
-                # Rust: compila con percorso assoluto
+                # Rust: compiles with absolute path
                 executable_path = os.path.join(temp_dir, 'test')
                 cmd = config['compiler'] + [filepath, '-o', executable_path]
             elif language == 'kotlin':
-                # Kotlin: compila in JAR
+                # Kotlin: compiles to JAR
                 jar_path = os.path.join(temp_dir, 'test.jar')
                 cmd = config['compiler'] + [filepath]
             elif language == 'swift':
-                # Swift: compila con percorso assoluto
+                # Swift: compiles with absolute path
                 executable_path = os.path.join(temp_dir, 'test')
                 cmd = config['compiler'] + [filepath, '-o', executable_path]
             elif language in ['c', 'cpp']:
-                # C/C++: ordine specifico degli argomenti
+                # C/C++: specific argument order
                 executable_path = os.path.join(temp_dir, 'test')
                 cmd = config['compiler'] + [executable_path, filepath]
             elif language == 'ocaml':
-                # OCaml: ordine specifico
+                # OCaml: specific order
                 executable_path = os.path.join(temp_dir, 'test')
                 cmd = config['compiler'] + [executable_path, filepath]
             elif language == 'typescript':
-                # TypeScript: compila in JS
+                # TypeScript: uses tsc to compile to JS
                 cmd = config['compiler'] + [filepath]
             elif language == 'haskell':
-                # Haskell: ordine specifico ghc -o executable filepath
+                # Haskell: specific order ghc -o executable filepath
                 executable_path = os.path.join(temp_dir, 'test')
                 cmd = ['ghc', '-o', executable_path, filepath]
             else:
-                # Altri linguaggi compilati
+                # Other compiled languages
                 executable_path = os.path.join(temp_dir, 'test')
                 cmd = config['compiler'] + [filepath] + ['-o', executable_path]
 
@@ -809,60 +810,60 @@ func main() {
                 }
 
         except subprocess.TimeoutExpired:
-            return {'success': False, 'error': 'Timeout durante compilazione'}
+            return {'success': False, 'error': 'Timeout during compilation'}
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
     def run_code(self, filepath, config, language, temp_dir):
-        """Esegue il codice"""
+        """Runs the code"""
         try:
             if 'compiler' in config:
                 if language == 'java':
-                    # Per Java, estrae il nome della classe dal file compilato
+                    # For Java, extracts the class name from the compiled file
                     with open(filepath, 'r', encoding='utf-8') as f:
                         code = f.read()
 
-                    # Cerca sia 'public class' che 'class' senza public
+                    # Searches for both 'public class' and 'class' without public
                     class_match = re.search(r'(?:public\s+)?class\s+(\w+)', code)
                     if class_match:
                         class_name = class_match.group(1)
                         cmd = config['executor'] + [class_name]
-                        print(f" Classe Java trovata: {class_name}")
+                        print(f" Java class found: {class_name}")
                     else:
-                        # Fallback: cerca per nome file
+                        # Fallback: uses the file name without extension
                         base_name = Path(filepath).stem
                         cmd = config['executor'] + [base_name]
-                        print(f" Usando nome file: {base_name}")
+                        print(f" Using file name: {base_name}")
                 elif language == 'csharp':
-                    # C#: eseguibile .exe generato dal compilatore
+                    # C#: executable .exe generated by the compiler
                     exe_name = Path(filepath).stem + '.exe'
                     exe_path = os.path.join(temp_dir, exe_name)
                     cmd = config['executor'] + [exe_path]
                 elif language in ['c', 'cpp']:
-                    # C/C++: usa nome fisso 'test'
+                    # C/C++: uses fixed name 'test'
                     executable_path = os.path.join(temp_dir, 'test')
                     cmd = [executable_path]
                 elif language == 'ocaml':
-                    # OCaml: usa nome fisso 'test' 
+                    # OCaml: uses fixed name 'test'
                     executable_path = os.path.join(temp_dir, 'test')
                     cmd = [executable_path]
                 elif language == 'rust':
-                    # Rust: usa nome fisso 'test'
+                    # Rust: uses fixed name 'test'
                     executable_path = os.path.join(temp_dir, 'test')
                     cmd = [executable_path]
                 elif language == 'typescript':
-                    # TypeScript: esegui il file JS generato
+                    # TypeScript: uses tsc to compile to JS
                     js_file = filepath.replace('.ts', '.js')
                     cmd = config['executor'] + [js_file]
                 else:
-                    # Altri linguaggi compilati
+                    # Other compiled languages
                     executable_name = Path(filepath).stem
                     executable_path = os.path.join(temp_dir, executable_name)
                     cmd = [executable_path]
             else:
-                # Linguaggi interpretati
+                # Interpreted languages
                 if language == 'matlab':
-                    # MATLAB richiede solo il nome dello script senza estensione
+                    # MATLAB requires only the script name without extension
                     script_name = Path(filepath).stem
                     cmd = config['executor'] + [script_name]
                 else:
@@ -889,22 +890,22 @@ func main() {
             return {'success': False, 'error': str(e), 'output': ''}
 
     def cleanup_temp_files(self, files):
-        """Pulisce i file temporanei"""
+        """Cleans up temporary files"""
         for filepath in files:
             try:
                 if os.path.exists(filepath):
                     os.remove(filepath)
 
-                # Rimuove anche file compilati
+                # Removes also compiled files
                 temp_dir = os.path.dirname(filepath)
                 base_name = Path(filepath).stem
 
-                # File .class per Java
+                # .class file for Java
                 class_file = os.path.join(temp_dir, f"{base_name}.class")
                 if os.path.exists(class_file):
                     os.remove(class_file)
 
-                # File .exe per C#
+                # .exe file for C#
                 exe_file = os.path.join(temp_dir, "test.exe")
                 if os.path.exists(exe_file):
                     os.remove(exe_file)
@@ -913,24 +914,24 @@ func main() {
                 print(f" Errore cleanup {filepath}: {e}")
 
     def find_task_file(self, task_name, language):
-        """Trova il file per una task e linguaggio nella struttura gerarchica"""
+        """Finds the file for a task and language in the hierarchical structure"""
         code_base_dir = "data/generated/code_snippets"
 
-        # Normalizza i nomi dei linguaggi
+        # Normalizes language names
         lang_normalized = language.lower()
         if lang_normalized == 'cpp':
             lang_normalized = 'c++'
 
-        # Lista delle categorie presenti nel dataset
+        # List of categories present in the dataset
         categories = ['algorithms', 'strings', 'mathematics', 'io', 'basic', 'misc']
 
-        # Cerca il file in tutte le categorie
+        # Searches for the file in all categories
         for category in categories:
             language_dir = os.path.join(code_base_dir, category, lang_normalized)
             if not os.path.exists(language_dir):
                 continue
 
-            # Cerca il file che contiene il nome della task (pattern migliorato)
+            # Searches for the file that contains the task name (improved pattern)
             task_patterns = [
                 task_name.replace('-', '_'),
                 task_name.replace('_', '-'),
@@ -947,54 +948,54 @@ func main() {
         return None
 
     def clean_code_content(self, code):
-        """Pulisce il codice da caratteri invisibili problematici"""
+        """Cleans up the code from problematic invisible characters"""
 
-        # Sostituisce direttamente i caratteri problematici più comuni
-        # U+00A0 (Non-Breaking Space) e altri spazi Unicode
+        # Replaces directly the most common problematic characters
+        # U+00A0 (Non-Breaking Space) and other Unicode spaces
         cleaned = code.replace('\u00a0', ' ') # Non-breaking space
         cleaned = cleaned.replace('\u2007', ' ') # Figure space
         cleaned = cleaned.replace('\u202f', ' ') # Narrow no-break space
-        cleaned = cleaned.replace('\u2060', '') # Word joiner (invisibile)
+        cleaned = cleaned.replace('\u2060', '') # Word joiner (invisible)
         cleaned = cleaned.replace('\ufeff', '') # Byte order mark
 
-        # Rimuove caratteri di controllo invisibili (tranne newline, tab, carriage return)
+        # Removes other control characters
         import re
         cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', cleaned)
 
         return cleaned
 
     def execute_task_all_available_languages(self, task_name):
-        """Esegue una task in tutti i linguaggi disponibili"""
-        print(f"\n Esecuzione task: {task_name}")
+        """Executes a task in all available languages"""
+        print(f"\n Executing task: {task_name}")
 
         task_results = {}
 
-        # Cerca i file nella struttura reale: data/generated/code_snippets/category/language/
+        # Searches for files in the real structure: data/generated/code_snippets/category/language/
         code_base_dir = "data/generated/code_snippets"
 
         if not os.path.exists(code_base_dir):
-            print(f" Directory base non trovata: {code_base_dir}")
+            print(f" Base directory not found: {code_base_dir}")
             return task_results
 
-        # Cerca i file di codice per i linguaggi disponibili in tutte le categorie
+        # Searches for code files for available languages in all categories
         for language in self.available_languages.keys():
             language_file = self.find_task_file(task_name, language)
 
             if language_file and os.path.exists(language_file):
-                print(f" Esecuzione {language}...")
+                print(f" Executing {language}...")
 
                 try:
                     with open(language_file, 'r', encoding='utf-8') as f:
                         code = f.read()
 
-                    # Pulisce il codice da caratteri invisibili
+                    # Cleans up the code from invisible characters
                     code = self.clean_code_content(code)
 
                     result = self.execute_code(code, language, task_name)
                     task_results[language] = result
 
                     if result['success']:
-                        print(f" {language}: successo ({result['execution_time']:.2f}s)")
+                        print(f" {language}: success ({result['execution_time']:.2f}s)")
                         if result['output'].strip():
                             output_preview = result['output'].strip()[:100].replace('\n', ' ')
                             print(f" Output: {output_preview}...")
@@ -1004,26 +1005,26 @@ func main() {
                 except Exception as e:
                     task_results[language] = {
                         'success': False,
-                        'error': f'Errore lettura file: {str(e)}',
+                        'error': f'Error reading file: {str(e)}',
                         'output': '',
                         'execution_time': 0
                     }
-                    print(f" {language}: errore lettura file")
+                    print(f" {language}: error reading file")
             else:
-                print(f" {language}: file non trovato")
+                print(f" {language}: file not found")
 
         return task_results
 
     def execute_all_common_tasks(self):
-        """Esegue tutte le task comuni"""
-        print(" SMART EXECUTOR - Esecuzione Adattiva")
-        print(f" Linguaggi disponibili: {len(self.available_languages)}")
+        """Executes all common tasks"""
+        print(" SMART EXECUTOR - Adaptive Multi-Language Code Execution\n")
+        print(f" Available languages: {len(self.available_languages)}")
 
-        # Carica task comuni
+        # Loads common tasks
         common_tasks_file = os.path.join(self.analysis_dir, "common_tasks.json")
 
         if not os.path.exists(common_tasks_file):
-            print(" File common_tasks.json non trovato")
+            print(" File common_tasks.json not found")
             return
 
         with open(common_tasks_file, 'r') as f:
@@ -1032,16 +1033,16 @@ func main() {
         common_tasks_data = data.get('common_tasks', [])
 
         if not common_tasks_data:
-            print(" Nessuna task comune trovata")
+            print(" No common tasks found")
             return
 
-        # Estrae solo i nomi delle task (primi 10 per test)
+        # Extracts only the names of the tasks (first 10 for testing)
         tasks = [task['name'] for task in common_tasks_data[:10]]
 
-        print(f" Trovate {len(common_tasks_data)} task comuni totali")
-        print(f" Eseguendo le prime {len(tasks)} task...")
+        print(f" Found {len(common_tasks_data)} total common tasks")
+        print(f" Executing the first {len(tasks)} tasks...")
 
-        # Crea directory risultati
+        # Create results directory
         os.makedirs(self.results_dir, exist_ok=True)
 
         overall_results = {}
@@ -1050,27 +1051,27 @@ func main() {
             task_results = self.execute_task_all_available_languages(task)
             overall_results[task] = task_results
 
-        # Salva risultati
+        # Saves results to a JSON file
         self.save_execution_results(overall_results)
 
-        # Report finale
+        # Final report
         self.print_execution_summary(overall_results)
 
     def save_execution_results(self, results):
-        """Salva i risultati dell'esecuzione"""
+        """Saves the execution results"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         results_file = os.path.join(self.results_dir, f"smart_execution_results_{timestamp}.json")
 
         try:
             with open(results_file, 'w') as f:
                 json.dump(results, f, indent=2, default=str)
-            print(f" Risultati salvati in: {results_file}")
+            print(f" Results saved in: {results_file}")
         except Exception as e:
-            print(f" Errore salvataggio risultati: {e}")
+            print(f" Error saving results: {e}")
 
     def print_execution_summary(self, results):
-        """Stampa un riassunto dell'esecuzione"""
-        print(f"\n RIASSUNTO ESECUZIONE SMART:")
+        """Prints a summary of the execution"""
+        print(f"\n SMART EXECUTOR - Execution Summary:")
 
         total_executions = 0
         successful_executions = 0
@@ -1094,14 +1095,14 @@ func main() {
 
             if task_total > 0:
                 success_rate = (task_success / task_total * 100)
-                print(f" Successo: {task_success}/{task_total} ({success_rate:.1f}%)")
+                print(f" Success: {task_success}/{task_total} ({success_rate:.1f}%)")
 
         if total_executions > 0:
             overall_success_rate = (successful_executions / total_executions * 100)
-            print(f"\n🎉 TOTALE: {successful_executions}/{total_executions} ({overall_success_rate:.1f}%) esecuzioni riuscite")
-            print(f" Linguaggi utilizzati: {sorted(self.available_languages.keys())}")
+            print(f"\n TOTAL: {successful_executions}/{total_executions} ({overall_success_rate:.1f}%) executions successful")
+            print(f" Languages used: {sorted(self.available_languages.keys())}")
         else:
-            print(f"\n Nessuna esecuzione completata")
+            print(f"\n No executions completed")
 
 
 if __name__ == "__main__":
