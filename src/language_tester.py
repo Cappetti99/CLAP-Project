@@ -165,7 +165,7 @@ main = putStrLn "Hello from Haskell!"''',
             'matlab': {
                 'extension': '.m',
                 'code': 'fprintf("Hello from MATLAB!\\n");',
-                'run_cmd': ['matlab', '-batch'],
+                'run_cmd': ['matlab', '-batch'],  # Will be updated in __init__
                 'compile_cmd': None,
                 'type': 'scientific'
             },
@@ -177,6 +177,40 @@ main = putStrLn "Hello from Haskell!"''',
                 'type': 'scientific'
             }
         }
+
+        # Initialize MATLAB command path and update configuration
+        self._matlab_cmd = self._get_matlab_command()
+        self.test_programs['matlab']['run_cmd'] = [self._matlab_cmd, '-batch']
+
+    def _get_matlab_command(self):
+        """Get MATLAB command path, supporting custom installation via MATLAB_PATH env var"""
+        # Check if user has specified custom MATLAB path
+        matlab_path = os.environ.get('MATLAB_PATH')
+        if matlab_path:
+            matlab_bin = os.path.join(matlab_path, 'bin', 'matlab')
+            if os.path.exists(matlab_bin):
+                return matlab_bin
+        
+        # Check standard installation paths
+        possible_paths = [
+            '/usr/local/MATLAB/R2025b/bin/matlab',  # User's installation
+            '/usr/local/MATLAB/R2024b/bin/matlab',
+            '/usr/local/MATLAB/R2024a/bin/matlab', 
+            '/usr/local/MATLAB/R2023b/bin/matlab',
+            '/usr/local/MATLAB/R2023a/bin/matlab',
+            '/opt/MATLAB/R2025b/bin/matlab',
+            '/opt/MATLAB/R2024b/bin/matlab',
+            '/opt/MATLAB/R2024a/bin/matlab',
+            '/opt/MATLAB/R2023b/bin/matlab',
+            '/opt/MATLAB/R2023a/bin/matlab'
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                return path
+        
+        # Fallback to 'matlab' in PATH
+        return 'matlab'
 
     def check_command_exists(self, command):
         """Check whether a command is available in the system"""

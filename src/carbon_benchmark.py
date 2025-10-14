@@ -1234,7 +1234,7 @@ print("Executing {task_name} in {language}")
         # Complete list of supported languages
         all_languages = [
             'python', 'javascript', 'java', 'cpp', 'c', 'ruby', 'php', 'r', 'julia', 
-            'csharp', 'go', 'rust', 'haskell', 'ocaml', 'typescript'
+            'csharp', 'go', 'rust', 'haskell', 'ocaml', 'typescript', 'matlab'
         ]
 
         # Calculate language statistics

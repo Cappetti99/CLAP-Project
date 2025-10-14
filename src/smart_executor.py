@@ -70,24 +70,24 @@ class SmartExecutor:
         if homebrew_path not in os.environ.get("PATH", ""):
             os.environ["PATH"] = homebrew_path + ":" + os.environ.get("PATH", "")
 
-        # Full configuration for all supported languages (aligned with LanguageTester)
-        self.language_config = {
+            # Full configuration for all supported languages (aligned with LanguageTester)
+            self.language_config = {
             'python': {
                 'extension': '.py',
-                'executor': ['conda', 'run', '-n', 'SWAM', 'python'],
+                'executor': ['conda', 'run', '-n', 'CLAP', 'python'],
                 'timeout': 30,
                 'test_code': 'print("test")'
             },
             'javascript': {
                 'extension': '.js',
-                'executor': ['conda', 'run', '-n', 'SWAM', 'node'],
+                'executor': ['conda', 'run', '-n', 'CLAP', 'node'],
                 'timeout': 30,
                 'test_code': 'console.log("test");'
             },
             'java': {
                 'extension': '.java',
-                'compiler': ['conda', 'run', '-n', 'SWAM', 'javac'],
-                'executor': ['conda', 'run', '-n', 'SWAM', 'java'],
+                'compiler': ['conda', 'run', '-n', 'CLAP', 'javac'],
+                'executor': ['conda', 'run', '-n', 'CLAP', 'java'],
                 'timeout': 30,
                 'test_code': '''public class Test {
     public static void main(String[] args) {
@@ -97,31 +97,31 @@ class SmartExecutor:
             },
             'ruby': {
                 'extension': '.rb',
-                'executor': ['conda', 'run', '-n', 'SWAM', 'ruby'],
+                'executor': ['conda', 'run', '-n', 'CLAP', 'ruby'],
                 'timeout': 30,
                 'test_code': 'puts "test"'
             },
             'php': {
                 'extension': '.php',
-                'executor': ['conda', 'run', '-n', 'SWAM', 'php'],
+                'executor': ['conda', 'run', '-n', 'CLAP', 'php'],
                 'timeout': 30,
                 'test_code': '<?php echo "test\\n"; ?>'
             },
             'r': {
                 'extension': '.r',
-                'executor': ['conda', 'run', '-n', 'SWAM', 'Rscript'],
+                'executor': ['conda', 'run', '-n', 'CLAP', 'Rscript'],
                 'timeout': 30,
                 'test_code': 'cat("test\\n")'
             },
             'julia': {
                 'extension': '.jl',
-                'executor': ['conda', 'run', '-n', 'SWAM', 'julia'],
+                'executor': ['conda', 'run', '-n', 'CLAP', 'julia'],
                 'timeout': 30,
                 'test_code': 'println("test")'
             },
             'matlab': {
                 'extension': '.m',
-                'executor': ['matlab', '-batch'],  
+                'executor': [self._get_matlab_command(), '-batch'],  
                 'timeout': 30,
                 'test_code': 'fprintf("test\\n");'
             },
@@ -203,6 +203,36 @@ func main() {
         # Detect available languages from test results or fallback
         self.load_available_languages_from_test()
 
+    def _get_matlab_command(self):
+        """Get MATLAB command path, supporting custom installation via MATLAB_PATH env var"""
+        # Check if user has specified custom MATLAB path
+        matlab_path = os.environ.get('MATLAB_PATH')
+        if matlab_path:
+            matlab_bin = os.path.join(matlab_path, 'bin', 'matlab')
+            if os.path.exists(matlab_bin):
+                return matlab_bin
+        
+        # Check standard installation paths
+        possible_paths = [
+            '/usr/local/MATLAB/R2025b/bin/matlab',  # User's installation
+            '/usr/local/MATLAB/R2024b/bin/matlab',
+            '/usr/local/MATLAB/R2024a/bin/matlab', 
+            '/usr/local/MATLAB/R2023b/bin/matlab',
+            '/usr/local/MATLAB/R2023a/bin/matlab',
+            '/opt/MATLAB/R2025b/bin/matlab',
+            '/opt/MATLAB/R2024b/bin/matlab',
+            '/opt/MATLAB/R2024a/bin/matlab',
+            '/opt/MATLAB/R2023b/bin/matlab',
+            '/opt/MATLAB/R2023a/bin/matlab'
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                return path
+        
+        # Fallback to 'matlab' in PATH or 'octave' as substitute
+        return os.environ.get('MATLAB_COMMAND', 'matlab')
+
     def get_modular_config(self, language):
         """Get language configuration from modular components if available"""
         if self.config_manager:
@@ -239,7 +269,8 @@ func main() {
         
         # Typical paths for miniconda/conda
         conda_base = os.path.expanduser("~/miniconda3")
-        swam_env_path = os.path.join(conda_base, "envs", "SWAM", "bin")
+        # Prefer the CLAP conda environment
+        swam_env_path = os.path.join(conda_base, "envs", "CLAP", "bin")
         
         if os.path.exists(swam_env_path):
             # Add the SWAM environment path at the beginning of the PATH
@@ -249,6 +280,16 @@ func main() {
         # Remove LD_LIBRARY_PATH for languages that have issues with libtinfo
         if language in ['java', 'haskell', 'python', 'r', 'julia', 'javascript', 'php', 'ruby']:
             env.pop('LD_LIBRARY_PATH', None)
+        
+        # Add headless environment variables to prevent GUI windows
+        env['DISPLAY'] = ''  # Disable X11 display
+        env['MPLBACKEND'] = 'Agg'  # Matplotlib non-interactive backend
+        env['PYTHONDONTWRITEBYTECODE'] = '1'  # Prevent .pyc files
+        
+        # Disable GUI for various frameworks
+        env['QT_QPA_PLATFORM'] = 'offscreen'  # Qt headless
+        env['HEADLESS'] = '1'  # General headless flag
+        env['NO_GUI'] = '1'  # General no-GUI flag
         
         return env
 
@@ -318,8 +359,8 @@ func main() {
                         run_cmd = config['executor']
                 else:
                     if language == 'matlab':
-                        # MATLAB requires only the script name
-                        script_name = 'Test'
+                        # MATLAB requires only the script name without extension
+                        script_name = os.path.splitext(os.path.basename(temp_file))[0]
                         run_cmd = config['executor'] + [script_name]
                     else:
                         run_cmd = config['executor'] + [temp_file]
@@ -539,6 +580,9 @@ func main() {
             # Adds parentheses to Python 2 print statements
             cleaned = re.sub(r'\bprint\s+([^(][^\n]*)', r'print(\1)', cleaned)
             
+            # Remove/replace GUI elements that could open windows
+            cleaned = self._clean_python_gui_code(cleaned)
+            
         elif language == 'javascript':
             # Removes references to window/DOM for Node.js
             cleaned = re.sub(r'if\s*\(\s*window\.DOMParser\s*\)', 'if (false)', cleaned)
@@ -546,10 +590,23 @@ func main() {
             # Adds missing declarations
             if 'Matrix' in cleaned and 'function Matrix' not in cleaned:
                 cleaned = 'function Matrix() {}\n' + cleaned
+            
+            # Remove browser-specific code that might try to open windows
+            cleaned = re.sub(r'window\.open\([^)]*\)', 'console.log("Window opening disabled")', cleaned)
+            cleaned = re.sub(r'alert\([^)]*\)', 'console.log', cleaned)
+            cleaned = re.sub(r'confirm\([^)]*\)', 'true', cleaned)
                 
         elif language == 'typescript':
             # Fixes compiler options
             cleaned = re.sub(r'-o\s+', '--outFile ', cleaned)
+            
+        elif language == 'matlab':
+            # Handle MATLAB function definitions vs executable scripts
+            if self._is_matlab_function_only(cleaned):
+                cleaned = self._make_matlab_executable(cleaned)
+            
+            # Remove/replace graphics elements that could open GUI windows
+            cleaned = self._clean_matlab_graphics_code(cleaned)
             
         elif language == 'java':
             # If no class is defined, create a Main class
@@ -655,27 +712,34 @@ func main() {
                 cleaned += '\n\nfunc main() {\n    // Generated main function\n}\n'
                 
         elif language == 'haskell':
-            # Removes imports of non-standard external modules
+            # Removes imports of non-standard external modules and fix common issues
             lines = cleaned.split('\n')
             filtered_lines = []
             
             for line in lines:
                 line_stripped = line.strip()
-                # Keeps only standard Haskell imports
-                if line_stripped.startswith('import ') and not any(std_mod in line_stripped for std_mod in ['Prelude', 'Data.List', 'Data.Char', 'System.IO']):
+                # Skip problematic imports
+                if line_stripped.startswith('import ') and any(problematic in line_stripped for problematic in ['Control.Monad', 'hiding (odd)']):
                     continue
+                # Fix join function usage
+                elif 'join (+)' in line:
+                    filtered_lines.append(line.replace('join (+)', '(\\x -> x + x)'))
                 else:
                     filtered_lines.append(line)
             
             cleaned = '\n'.join(filtered_lines)
             
+            # Remove redefined odd function to avoid conflicts
+            cleaned = re.sub(r'odd :: Int -> Bool\s*\n.*odd = .*\n', '', cleaned, flags=re.MULTILINE)
+            
             # Ensure there is a main function
             if 'main =' not in cleaned and 'main::' not in cleaned:
                 # Find the first defined function to call it in main
-                function_match = re.search(r'^(\w+)\s+', cleaned, re.MULTILINE)
+                function_match = re.search(r'^(\w+)\s+::', cleaned, re.MULTILINE)
                 if function_match:
                     func_name = function_match.group(1)
-                    cleaned += f'\n\nmain = print ({func_name} 3)'
+                    if func_name != 'main':
+                        cleaned += f'\n\nmain = print ({func_name} 3 5)'
                 else:
                     cleaned += '\n\nmain = putStrLn "Haskell execution completed"'
                 
@@ -700,6 +764,10 @@ func main() {
             # Ensure there is a main function
             if 'fn main()' not in cleaned:
                 cleaned += '\n\nfn main() {\n    println!("Rust execution completed");\n}\n'
+        
+        elif language == 'r':
+            # Remove/replace graphics elements that could open GUI windows
+            cleaned = self._clean_r_graphics_code(cleaned)
                 
         return cleaned
     
@@ -1103,6 +1171,231 @@ func main() {
             print(f" Languages used: {sorted(self.available_languages.keys())}")
         else:
             print(f"\n No executions completed")
+
+    def _is_matlab_function_only(self, code):
+        """Check if MATLAB code contains only function definitions without executable statements"""
+        lines = [line.strip() for line in code.split('\n') if line.strip()]
+        if not lines:
+            return False
+        
+        # Check if the code starts with 'function' and doesn't have executable statements
+        starts_with_function = any(line.startswith('function ') for line in lines)
+        
+        # Look for executable statements (not comments, not function definitions, not 'end')
+        executable_statements = []
+        in_function = False
+        
+        for line in lines:
+            if line.startswith('%'):  # Comment
+                continue
+            if line.startswith('function '):
+                in_function = True
+                continue
+            if line == 'end':
+                in_function = False
+                continue
+            if not in_function and not line.startswith('function ') and not line.startswith('%'):
+                executable_statements.append(line)
+        
+        return starts_with_function and len(executable_statements) == 0
+
+    def _make_matlab_executable(self, code):
+        """Transform MATLAB function-only code into executable script"""
+        lines = code.split('\n')
+        
+        # Find function name and parameters
+        function_info = self._extract_matlab_function_info(code)
+        
+        if not function_info:
+            return code  # Return as-is if we can't parse
+        
+        func_name = function_info['name']
+        params = function_info['params']
+        
+        # Create sample test calls based on function name and common patterns
+        test_calls = self._generate_matlab_test_calls(func_name, params)
+        
+        # Add test calls to make it executable
+        executable_code = code + '\n\n% Auto-generated test calls\ntry\n'
+        for call in test_calls:
+            executable_code += f'    result = {call};\n'
+            executable_code += f'    disp(result);\n'
+        executable_code += 'catch ME\n    disp([\'Error: \' ME.message]);\nend\n'
+        
+        return executable_code
+
+    def _extract_matlab_function_info(self, code):
+        """Extract function name and parameters from MATLAB function definition"""
+        function_pattern = r'function\s+(?:\[?([^\]]*)\]?\s*=\s*)?(\w+)\s*\(([^)]*)\)'
+        match = re.search(function_pattern, code)
+        
+        if match:
+            output_vars = match.group(1) if match.group(1) else None
+            func_name = match.group(2)
+            params_str = match.group(3).strip() if match.group(3) else ''
+            params = [p.strip() for p in params_str.split(',') if p.strip()] if params_str else []
+            
+            return {
+                'name': func_name,
+                'params': params,
+                'output_vars': output_vars
+            }
+        return None
+
+    def _generate_matlab_test_calls(self, func_name, params):
+        """Generate appropriate test calls for MATLAB functions based on name and parameters"""
+        test_calls = []
+        
+        # Common test values based on parameter count
+        if len(params) == 0:
+            test_calls.append(f'{func_name}()')
+        elif len(params) == 1:
+            # Generate different test values based on function name hints
+            if any(keyword in func_name.lower() for keyword in ['median', 'mean', 'average', 'sum']):
+                test_calls.append(f'{func_name}([1, 2, 3, 4, 5])')
+                test_calls.append(f'{func_name}([10, 20, 30])')
+            elif any(keyword in func_name.lower() for keyword in ['gcd', 'divisor']):
+                test_calls.append(f'{func_name}(48, 18)')
+            elif any(keyword in func_name.lower() for keyword in ['roman', 'rom']):
+                test_calls.append(f'{func_name}(\'VII\')')
+                test_calls.append(f'{func_name}(\'XIV\')')
+            elif any(keyword in func_name.lower() for keyword in ['factorial', 'fact']):
+                test_calls.append(f'{func_name}(5)')
+            elif 'halve' in func_name.lower():
+                test_calls.append(f'{func_name}(10)')
+                test_calls.append(f'{func_name}(7)')
+            else:
+                # Generic test values
+                test_calls.append(f'{func_name}(5)')
+                test_calls.append(f'{func_name}([1, 2, 3])')
+        elif len(params) == 2:
+            if any(keyword in func_name.lower() for keyword in ['gcd', 'divisor']):
+                test_calls.append(f'{func_name}(48, 18)')
+                test_calls.append(f'{func_name}(12, 8)')
+            else:
+                test_calls.append(f'{func_name}(5, 3)')
+                test_calls.append(f'{func_name}(10, 2)')
+        else:
+            # For functions with many parameters, create a simple call
+            simple_params = ', '.join(['1'] * len(params))
+            test_calls.append(f'{func_name}({simple_params})')
+        
+        return test_calls if test_calls else [f'{func_name}()']
+
+    def _clean_python_gui_code(self, code):
+        """Remove or replace GUI elements in Python code to prevent windows from opening"""
+        
+        # Remove problematic imports
+        gui_imports = [
+            r'import\s+tkinter.*\n',
+            r'from\s+tkinter\s+import.*\n', 
+            r'import\s+turtle.*\n',
+            r'import\s+pygame.*\n',
+            r'import\s+webbrowser.*\n',
+            r'from\s+turtle\s+import.*\n',
+            r'from\s+OpenGL.*import.*\n',
+            r'import\s+OpenGL.*\n'
+        ]
+        
+        for pattern in gui_imports:
+            code = re.sub(pattern, '# GUI import removed\n', code, flags=re.IGNORECASE)
+        
+        # Replace matplotlib show() calls
+        code = re.sub(r'plt\.show\(\)', 'plt.savefig("/tmp/plot.png")  # plt.show() disabled', code)
+        code = re.sub(r'pyplot\.show\(\)', 'pyplot.savefig("/tmp/plot.png")  # pyplot.show() disabled', code)
+        
+        # Replace PIL Image show() and other general show() calls
+        code = re.sub(r'\.show\(\)', '.save("/tmp/image.png")  # .show() disabled', code)
+        
+        # Replace tkinter operations
+        code = re.sub(r'\.mainloop\(\)', '.quit()  # mainloop() disabled', code)
+        code = re.sub(r'root\.mainloop\(\)', 'pass  # root.mainloop() disabled', code)
+        code = re.sub(r'app\.run\(\)', 'pass  # app.run() disabled', code)
+        
+        # Replace webbrowser calls
+        code = re.sub(r'webbrowser\.open\([^)]*\)', 'print("Browser opening disabled")', code)
+        
+        # Replace turtle graphics
+        code = re.sub(r'turtle\..*\n', '# Turtle graphics disabled\n', code)
+        
+        # Replace OpenGL/GLUT main loop and window creation
+        code = re.sub(r'glutMainLoop\(\)', '# glutMainLoop() disabled', code)
+        code = re.sub(r'glutCreateWindow\([^)]*\)', '# glutCreateWindow() disabled', code)
+        code = re.sub(r'glutInit\([^)]*\)', '# glutInit() disabled', code)
+        
+        # Replace input() calls that might block execution
+        code = re.sub(r'input\s*\([^)]*\)', '"simulated_input"', code)
+        
+        # Add matplotlib backend setting at the top if matplotlib is used
+        if 'matplotlib' in code or 'pyplot' in code:
+            backend_code = '''
+import matplotlib
+matplotlib.use('Agg')  # Non-interactive backend
+'''
+            code = backend_code + code
+        
+        return code
+
+    def _clean_r_graphics_code(self, code):
+        """Remove or replace graphics elements in R code to prevent GUI windows from opening"""
+        
+        # Replace dev.new() and similar device creation calls
+        code = re.sub(r'dev\.new\(\)', '# dev.new() disabled', code)
+        code = re.sub(r'x11\(\)', '# x11() disabled', code)
+        code = re.sub(r'windows\(\)', '# windows() disabled', code)
+        code = re.sub(r'quartz\(\)', '# quartz() disabled', code)
+        
+        # Replace interactive plotting commands with file output
+        code = re.sub(r'plot\s*\(([^)]*)\)', r'png("/tmp/plot.png"); plot(\1); dev.off()  # plot() redirected to file', code)
+        code = re.sub(r'hist\s*\(([^)]*)\)', r'png("/tmp/hist.png"); hist(\1); dev.off()  # hist() redirected to file', code)
+        code = re.sub(r'boxplot\s*\(([^)]*)\)', r'png("/tmp/boxplot.png"); boxplot(\1); dev.off()  # boxplot() redirected to file', code)
+        code = re.sub(r'barplot\s*\(([^)]*)\)', r'png("/tmp/barplot.png"); barplot(\1); dev.off()  # barplot() redirected to file', code)
+        
+        # Handle ggplot2 graphics
+        code = re.sub(r'ggsave\s*\([^)]*\)', 'ggsave("/tmp/ggplot.png")  # ggsave() redirected', code)
+        code = re.sub(r'print\s*\(\s*p\s*\)', 'ggsave("/tmp/ggplot.png", p)  # ggplot print() disabled', code)
+        
+        # Remove readline and interactive input
+        code = re.sub(r'readline\s*\([^)]*\)', '"simulated_input"', code)
+        code = re.sub(r'readLines\s*\([^)]*\)', 'c("simulated_input")', code)
+        
+        # Replace Shiny apps
+        code = re.sub(r'shinyApp\s*\([^)]*\)', '# Shiny app disabled', code)
+        code = re.sub(r'runApp\s*\([^)]*\)', '# runApp() disabled', code)
+        
+        # Replace browser() debugging calls
+        code = re.sub(r'browser\s*\(\)', '# browser() disabled', code)
+        
+        return code
+
+    def _clean_matlab_graphics_code(self, code):
+        """Remove or replace graphics elements in MATLAB code to prevent GUI windows from opening"""
+        
+        # Replace figure creation with invisible figures
+        code = re.sub(r'figure\s*\(\s*\)', "figure('Visible', 'off')", code)
+        code = re.sub(r'figure\s*\(\s*(\d+)\s*\)', r"figure(\1, 'Visible', 'off')", code)
+        
+        # Replace plot commands to save to file instead of displaying
+        code = re.sub(r'plot\s*\(([^)]*)\)', r"plot(\1); print('/tmp/matlab_plot.png', '-dpng');", code)
+        code = re.sub(r'scatter\s*\(([^)]*)\)', r"scatter(\1); print('/tmp/matlab_scatter.png', '-dpng');", code)
+        code = re.sub(r'histogram\s*\(([^)]*)\)', r"histogram(\1); print('/tmp/matlab_hist.png', '-dpng');", code)
+        code = re.sub(r'bar\s*\(([^)]*)\)', r"bar(\1); print('/tmp/matlab_bar.png', '-dpng');", code)
+        
+        # Remove interactive elements
+        code = re.sub(r'input\s*\([^)]*\)', "'simulated_input'", code)
+        code = re.sub(r'pause\s*\(\s*\)', '% pause() disabled', code)
+        code = re.sub(r'waitforbuttonpress\s*\(\s*\)', '% waitforbuttonpress() disabled', code)
+        
+        # Replace GUI creation commands
+        code = re.sub(r'uicontrol\s*\([^)]*\)', '% uicontrol() disabled', code)
+        code = re.sub(r'uifigure\s*\([^)]*\)', '% uifigure() disabled', code)
+        code = re.sub(r'uimenu\s*\([^)]*\)', '% uimenu() disabled', code)
+        
+        # Remove debugging stops
+        code = re.sub(r'keyboard\s*;?', '% keyboard disabled', code)
+        code = re.sub(r'dbstop\s+[^;\n]*', '% dbstop disabled', code)
+        
+        return code
 
 
 if __name__ == "__main__":
