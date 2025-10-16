@@ -71,7 +71,7 @@ python3 scripts/visualize_results.py --tasks
 ### 1. Language Energy Ranking
 
 <div align="center">
-    <img src="results/visualizations/language_energy_ranking.png" alt="Language Energy Ranking" width="600"/>
+    <img src="results/visualizations/language_energy_ranking.png" alt="Language Energy Ranking" width="650"/>
 </div>
 
 **Shows:** CO2 emissions and execution time by programming language. Compiled languages (C, C++, Rust) typically show lower emissions than interpreted languages (Python, Ruby).
