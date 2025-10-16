@@ -55,22 +55,6 @@ That's it! 🎉
 | `python3 main.py benchmark --mode top10` | Full benchmark (30 iterations) | 45-60 min |
 | `python3 main.py carbon` | Display CO2 statistics | <1s |
 
-### Command Examples
-
-```bash
-# Find all sorting algorithms
-python3 main.py find --task "sort"
-
-# Execute TOP 10 tasks with CO2 tracking
-python3 main.py smart
-
-# Run comprehensive benchmark
-python3 main.py benchmark --mode top10
-
-# View emissions report
-python3 main.py carbon
-```
-
 ## 📊 Benchmark Results & Visualizations
 
 CLAP generates professional visualizations of benchmark results:
@@ -86,31 +70,41 @@ python3 scripts/visualize_results.py --tasks
 
 ### 1. Language Energy Ranking
 
-![Language Energy Ranking](results/visualizations/language_energy_ranking.png)
+<div align="center">
+    <img src="results/visualizations/language_energy_ranking.png" alt="Language Energy Ranking" width="480"/>
+</div>
 
 **Shows:** CO2 emissions and execution time by programming language. Compiled languages (C, C++, Rust) typically show lower emissions than interpreted languages (Python, Ruby).
 
 ### 2. CO2 vs Execution Time
 
-![CO2 vs Time Scatter](results/visualizations/co2_vs_time_scatter.png)
+<div align="center">
+    <img src="results/visualizations/co2_vs_time_scatter.png" alt="CO2 vs Time Scatter" width="480"/>
+</div>
 
 **Shows:** Relationship between execution time and CO2 emissions. Bubble size = number of successful runs. Clear correlation: longer execution → higher emissions.
 
 ### 3. Top 10 Tasks Heatmap
 
-![Top Tasks Heatmap](results/visualizations/top_tasks_co2_heatmap.png)
+<div align="center">
+    <img src="results/visualizations/top_tasks_co2_heatmap.png" alt="Top Tasks Heatmap" width="480"/>
+</div>
 
 **Shows:** CO2 emissions for the 10 most common tasks across all languages. Reveals which algorithms are most energy-intensive and language-specific optimizations.
 
 ### 4. Success Rate by Language
 
-![Success Rate Comparison](results/visualizations/success_rate_comparison.png)
+<div align="center">
+    <img src="results/visualizations/success_rate_comparison.png" alt="Success Rate Comparison" width="480"/>
+</div>
 
 **Shows:** Reliability indicator - percentage of successful executions vs failures for each language. Green = 100% success rate.
 
 ### 5. CO2 Distribution
 
-![CO2 Distribution Boxplot](results/visualizations/co2_distribution_boxplot.png)
+<div align="center">
+    <img src="results/visualizations/co2_distribution_boxplot.png" alt="CO2 Distribution Boxplot" width="480"/>
+</div>
 
 **Shows:** Statistical distribution of emissions per language. Box height indicates variability, median line shows typical emissions.
 
