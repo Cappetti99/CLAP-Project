@@ -68,6 +68,7 @@ class TaskSearcher:
             'ocaml': ['ocaml'],
             'r': ['r'],
             'julia': ['julia'],
+            'matlab': ['matlab'],
             'typescript': ['typescript']
         }
 
@@ -127,7 +128,9 @@ class TaskSearcher:
                         'r': 'r',
                         'rlang': 'r',             # R full form
                         'julia': 'julia',
-                        'jl': 'julia'             # Julia abbreviation
+                        'jl': 'julia',            # Julia abbreviation
+                        'matlab': 'matlab',
+                        'octave': 'matlab'        # MATLAB/Octave compatibility
                     }
                     
                     # Only load languages that have passed the test

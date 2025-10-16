@@ -18,5 +18,6 @@ click==8.2.1               # CLI framework
 cryptography==45.0.5       # Sicurezza e crittografia
 
 # Optional (da installare se necessario)
-# matplotlib>=3.7.0        # Visualizzazioni grafiche
+matplotlib>=3.7.0          # Visualizzazioni grafiche (richiesto per scripts/visualize_results.py)
+seaborn>=0.12.0            # Grafici statistici avanzati (richiesto per scripts/visualize_results.py)
 # tabulate>=0.9.0          # Formattazione tabelle eleganti

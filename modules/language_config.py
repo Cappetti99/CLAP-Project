@@ -159,6 +159,88 @@ func main() {
 }''',
                 'type': 'compiled',
                 'compile_flags': ['-O']
+            },
+            'csharp': {
+                'extension': '.cs',
+                'compiler': self.get_conda_command('csc'),
+                'executor': self.get_conda_command('mono'),
+                'timeout': self.DEFAULT_TIMEOUTS['compiled'],
+                'test_code': '''using System;
+class Test {
+    static void Main() {
+        Console.WriteLine("Hello from C#!");
+    }
+}''',
+                'type': 'compiled',
+                'needs_class_name': True
+            },
+            'haskell': {
+                'extension': '.hs',
+                'compiler': self.get_conda_command('ghc'),
+                'timeout': self.DEFAULT_TIMEOUTS['compiled'],
+                'test_code': '''main :: IO ()
+main = putStrLn "Hello from Haskell!"''',
+                'type': 'compiled',
+                'compile_flags': ['-O2']
+            },
+            'julia': {
+                'extension': '.jl',
+                'executor': self.get_conda_command('julia'),
+                'timeout': self.DEFAULT_TIMEOUTS['interpreted'],
+                'test_code': 'println("Hello from Julia!")',
+                'type': 'interpreted',
+                'compile_cmd': None
+            },
+            'matlab': {
+                'extension': '.m',
+                'executor': self.get_conda_command('matlab'),
+                'timeout': self.DEFAULT_TIMEOUTS['interpreted'],
+                'test_code': 'disp("Hello from MATLAB!")',
+                'type': 'interpreted',
+                'compile_cmd': None,
+                'executor_flags': ['-batch']
+            },
+            'ocaml': {
+                'extension': '.ml',
+                'compiler': self.get_conda_command('ocamlc'),
+                'timeout': self.DEFAULT_TIMEOUTS['compiled'],
+                'test_code': 'print_endline "Hello from OCaml!";;',
+                'type': 'compiled',
+                'compile_flags': []
+            },
+            'php': {
+                'extension': '.php',
+                'executor': self.get_conda_command('php'),
+                'timeout': self.DEFAULT_TIMEOUTS['interpreted'],
+                'test_code': '<?php\necho "Hello from PHP!\\n";\n?>',
+                'type': 'interpreted',
+                'compile_cmd': None
+            },
+            'r': {
+                'extension': '.r',
+                'executor': self.get_conda_command('Rscript'),
+                'timeout': self.DEFAULT_TIMEOUTS['interpreted'],
+                'test_code': 'cat("Hello from R!\\n")',
+                'type': 'interpreted',
+                'compile_cmd': None
+            },
+            'ruby': {
+                'extension': '.rb',
+                'executor': self.get_conda_command('ruby'),
+                'timeout': self.DEFAULT_TIMEOUTS['interpreted'],
+                'test_code': 'puts "Hello from Ruby!"',
+                'type': 'interpreted',
+                'compile_cmd': None
+            },
+            'typescript': {
+                'extension': '.ts',
+                'compiler': self.get_conda_command('tsc'),
+                'executor': self.get_conda_command('node'),
+                'timeout': self.DEFAULT_TIMEOUTS['compiled'],
+                'test_code': 'console.log("Hello from TypeScript!");',
+                'type': 'compiled',
+                'compile_cmd': ['tsc'],
+                'needs_compilation': True
             }
         }
         
@@ -166,7 +248,8 @@ func main() {
     
     def get_all_supported_languages(self) -> List[str]:
         """Get list of all supported languages"""
-        return ['python', 'javascript', 'java', 'c', 'cpp', 'go', 'rust']
+        return ['python', 'javascript', 'java', 'c', 'cpp', 'go', 'rust', 
+                'csharp', 'haskell', 'julia', 'matlab', 'ocaml', 'php', 'r', 'ruby', 'typescript']
     
     def get_file_extensions(self) -> Dict[str, str]:
         """Get mapping of languages to file extensions"""
