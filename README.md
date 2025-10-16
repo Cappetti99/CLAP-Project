@@ -11,7 +11,7 @@
 [![CodeCarbon](https://img.shields.io/badge/CodeCarbon-Enabled-green.svg)](https://codecarbon.io)
 [![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)](https://github.com)
 
-## �� Overview
+## Overview
 
 **CLAP** is an automated system for executing and analyzing code across **16 programming languages** with real-time CO2 emissions tracking. Perfect for:
 
@@ -24,23 +24,23 @@
 
 ## 🚀 Quick Start (5 minutes)
 
-\`\`\`bash
+```bash
 # 1. Clone repository
 git clone https://github.com/Cappetti99/CLAP-Project.git
 cd CLAP-Project
 
-# 2. Install dependencies
-pip install -r requirements.txt
+# 2. Install dependencies (macOS/Linux)
+python3 -m pip install -r requirements.txt
 
 # 3. Test available languages on your system
-python main.py test
+python3 main.py test
 
 # 4. Run smart execution (TOP 10 tasks)
-python main.py smart
+python3 main.py smart
 
 # 5. Run CO2 benchmark (fast mode - 3 minutes)
-python main.py benchmark --mode fast
-\`\`\`
+python3 main.py benchmark --mode fast
+```
 
 That's it! 🎉
 
@@ -48,41 +48,41 @@ That's it! 🎉
 
 | Command | Description | Time |
 |---------|-------------|------|
-| \`python main.py test\` | Check available languages | ~10s |
-| \`python main.py find --task "bubble sort"\` | Search specific algorithms | <1s |
-| \`python main.py smart\` | Run TOP 10 common tasks | 2-5 min |
-| \`python main.py benchmark --mode fast\` | Quick CO2 benchmark | 3-5 min |
-| \`python main.py benchmark --mode top10\` | Full benchmark (30 iterations) | 45-60 min |
-| \`python main.py carbon\` | Display CO2 statistics | <1s |
+| `python3 main.py test` | Check available languages | ~10s |
+| `python3 main.py find --task "bubble sort"` | Search specific algorithms | <1s |
+| `python3 main.py smart` | Run TOP 10 common tasks | 2-5 min |
+| `python3 main.py benchmark --mode fast` | Quick CO2 benchmark | 3-5 min |
+| `python3 main.py benchmark --mode top10` | Full benchmark (30 iterations) | 45-60 min |
+| `python3 main.py carbon` | Display CO2 statistics | <1s |
 
 ### Command Examples
 
-\`\`\`bash
+```bash
 # Find all sorting algorithms
-python main.py find --task "sort"
+python3 main.py find --task "sort"
 
 # Execute TOP 10 tasks with CO2 tracking
-python main.py smart
+python3 main.py smart
 
 # Run comprehensive benchmark
-python main.py benchmark --mode top10
+python3 main.py benchmark --mode top10
 
 # View emissions report
-python main.py carbon
-\`\`\`
+python3 main.py carbon
+```
 
 ## 📊 Benchmark Results & Visualizations
 
 CLAP generates professional visualizations of benchmark results:
 
-\`\`\`bash
+```bash
 # Generate all charts
-python scripts/visualize_results.py --all
+python3 scripts/visualize_results.py --all
 
 # Or generate specific charts
-python scripts/visualize_results.py --ranking
-python scripts/visualize_results.py --tasks
-\`\`\`
+python3 scripts/visualize_results.py --ranking
+python3 scripts/visualize_results.py --tasks
+```
 
 ### 1. Language Energy Ranking
 
@@ -139,20 +139,26 @@ Based on TOP10 benchmark (10 tasks × 30 iterations × 15 languages):
 - At least 1 programming language installed
 
 **For full 16-language support:**
-\`\`\`bash
+```bash
 # Ubuntu/Debian - Install all languages
 sudo apt update
-sudo apt install -y build-essential openjdk-11-jdk mono-complete \\
+sudo apt install -y build-essential openjdk-11-jdk mono-complete \
     nodejs npm php-cli ruby-full golang-go ghc ocaml r-base
 
 npm install -g typescript
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 sudo snap install julia --classic
 
+# macOS (Homebrew) - Install languages
+brew update
+brew install openjdk@11 mono node php ruby go ghc ocaml r julia
+npm install -g typescript
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
 # Test installation
-python main.py test
+python3 main.py test
 # Target: 15-16/16 languages available
-\`\`\`
+```
 
 ## ⚙️ Configuration
 
@@ -200,32 +206,28 @@ CLAP-Project/
 ## 🔧 Troubleshooting
 
 **Language not detected?**
-\`\`\`bash
+```bash
 which python3  # or gcc, node, javac, etc.
-python main.py test
-\`\`\`
+python3 main.py test
+```
 
 **CO2 tracking disabled?**
-\`\`\`bash
-pip install codecarbon
-\`\`\`
+```bash
+python3 -m pip install codecarbon
+```
 
 **Permission errors?**
-\`\`\`bash
+```bash
 chmod +x main.py
 chmod -R 755 src/ modules/
-\`\`\`
+```
 
 ## 📚 Additional Resources
 
-- **Dataset:** Rosetta Code implementations (1000+ tasks)
+- **Dataset:** [Rosetta Code](https://huggingface.co/datasets/christopher/rosetta-code) implementations (1000+ tasks)
 - **CO2 Tracking:** Powered by [CodeCarbon](https://codecarbon.io)
 - **Python Libraries:** pandas, matplotlib, seaborn
 - **Supported Paradigms:** OOP, Functional, Systems, Scientific
-
-## 📄 License
-
-Academic research project. Contact author for licensing.
 
 ## 👨‍💻 Author
 
