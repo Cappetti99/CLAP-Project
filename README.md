@@ -71,7 +71,7 @@ python3 scripts/visualize_results.py --tasks
 ### 1. Language Energy Ranking
 
 <div align="center">
-    <img src="results/visualizations/language_energy_ranking.png" alt="Language Energy Ranking" width="650"/>
+    <img src="results/visualizations/language_energy_ranking.png" alt="Language Energy Ranking" width="700"/>
 </div>
 
 **Shows:** CO2 emissions and execution time by programming language. Compiled languages (C, C++, Rust) typically show lower emissions than interpreted languages (Python, Ruby).
@@ -79,7 +79,7 @@ python3 scripts/visualize_results.py --tasks
 ### 2. CO2 vs Execution Time
 
 <div align="center">
-    <img src="results/visualizations/co2_vs_time_scatter.png" alt="CO2 vs Time Scatter" width="600"/>
+    <img src="results/visualizations/co2_vs_time_scatter.png" alt="CO2 vs Time Scatter" width="650"/>
 </div>
 
 **Shows:** Relationship between execution time and CO2 emissions. Bubble size = number of successful runs. Clear correlation: longer execution → higher emissions.
@@ -87,7 +87,7 @@ python3 scripts/visualize_results.py --tasks
 ### 3. Top 10 Tasks Heatmap
 
 <div align="center">
-    <img src="results/visualizations/top_tasks_co2_heatmap.png" alt="Top Tasks Heatmap" width="600"/>
+    <img src="results/visualizations/top_tasks_co2_heatmap.png" alt="Top Tasks Heatmap" width="650"/>
 </div>
 
 **Shows:** CO2 emissions for the 10 most common tasks across all languages. Reveals which algorithms are most energy-intensive and language-specific optimizations.
@@ -103,7 +103,7 @@ python3 scripts/visualize_results.py --tasks
 ### 5. CO2 Distribution
 
 <div align="center">
-    <img src="results/visualizations/co2_distribution_boxplot.png" alt="CO2 Distribution Boxplot" width="600"/>
+    <img src="results/visualizations/co2_distribution_boxplot.png" alt="CO2 Distribution Boxplot" width="650"/>
 </div>
 
 **Shows:** Statistical distribution of emissions per language. Box height indicates variability, median line shows typical emissions.
