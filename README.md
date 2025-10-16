@@ -164,16 +164,16 @@ python3 main.py test
 
 CLAP works **zero-configuration** in most cases. Optional environment variables:
 
-\`\`\`bash
+```bash
 export CLAP_DATASET_PATH="/path/to/custom/dataset"    # Custom dataset
 export CLAP_OUTPUT_PATH="/path/to/custom/results"     # Custom output
 export CLAP_LOG_LEVEL="DEBUG"                         # Verbose logging
 export CLAP_EXECUTION_TIMEOUT="30"                    # Longer timeout
-\`\`\`
+```
 
 ## 📁 Project Structure
 
-\`\`\`
+```
 CLAP-Project/
 ├── main.py                 # Main CLI interface
 ├── requirements.txt        # Python dependencies
@@ -201,7 +201,7 @@ CLAP-Project/
 │
 └── scripts/               # Utility scripts
     └── visualize_results.py
-\`\`\`
+```
 
 ## 🔧 Troubleshooting
 
