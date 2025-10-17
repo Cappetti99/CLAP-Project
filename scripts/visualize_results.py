@@ -73,7 +73,7 @@ class CLAPVisualizer:
         bars1 = ax1.barh(df['language'], df['avg_co2_per_run_mg'], color=colors)
         ax1.set_xlabel('Average CO₂ per Execution (mg)', fontsize=12, fontweight='bold')
         ax1.set_ylabel('Language', fontsize=12, fontweight='bold')
-        ax1.set_title('🌍 Energy Ranking: Average CO₂ by Language', 
+        ax1.set_title('Energy Ranking: Average CO₂ by Language', 
                      fontsize=14, fontweight='bold', pad=20)
         ax1.invert_yaxis()
         
@@ -87,7 +87,7 @@ class CLAPVisualizer:
         bars2 = ax2.barh(df['language'], df['avg_time_per_run_s'], color=colors2)
         ax2.set_xlabel('Average Time per Execution (s)', fontsize=12, fontweight='bold')
         ax2.set_ylabel('Language', fontsize=12, fontweight='bold')
-        ax2.set_title('⏱️ Performance: Average Time by Language', 
+        ax2.set_title('Performance: Average Time by Language', 
                      fontsize=14, fontweight='bold', pad=20)
         ax2.invert_yaxis()
         
@@ -133,8 +133,8 @@ class CLAPVisualizer:
                        bbox=dict(boxstyle='round,pad=0.3', 
                                facecolor='yellow', alpha=0.3))
         
-        ax.set_xlabel('⏱️ Average Time per Run (seconds)', fontsize=13, fontweight='bold')
-        ax.set_ylabel('🌍 Average CO₂ per Run (mg)', fontsize=13, fontweight='bold')
+        ax.set_xlabel('Average Time per Run (seconds)', fontsize=13, fontweight='bold')
+        ax.set_ylabel('Average CO₂ per Run (mg)', fontsize=13, fontweight='bold')
         ax.set_title('CO₂ vs Execution Time by Language\n(Bubble size = number of runs)', 
                     fontsize=15, fontweight='bold', pad=20)
         ax.grid(True, alpha=0.3)
@@ -178,7 +178,7 @@ class CLAPVisualizer:
         sns.heatmap(pivot, annot=True, fmt='.0f', cmap='YlOrRd', 
                    linewidths=0.5, ax=ax, cbar_kws={'label': 'Average CO₂ (mg)'})
         
-        ax.set_title('📊 CO₂ Comparison by Task and Language (Top 10 Tasks)', 
+        ax.set_title('CO₂ Comparison by Task and Language (Top 10 Tasks)', 
                     fontsize=15, fontweight='bold', pad=20)
         ax.set_xlabel('Language', fontsize=12, fontweight='bold')
         ax.set_ylabel('Task', fontsize=12, fontweight='bold')
@@ -209,7 +209,7 @@ class CLAPVisualizer:
         
         ax.set_xlabel('Success Rate (%)', fontsize=12, fontweight='bold')
         ax.set_ylabel('Language', fontsize=12, fontweight='bold')
-        ax.set_title('✅ Success Rate by Language', fontsize=14, fontweight='bold', pad=20)
+        ax.set_title('Success Rate by Language', fontsize=14, fontweight='bold', pad=20)
         ax.set_xlim(0, 105)
         
         # Add percentages
@@ -253,7 +253,7 @@ class CLAPVisualizer:
         
         ax.set_xlabel('Language', fontsize=12, fontweight='bold')
         ax.set_ylabel('CO₂ (mg)', fontsize=12, fontweight='bold')
-        ax.set_title('📦 CO₂ Distribution by Language (Boxplot)', 
+        ax.set_title('CO₂ Distribution by Language (Boxplot)', 
                     fontsize=14, fontweight='bold', pad=20)
         ax.grid(axis='y', alpha=0.3)
         plt.xticks(rotation=45, ha='right')
@@ -269,25 +269,25 @@ class CLAPVisualizer:
     
     def generate_all_plots(self):
         """Generate all available charts"""
-        print("🚀 Generating CLAP charts...\n")
+        print("Generating CLAP charts...\n")
         
-        print("1️⃣ Language Energy Ranking...")
+        print("1 - Language Energy Ranking...")
         self.plot_language_energy_ranking()
         
-        print("\n2️⃣ CO2 vs Time Scatter...")
+        print("\n2 - CO2 vs Time Scatter...")
         self.plot_co2_vs_time_scatter()
-        
-        print("\n3️⃣ Top Tasks Comparison...")
+
+        print("\n3 - Top Tasks Comparison...")
         self.plot_top_tasks_comparison()
-        
-        print("\n4️⃣ Success Rate Comparison...")
+
+        print("\n4 - Success Rate Comparison...")
         self.plot_success_rate_comparison()
-        
-        print("\n5️⃣ CO2 Distribution Boxplot...")
+
+        print("\n5 - CO2 Distribution Boxplot...")
         self.plot_co2_distribution_boxplot()
         
         print(f"\n✅ COMPLETE! All charts saved in: {self.output_dir}")
-        print(f"📁 Directory: {self.output_dir.absolute()}")
+        print(f"Directory: {self.output_dir.absolute()}")
 
 
 def main():
