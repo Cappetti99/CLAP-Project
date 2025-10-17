@@ -18,10 +18,10 @@ except ImportError:
     print(" CodeCarbon not installed. Install with: pip install codecarbon")
 
 
-class SWAMCarbonTracker:
+class CLAPCarbonTracker:
     """Tracker dedicated to measuring the environmental impact of CLAP executions"""
 
-    def __init__(self, project_name="SWAM-Project"):
+    def __init__(self, project_name="CLAP-Project"):
         self.project_name = project_name
         self.results_dir = "results/carbon"
         self.tracker = None
@@ -38,7 +38,7 @@ class SWAMCarbonTracker:
                 log_level="ERROR",  # Reduce logging
                 save_to_file=False,  # DISABLED to avoid CSV error
                 save_to_api=False,  # Disabled for privacy
-                experiment_id=f"swam_session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                experiment_id=f"clap_session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             )
         else:
             print(" CodeCarbon not available - CO2 tracking disabled")
@@ -103,7 +103,7 @@ class SWAMCarbonTracker:
         return track_emissions(
             project_name=self.project_name,
             output_dir=self.results_dir,
-            experiment_id=func_name or "swam_function"
+            experiment_id=func_name or "clap_function"
         )
 
     def get_summary_report(self):
@@ -157,7 +157,7 @@ class SWAMCarbonTracker:
 
     def print_impact_report(self):
         """Print environmental impact report"""
-        print("\n SWAM PROJECT - CARBON IMPACT REPORT")
+        print("\n CLAP PROJECT - CARBON IMPACT REPORT")
         print("=" * 50)
 
         if not CODECARBON_AVAILABLE:
@@ -191,33 +191,33 @@ class SWAMCarbonTracker:
 
 
 # Global instance for simple usage
-swam_carbon_tracker = SWAMCarbonTracker()
+clap_carbon_tracker = CLAPCarbonTracker()
 
 
 # Utility functions
 def start_carbon_tracking(task_name=None, language=None):
     """Start CO2 tracking for a session"""
-    return swam_carbon_tracker.start_tracking(task_name, language)
+    return clap_carbon_tracker.start_tracking(task_name, language)
 
 
 def stop_carbon_tracking():
     """Stop CO2 tracking"""
-    return swam_carbon_tracker.stop_tracking()
+    return clap_carbon_tracker.stop_tracking()
 
 
 def track_emissions_decorator(func_name=None):
     """Decorator to automatically track emissions for a function"""
-    return swam_carbon_tracker.track_function(func_name)
+    return clap_carbon_tracker.track_function(func_name)
 
 
 def print_carbon_report():
     """Print environmental impact report"""
-    swam_carbon_tracker.print_impact_report()
+    clap_carbon_tracker.print_impact_report()
 
 
 if __name__ == "__main__":
     # Test carbon tracking system
-    print(" Test SWAM Carbon Tracker")
+    print(" Test CLAP Carbon Tracker")
 
     # Test manual tracking
     start_carbon_tracking("test_task", "python")

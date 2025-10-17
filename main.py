@@ -44,8 +44,6 @@ def print_help():
     print("\n QUICK START:")
     print("  python main.py test && python main.py analyze && python main.py smart")
     
-    print("\n For details: README.md and SETUP_GUIDE.md")
-
 def analyze_tasks():
     """Performs the analysis of common tasks"""
     print("\nANALYSIS OF COMMON TASKS")
@@ -105,7 +103,7 @@ def analyze_tasks():
                 lang_info = f"{task['language_count']} languages"
                 print(f"  {i:2d}. {task['name']} - {lang_info}")
             
-            # Save the results to a file
+            # Save the results to a file for smart execution
             import json
             import os
             os.makedirs("results/task_analysis", exist_ok=True)
@@ -122,8 +120,12 @@ def analyze_tasks():
                 "search_strategy": "top_10_by_coverage"
             }
             
-            with open("results/task_analysis/common_tasks.json", 'w') as f:
+            output_file = "results/task_analysis/common_tasks.json"
+            with open(output_file, 'w') as f:
                 json.dump(result_data, f, indent=2)
+            
+            print(f"\n Results saved to: {output_file}")
+            print(f" Next step: Run 'python main.py smart' to execute these {len(common_tasks[:10])} tasks")
                 
         else:
             print("No common tasks found")
@@ -279,6 +281,22 @@ def smart_execute():
     print("\nADAPTIVE EXECUTION")
     print("-" * 40)
     
+    # Check if analyze has been run first
+    import os
+    from pathlib import Path
+    common_tasks_file = Path("results/task_analysis/common_tasks.json")
+    
+    if not common_tasks_file.exists():
+        print("  No task analysis found.")
+        print("  REQUIRED ACTION: Run 'python main.py analyze' first to find common tasks.")
+        print("  The 'smart' command executes the tasks found by 'analyze'.")
+        print()
+        print("  Workflow:")
+        print("    1. python main.py test     # Detect available languages")
+        print("    2. python main.py analyze  # Find TOP 10 common tasks")
+        print("    3. python main.py smart    # Execute those tasks")
+        return False
+    
     try:
         from src.smart_executor import SmartExecutor
         executor = SmartExecutor()
@@ -393,99 +411,52 @@ def benchmark_carbon(mode=None):
     
     return True
 
-def clean_project():
-    """Cleans temporary files and project cache"""
-    print("\nPROJECT CLEANUP")
+def clean_project(args=None):
+    """Enhanced cleanup with options from new cleaner.py"""
+    print("\n🧹 PROJECT CLEANUP")
     print("-" * 40)
     
     try:
-        import shutil
-        import glob
+        from src.cleaner import (
+            cleanup_carbon_sessions,
+            cleanup_temp_files,
+            show_session_statistics,
+            get_directory_stats,
+            deep_clean
+        )
         
-        cleaned_files = 0
-        cleaned_dirs = 0
+        # Parse options
+        dry_run = True if args and hasattr(args, 'dry_run') and args.dry_run else not (args and hasattr(args, 'execute') and args.execute)
+        days = args.days if args and hasattr(args, 'days') else 2
         
-        # Temporary files to remove
-        temp_patterns = [
-            "results/execution/temp_*",
-            "results/execution/*.class",
-            "results/execution/a.out",
-            "**/__pycache__",
-            "**/*.pyc",
-            "**/*.pyo",
-            "**/*.o",
-            "**/*.obj",
-            "**/*.exe",
-            "**/*.out",
-            "**/*.class",
-            "**/*.hi",
-            "**/*.cmo",
-            "**/*.cmi"
-        ]
+        # Show statistics mode
+        if args and hasattr(args, 'stats') and args.stats:
+            show_session_statistics()
+            get_directory_stats()
+            return True
         
-        print("Removing temporary files...")
+        # Deep clean mode (comprehensive)
+        if args and hasattr(args, 'deep') and args.deep:
+            deep_clean(days_to_keep=days, keep_benchmarks=3, dry_run=dry_run)
+            return True
         
-        for pattern in temp_patterns:
-            files = glob.glob(pattern, recursive=True)
-            for file_path in files:
-                try:
-                    if os.path.isfile(file_path):
-                        os.remove(file_path)
-                        cleaned_files += 1
-                        print(f"  Removed: {file_path}")
-                    elif os.path.isdir(file_path):
-                        shutil.rmtree(file_path)
-                        cleaned_dirs += 1
-                        print(f"  Removed directory: {file_path}")
-                except Exception as e:
-                    print(f"  Error removing {file_path}: {e}")
+        # Default: carbon sessions + temp files
+        cleanup_carbon_sessions(days_to_keep=days, dry_run=dry_run)
+        cleanup_temp_files(dry_run=dry_run)
         
-        # Cleaning specific caches
-        cache_dirs = [
-            ".pytest_cache",
-            "node_modules",
-            "target",  # Rust
-            "dist",    # Go/Python
-            "_build"   # OCaml
-        ]
+        print("\n✅ Cleanup completed!")
         
-        print("\nCleaning caches...")
-        for cache_dir in cache_dirs:
-            if os.path.exists(cache_dir):
-                try:
-                    shutil.rmtree(cache_dir)
-                    cleaned_dirs += 1
-                    print(f"  Removed cache: {cache_dir}")
-                except Exception as e:
-                    print(f"  Error removing cache {cache_dir}: {e}")
-        
-        print(f"\nCleanup completed!")
-        print(f"Files removed: {cleaned_files}")
-        print(f"Directories removed: {cleaned_dirs}")
-        
-        # Cleaning duplicate CSV files in results/
-        print("\nCleaning duplicate CSV files...")
-        try:
-            # Import the cleaner module if it exists
-            if os.path.exists("src/cleaner.py"):
-                sys.path.insert(0, 'src')
-                import cleaner
-                csv_removed = cleaner.cleanup_csv_duplicates()
-                print(f"Duplicate CSV files removed: {csv_removed}")
-            elif os.path.exists("cleaner.py"):
-                import cleaner
-                csv_removed = cleaner.cleanup_csv_duplicates()
-                print(f"Duplicate CSV files removed: {csv_removed}")
-            else:
-                print("Script cleaner.py not found")
-        except Exception as e:
-            print(f"Error cleaning CSV files: {e}")
+        if dry_run:
+            print("\n💡 To actually delete files, use: python main.py clean --execute")
         
         return True
-            
+        
     except Exception as e:
-        print(f"Error during cleanup: {e}")
+        print(f"❌ Error during cleanup: {e}")
+        import traceback
+        traceback.print_exc()
         return False
+
 
 def show_status():
     """Displays the project status"""
@@ -642,6 +613,32 @@ def main():
         help='Name of the task to search for (for the find command)'
     )
     
+    # Clean command options
+    parser.add_argument(
+        '--execute',
+        action='store_true',
+        help='Actually delete files (default is dry-run)'
+    )
+    
+    parser.add_argument(
+        '--days',
+        type=int,
+        default=2,
+        help='Number of days to keep for session files (default: 2)'
+    )
+    
+    parser.add_argument(
+        '--stats',
+        action='store_true',
+        help='Show statistics about files without deleting'
+    )
+    
+    parser.add_argument(
+        '--deep',
+        action='store_true',
+        help='Deep clean: sessions + temp files + old benchmarks'
+    )
+    
     args = parser.parse_args()
     
     print_banner()
@@ -691,9 +688,9 @@ def main():
             print("\nLanguage test failed")
             sys.exit(1)
     elif args.command == 'clean':
-        success = clean_project()
+        success = clean_project(args)
         if success:
-            print("\nCleanup completed!")
+            print("\n✅ Cleanup completed!")
         else:
             print("\nCleanup failed")
             sys.exit(1)

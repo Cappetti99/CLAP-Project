@@ -22,12 +22,10 @@ sys.path.insert(0, modules_path)
 # Import modular components
 try:
     from modules.language_config import LanguageConfigManager
-    from modules.modern_logger import get_logger
-    from modules.modern_dependency_analyzer import ModernDependencyAnalyzer
     MODULAR_COMPONENTS_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     MODULAR_COMPONENTS_AVAILABLE = False
-    print(" Modular components not available, using fallback configuration")
+    print(f"⚠️  Modular components not available: {e}")
 
 # Import the carbon tracker to monitor environmental impact (lazy import)
 CARBON_TRACKING_AVAILABLE = False  # Temporarily disabled for debugging
@@ -55,15 +53,10 @@ class SmartExecutor:
         # Initialize modular components
         if MODULAR_COMPONENTS_AVAILABLE:
             self.config_manager = LanguageConfigManager('CLAP')
-            self.logger = get_logger(session_id=f"smart_executor_{int(time.time())}")
-            self.dependency_analyzer = ModernDependencyAnalyzer()
-            self.logger.info(" SmartExecutor initialized with modular components")
-            print("✅ MODULAR: Using modern language configuration and logging systems")
+            print("✅ MODULAR: Using modern language configuration")
         else:
             self.config_manager = None
-            self.logger = None
-            self.dependency_analyzer = None
-            print(" LEGACY: Using fallback configuration (modular components not available)")
+            print("⚠️  LEGACY: Using fallback configuration")
         
         # Add homebrew to PATH to locate all compilers
         homebrew_path = "/opt/homebrew/bin"

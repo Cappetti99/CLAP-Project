@@ -239,8 +239,7 @@ main = putStrLn "Hello from Haskell!"''',
                 'timeout': self.DEFAULT_TIMEOUTS['compiled'],
                 'test_code': 'console.log("Hello from TypeScript!");',
                 'type': 'compiled',
-                'compile_cmd': ['tsc'],
-                'needs_compilation': True
+                'compile_flags': []
             }
         }
         
@@ -275,147 +274,6 @@ TIMEOUT_SECONDS = 30
 MAX_SNIPPETS_PER_LANGUAGE = 500
 COMPILATION_TIMEOUT = 60
 
-# Legacy configuration dictionary (deprecated - use LanguageConfigManager instead)
-LEGACY_LANGUAGE_CONFIG = {
- "OOP": {
- "C++": {
- "ext": ".cpp",
- "compile_cmd": ["g++", "-std=c++20"],
- "run_cmd": "./",
- "install_deps": None,
- "common_includes": ["#include <iostream>", "#include <vector>", "#include <string>", "#include <algorithm>"],
- "folder": "../data/generated/code_snippets/oop/c++"
- },
- "C#": {
- "ext": ".cs",
- "compile_cmd": ["csc"],
- "run_cmd": "mono ",
- "install_deps": None,
- "common_includes": ["using System;"],
- "folder": "../data/generated/code_snippets/oop/csharp"
- },
- "Java": {
- "ext": ".java",
- "compile_cmd": ["javac"],
- "run_cmd": "java ",
- "install_deps": None,
- "common_includes": ["import java.util.*;", "import java.io.*;"],
- "folder": "../data/generated/code_snippets/oop/java"
- }
- },
- "Scripting": {
- "Python": {
- "ext": ".py",
- "compile_cmd": None,
- "run_cmd": "python ",
- "install_deps": "pip install",
- "common_imports": ["import sys", "import os", "import re", "import math", "import random"],
- "folder": "../data/generated/code_snippets/scripting/python"
- },
- "Ruby": {
- "ext": ".rb",
- "compile_cmd": None,
- "run_cmd": "ruby ",
- "install_deps": "gem install",
- "common_imports": ["require 'json'"],
- "folder": "../data/generated/code_snippets/scripting/ruby"
- },
- "JavaScript": {
- "ext": ".js",
- "compile_cmd": None,
- "run_cmd": "node ",
- "install_deps": "npm install -g",
- "common_imports": [],
- "folder": "../data/generated/code_snippets/scripting/javascript"
- },
- "TypeScript": {
- "ext": ".ts",
- "compile_cmd": ["tsc"],
- "run_cmd": "node ",
- "install_deps": "npm install -g typescript",
- "common_imports": [],
- "folder": "../data/generated/code_snippets/scripting/typescript"
- }
- },
- "Imperative": {
- "C": {
- "ext": ".c",
- "compile_cmd": ["gcc", "-std=c99"],
- "run_cmd": "./",
- "install_deps": None,
- "common_includes": ["#include <stdio.h>", "#include <stdlib.h>", "#include <string.h>"],
- "folder": "../data/generated/code_snippets/imperative/c"
- },
- "Go": {
- "ext": ".go",
- "compile_cmd": ["go", "build"],
- "run_cmd": "./",
- "install_deps": "go get",
- "common_imports": ["import \"fmt\""],
- "folder": "../data/generated/code_snippets/imperative/go"
- },
- "Rust": {
- "ext": ".rs",
- "compile_cmd": ["rustc"],
- "run_cmd": "./",
- "install_deps": "cargo install",
- "common_imports": [],
- "folder": "../data/generated/code_snippets/imperative/rust"
- },
- "PHP": {
- "ext": ".php",
- "compile_cmd": None,
- "run_cmd": "php ",
- "install_deps": None,
- "common_imports": ["<?php"],
- "folder": "../data/generated/code_snippets/imperative/php"
- }
- },
- "Functional": {
- "Haskell": {
- "ext": ".hs",
- "compile_cmd": ["ghc"],
- "run_cmd": "./",
- "install_deps": "cabal install",
- "common_imports": ["import Data.List"],
- "folder": "../data/generated/code_snippets/functional/haskell"
- },
- "OCaml": {
- "ext": ".ml",
- "compile_cmd": ["ocamlfind", "ocamlc"],
- "run_cmd": "./",
- "install_deps": "opam install",
- "common_imports": [],
- "folder": "../data/generated/code_snippets/functional/ocaml"
- }
- },
- "Scientific": {
- "R": {
- "ext": ".r",
- "compile_cmd": None,
- "run_cmd": "Rscript ",
- "install_deps": "R -e 'install.packages'",
- "common_imports": [],
- "folder": "../data/generated/code_snippets/scientific/r"
- },
- "MATLAB": {
- "ext": ".m",
- "compile_cmd": None,
- "run_cmd": "octave ",
- "install_deps": None,
- "common_imports": [],
- "folder": "../data/generated/code_snippets/scientific/matlab"
- },
- "Julia": {
- "ext": ".jl",
- "compile_cmd": None,
- "run_cmd": "julia ",
- "install_deps": "julia -e 'using Pkg; Pkg.add'",
- "common_imports": [],
- "folder": "../data/generated/code_snippets/scientific/julia"
- }
- }
-}
 
 # Problematic patterns for language (codes to be filtered)
 PROBLEMATIC_PATTERNS = {
@@ -449,6 +307,66 @@ PROBLEMATIC_PATTERNS = {
  r"getch\s*\(",
  r"scanf\s*\(",
  r"while\s*\(\s*1\s*\)"
+ ],
+ "C#": [
+ r"Console\.ReadLine",
+ r"Console\.ReadKey",
+ r"System\.Windows\.Forms",
+ r"while\s*\(\s*true\s*\)"
+ ],
+ "TypeScript": [
+ r"document\.",
+ r"window\.",
+ r"prompt\s*\(",
+ r"while\s*\(\s*true\s*\)"
+ ],
+ "Go": [
+ r"fmt\.Scan",
+ r"bufio\.NewReader.*os\.Stdin",
+ r"for\s*{\s*}",  # Infinite loop
+ r"for\s+true\s*{"
+ ],
+ "Rust": [
+ r"std::io::stdin",
+ r"loop\s*{",  # Infinite loop
+ r"while\s+true\s*{"
+ ],
+ "Ruby": [
+ r"gets",
+ r"readline",
+ r"require\s+['\"]tk['\"]",
+ r"while\s+true"
+ ],
+ "PHP": [
+ r"fgets\s*\(\s*STDIN",
+ r"readline\s*\(",
+ r"while\s*\(\s*true\s*\)"
+ ],
+ "Haskell": [
+ r"getLine",
+ r"getChar",
+ r"interact"
+ ],
+ "OCaml": [
+ r"read_line",
+ r"input_line",
+ r"Graphics\."
+ ],
+ "R": [
+ r"readline\s*\(",
+ r"scan\s*\(",
+ r"while\s*\(\s*TRUE\s*\)"
+ ],
+ "MATLAB": [
+ r"input\s*\(",
+ r"ginput\s*\(",
+ r"while\s+true",
+ r"uicontrol"  # GUI
+ ],
+ "Julia": [
+ r"readline\s*\(",
+ r"read\s*\(\s*stdin",
+ r"while\s+true"
  ]
 }
 
@@ -456,6 +374,16 @@ PROBLEMATIC_PATTERNS = {
 PROBLEMATIC_PACKAGES = {
  "Python": ["tkinter", "turtle", "pygame", "numpy", "scipy", "matplotlib", "pandas"],
  "Javascript": ["fs", "path", "os", "crypto"],
+ "TypeScript": ["fs", "path", "os", "crypto"],
  "Ruby": ["tk", "socket"],
- "R": ["base", "stats", "graphics"]
+ "PHP": ["socket", "ftp"],
+ "R": ["base", "stats", "graphics"],
+ "Java": ["javax.swing", "java.awt"],
+ "C#": ["System.Windows.Forms"],
+ "Go": ["syscall"],
+ "Rust": ["std::io::stdin"],
+ "Haskell": ["System.IO"],
+ "OCaml": ["Graphics"],
+ "MATLAB": ["uicontrol", "figure"],
+ "Julia": ["Gtk", "Plots"]
 }

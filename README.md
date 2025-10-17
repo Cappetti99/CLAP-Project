@@ -20,7 +20,7 @@
 - 🌱 **Energy consumption analysis**
 - 📊 **Comparative programming studies**
 
-**Supported Languages:** C, C++, C#, Java, Python, JavaScript, TypeScript, Ruby, PHP, Go, Rust, Haskell, OCaml, R, MATLAB, Julia
+**Supported Languages:** C, C++, C#, Java, Python, JavaScript, TypeScript, Ruby, PHP, Go, Rust, Haskell, OCaml, R, MATLAB, Julia.
 
 ## 🚀 Quick Start (5 minutes)
 
@@ -50,10 +50,28 @@ That's it! 🎉
 |---------|-------------|------|
 | `python3 main.py test` | Check available languages | ~10s |
 | `python3 main.py find --task "bubble sort"` | Search specific algorithms | <1s |
-| `python3 main.py smart` | Run TOP 10 common tasks | 2-5 min |
+| `python3 main.py analyze` | Find TOP 10 common tasks (required before smart) | <1s |
+| `python3 main.py smart` | Execute tasks found by analyze | 2-5 min |
 | `python3 main.py benchmark --mode fast` | Quick CO2 benchmark | 3-5 min |
 | `python3 main.py benchmark --mode top10` | Full benchmark (30 iterations) | 45-60 min |
 | `python3 main.py carbon` | Display CO2 statistics | <1s |
+| `python3 main.py clean --stats` | Show disk usage statistics | <1s |
+| `python3 main.py clean --execute` | Cleanup old session files | <1s |
+
+**Recommended workflow:**
+```bash
+# 1. Detect available languages
+python3 main.py test
+
+# 2. Find TOP 10 common tasks
+python3 main.py analyze
+
+# 3. Execute those tasks
+python3 main.py smart
+
+# 4. (Optional) Run full CO2 benchmark
+python3 main.py benchmark --mode top10
+```
 
 ## 📊 Benchmark Results & Visualizations
 
@@ -119,51 +137,10 @@ Based on TOP10 benchmark (10 tasks × 30 iterations × 15 languages):
 | 🔴 **High** | Python, Ruby, Julia, R | 48-67 | 1.38-1.89 |
 
 **Key Insights:**
-- **Compiled languages** (C, C++, Rust) are 5-6× more efficient than interpreted languages
-- **Python** has highest success rate (99.6%) but higher emissions
-- **C/C++/Rust** optimal for compute-intensive tasks
-- **Python/JavaScript** good balance between productivity and performance
-
-## 🛠️ System Requirements
-
-**Minimum:**
-- Python 3.8+ (recommended: 3.12+)
-- 4 GB RAM
-- Any Linux/macOS/Windows (WSL2)
-- At least 1 programming language installed
-
-**For full 16-language support:**
-```bash
-# Ubuntu/Debian - Install all languages
-sudo apt update
-sudo apt install -y build-essential openjdk-11-jdk mono-complete \
-    nodejs npm php-cli ruby-full golang-go ghc ocaml r-base
-
-npm install -g typescript
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-sudo snap install julia --classic
-
-# macOS (Homebrew) - Install languages
-brew update
-brew install openjdk@11 mono node php ruby go ghc ocaml r julia
-npm install -g typescript
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# Test installation
-python3 main.py test
-# Target: 15-16/16 languages available
-```
-
-## ⚙️ Configuration
-
-CLAP works **zero-configuration** in most cases. Optional environment variables:
-
-```bash
-export CLAP_DATASET_PATH="/path/to/custom/dataset"    # Custom dataset
-export CLAP_OUTPUT_PATH="/path/to/custom/results"     # Custom output
-export CLAP_LOG_LEVEL="DEBUG"                         # Verbose logging
-export CLAP_EXECUTION_TIMEOUT="30"                    # Longer timeout
-```
+- **Compiled languages** (C, C++, Rust) are 5-6× more efficient than interpreted languages.
+- **Python** has highest success rate (99.6%) but higher emissions.
+- **C/C++/Rust** optimal for compute-intensive tasks.
+- **Python/JavaScript** good balance between productivity and performance.
 
 ## 📁 Project Structure
 
@@ -194,7 +171,10 @@ CLAP-Project/
 │   └── logs/
 │
 └── scripts/               # Utility scripts
+    ├── export_to_csv.py
+    ├── extract_top_10.py
     └── visualize_results.py
+    
 ```
 
 ## 🔧 Troubleshooting
