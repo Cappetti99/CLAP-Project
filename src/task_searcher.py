@@ -22,6 +22,7 @@ sys.path.insert(0, modules_path)
 try:
     from carbon_tracker import start_carbon_tracking, stop_carbon_tracking, CODECARBON_AVAILABLE
     from smart_executor import SmartExecutor
+    from modules.language_config import LanguageConfigManager
     DEPENDENCIES_AVAILABLE = True
 except ImportError:
     DEPENDENCIES_AVAILABLE = False
@@ -44,11 +45,83 @@ class TaskSearcher:
         # Initialize components if available
         if DEPENDENCIES_AVAILABLE:
             self.executor = SmartExecutor()
+            self.lang_config = LanguageConfigManager()
         else:
             self.executor = None
+            self.lang_config = None
 
         # Create results directory
         os.makedirs(self.results_dir, exist_ok=True)
+        
+        # Language name mapping: directory name -> standardized name
+        # Includes all possible variations found in the dataset
+        self.dir_name_to_standard = {
+            # C
+            'c': 'c',
+            
+            # C++
+            'cpp': 'cpp',
+            'c++': 'cpp',
+            'cplusplus': 'cpp',
+            'c plus plus': 'cpp',
+            
+            # C#
+            'csharp': 'csharp',
+            'c#': 'csharp',
+            'c sharp': 'csharp',
+            'cs': 'csharp',
+            
+            # Go
+            'go': 'go',
+            'golang': 'go',
+            
+            # Haskell
+            'haskell': 'haskell',
+            
+            # Java
+            'java': 'java',
+            
+            # JavaScript
+            'javascript': 'javascript',
+            'js': 'javascript',
+            'ecmascript': 'javascript',
+            
+            # Julia
+            'julia': 'julia',
+            
+            # MATLAB
+            'matlab': 'matlab',
+            'octave': 'matlab',
+            
+            # OCaml
+            'ocaml': 'ocaml',
+            'objective caml': 'ocaml',
+            'o caml': 'ocaml',
+            
+            # PHP
+            'php': 'php',
+            
+            # Python
+            'python': 'python',
+            'python3': 'python',
+            'py': 'python',
+            
+            # R
+            'r': 'r',
+            'rstats': 'r',
+            
+            # Ruby
+            'ruby': 'ruby',
+            'rb': 'ruby',
+            
+            # Rust
+            'rust': 'rust',
+            'rs': 'rust',
+            
+            # TypeScript
+            'typescript': 'typescript',
+            'ts': 'typescript'
+        }
 
         # Mapping common languages for search (standardized names)
         all_language_mapping = {
@@ -161,27 +234,20 @@ class TaskSearcher:
         return normalized
     
     def _get_file_extensions(self, language: str) -> List[str]:
-        """Gets the supported file extensions for a language"""
-        # Maps languages to their extensions (standardized names)
-        extension_mapping = {
-            'python': ['.py', '.txt'],
-            'java': ['.java', '.txt'],
-            'javascript': ['.js', '.txt'],
-            'typescript': ['.ts', '.txt'],
-            'c': ['.c', '.txt'],
-            'cpp': ['.cpp', '.cxx', '.cc', '.c++', '.txt'],  # C++ standardized to 'cpp'
-            'csharp': ['.cs', '.txt'],                       # C# standardized to 'csharp'
-            'go': ['.go', '.txt'],
-            'rust': ['.rs', '.txt'],
-            'ruby': ['.rb', '.txt'],
-            'php': ['.php', '.txt'],
-            'haskell': ['.hs', '.lhs', '.txt'],  # .lhs for Literate Haskell
-            'ocaml': ['.ml', '.mli', '.txt'],   # .mli for interface files
-            'julia': ['.jl', '.txt'],
-            'r': ['.r', '.R', '.txt']
-        }
+        """Gets the supported file extensions for a language using LanguageConfigManager"""
+        if self.lang_config:
+            config = self.lang_config.get_language_config(language)
+            if config and 'extension' in config:
+                # Primary extension from config + .txt as fallback
+                extensions = [config['extension'], '.txt']
+                # Handle C++ special case with multiple extensions
+                if language.lower() == 'cpp':
+                    extensions = ['.cpp', '.cxx', '.cc', '.c++', '.txt']
+                return extensions
         
-        return extension_mapping.get(language.lower(), ['.txt'])  # Default to .txt
+        # Fallback if config not available
+        return ['.txt']
+
     
     def search_tasks(self, task_name: str, fuzzy: bool = True) -> Dict[str, List[str]]:
         """
@@ -217,7 +283,10 @@ class TaskSearcher:
                 if not os.path.isdir(lang_dir):
                     continue
                     
-                lang_name = os.path.basename(lang_dir).lower()
+                lang_dir_name = os.path.basename(lang_dir).lower()
+                
+                # Normalize directory name (cplusplus -> cpp, c# -> csharp)
+                lang_name = self.dir_name_to_standard.get(lang_dir_name, lang_dir_name)
 
                 # FILTER: Consider only tested and available languages
                 if lang_name not in [lang.lower() for lang in self.available_languages]:

@@ -75,15 +75,20 @@ python3 main.py benchmark --mode top10
 
 ## 📊 Benchmark Results & Visualizations
 
-CLAP generates professional visualizations of benchmark results:
+CLAP generates professional visualizations of benchmark results with a single unified script:
 
 ```bash
-# Generate all charts
+# Generate all 7 charts at once
 python3 scripts/visualize_results.py --all
 
 # Or generate specific charts
-python3 scripts/visualize_results.py --ranking
-python3 scripts/visualize_results.py --tasks
+python3 scripts/visualize_results.py --ranking        # Energy ranking
+python3 scripts/visualize_results.py --scatter        # CO2 vs Time
+python3 scripts/visualize_results.py --tasks          # Top tasks heatmap
+python3 scripts/visualize_results.py --boxplot        # CO2 distribution
+python3 scripts/visualize_results.py --success-rates  # Success rates
+python3 scripts/visualize_results.py --success-breakdown  # Detailed breakdown
+python3 scripts/visualize_results.py --heatmap        # Task × Language heatmap
 ```
 
 ### 1. Language Energy Ranking
@@ -110,15 +115,31 @@ python3 scripts/visualize_results.py --tasks
 
 **Shows:** CO2 emissions for the 10 most common tasks across all languages. Reveals which algorithms are most energy-intensive and language-specific optimizations.
 
-### 4. Success Rate by Language
+### 4. Language Success Rates
 
 <div align="center">
-    <img src="results/visualizations/success_rate_comparison.png" alt="Success Rate Comparison" width="600"/>
+    <img src="results/visualizations/language_success_rates.png" alt="Language Success Rates" width="700"/>
 </div>
 
-**Shows:** Reliability indicator - percentage of successful executions vs failures for each language. Green = 100% success rate.
+**Shows:** Percentage of tasks with 100% successful iterations for each language. Color-coded: 🟢 Green (≥80%), 🟠 Orange (50-79%), 🔴 Red (<50%). Reveals language reliability and compilation/runtime issues.
 
-### 5. CO2 Distribution
+### 5. Success Breakdown (Full/Partial/Failed)
+
+<div align="center">
+    <img src="results/visualizations/language_success_breakdown.png" alt="Success Breakdown" width="700"/>
+</div>
+
+**Shows:** Detailed breakdown of task success by language. Stacked bars show: Full Success (100%), Partial Success (1-99%), and Complete Failures. Helps identify systematic issues.
+
+### 6. Task × Language Heatmap
+
+<div align="center">
+    <img src="results/visualizations/language_task_heatmap.png" alt="Task-Language Heatmap" width="800"/>
+</div>
+
+**Shows:** Success rate heatmap for each task-language combination. Green = 100% success, Yellow = partial, Red = failure. Reveals task-specific compatibility issues.
+
+### 7. CO2 Distribution
 
 <div align="center">
     <img src="results/visualizations/co2_distribution_boxplot.png" alt="CO2 Distribution Boxplot" width="650"/>

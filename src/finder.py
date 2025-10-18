@@ -50,6 +50,76 @@ class UnifiedTaskFinder:
             'rust': ['.rs'],
             'typescript': ['.ts']
         }
+        
+        # Language name mapping: directory name -> standardized name
+        # Includes all possible variations found in the dataset
+        self.language_name_mapping = {
+            # C
+            'c': 'c',
+            
+            # C++
+            'cpp': 'cpp',
+            'c++': 'cpp',
+            'cplusplus': 'cpp',
+            'c plus plus': 'cpp',
+            
+            # C#
+            'csharp': 'csharp',
+            'c#': 'csharp',
+            'c sharp': 'csharp',
+            'cs': 'csharp',
+            
+            # Go
+            'go': 'go',
+            'golang': 'go',
+            
+            # Haskell
+            'haskell': 'haskell',
+            
+            # Java
+            'java': 'java',
+            
+            # JavaScript
+            'javascript': 'javascript',
+            'js': 'javascript',
+            'ecmascript': 'javascript',
+            
+            # Julia
+            'julia': 'julia',
+            
+            # MATLAB
+            'matlab': 'matlab',
+            'octave': 'matlab',
+            
+            # OCaml
+            'ocaml': 'ocaml',
+            'objective caml': 'ocaml',
+            'o caml': 'ocaml',
+            
+            # PHP
+            'php': 'php',
+            
+            # Python
+            'python': 'python',
+            'python3': 'python',
+            'py': 'python',
+            
+            # R
+            'r': 'r',
+            'rstats': 'r',
+            
+            # Ruby
+            'ruby': 'ruby',
+            'rb': 'ruby',
+            
+            # Rust
+            'rust': 'rust',
+            'rs': 'rust',
+            
+            # TypeScript
+            'typescript': 'typescript',
+            'ts': 'typescript'
+        }
 
         # Patterns for qualitative code analysis
         self.quality_patterns = {
@@ -115,6 +185,9 @@ class UnifiedTaskFinder:
                     if language_dir.is_dir():
                         language = language_dir.name
                         
+                        # Normalize language name (cplusplus -> cpp, c# -> csharp)
+                        normalized_language = self.language_name_mapping.get(language.lower(), language)
+                        
                         for file_path in language_dir.iterdir():
                             if file_path.is_file():
                                 task_name = self.extract_task_name(file_path.name)
@@ -123,7 +196,7 @@ class UnifiedTaskFinder:
                                     # Base info
                                     row = {
                                         'task_name': task_name,
-                                        'language': language,
+                                        'language': normalized_language,  # Use normalized name
                                         'category': category_dir.name,
                                         'file_path': str(file_path),
                                         'file_size': file_path.stat().st_size,
