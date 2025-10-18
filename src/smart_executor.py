@@ -1000,11 +1000,34 @@ func main() {
                 task_name.replace(' ', '-')
             ]
 
+            # Collect all matching files first
+            matching_files = []
             for filename in os.listdir(language_dir):
                 filename_lower = filename.lower()
                 for pattern in task_patterns:
                     if pattern.lower() in filename_lower:
-                        return os.path.join(language_dir, filename)
+                        matching_files.append(filename)
+                        break  # Don't add the same file multiple times
+            
+            if not matching_files:
+                continue
+            
+            # Prioritize exact matches over partial matches
+            # Example: prefer "snippet_128_Exceptions.cpp" over "snippet_127_ExceptionsCatch_an_exception..."
+            normalized_task = task_name.replace('-', '_').replace(' ', '_')
+            exact_match = None
+            
+            for filename in matching_files:
+                # Remove extension and check if it ends with the task name
+                name_without_ext = os.path.splitext(filename)[0]
+                # Check if ends with _{task_name} (exact match)
+                if name_without_ext.lower().endswith(f"_{normalized_task.lower()}"):
+                    exact_match = filename
+                    break
+            
+            # Use exact match if found, otherwise use first matching file
+            file_to_use = exact_match if exact_match else matching_files[0]
+            return os.path.join(language_dir, file_to_use)
 
         return None
 
