@@ -33,6 +33,7 @@ def print_help():
     print("  smart      - Smart execution (RECOMMENDED)")
     print("  benchmark  - CO2 measurement")
     print("  carbon     - Emissions report")
+    print("  rankings   - Multi-tier rankings analysis")
     
     print("\nADDITIONAL COMMANDS:")
     print("  execute    - Full execution (all languages)")
@@ -43,6 +44,12 @@ def print_help():
     
     print("\n QUICK START:")
     print("  python main.py test && python main.py analyze && python main.py smart")
+    
+    print("\n BENCHMARK WORKFLOW:")
+    print("  python main.py benchmark --mode fast")
+    print("  python main.py benchmark --mode top10 --timeout 120")
+    print("  python main.py rankings --mode fast")
+    print("  # Rankings are also generated automatically after benchmarks")
     
 def analyze_tasks():
     """Performs the analysis of common tasks"""
@@ -310,8 +317,15 @@ def smart_execute():
     
     return True
 
-def benchmark_carbon(mode=None):
-    """Performs CO2 benchmark with multiple repetitions and interactive input"""
+def benchmark_carbon(mode=None, auto_export_csv=True, auto_visualize=True, timeout=90):
+    """Executes a carbon benchmark with multiple repetitions.
+    
+    Args:
+        mode: Benchmark mode ('fast', 'top10', 'complete')
+        auto_export_csv: Auto-export results to CSV
+        auto_visualize: Auto-generate visualizations
+        timeout: Timeout for task execution in seconds (default: 90)
+    """
     print("\n CARBON BENCHMARK - CO2 Measurement System")
     print("=" * 55)
     
@@ -350,21 +364,21 @@ def benchmark_carbon(mode=None):
         
         # Configure mode
         if choice in ["2", "fast", "speed"]:
-            iterations = 3
-            max_tasks = 3
+            iterations = 1
+            max_tasks = 10
             mode_name = "FAST"
-            description = "Functionality test - 3 tasks, 3 repetitions"
+            description = f"Functionality test - {max_tasks} tasks, {iterations} repetitions"
         elif choice in ["3", "complete", "full", "all"]:
-            iterations = 3
+            iterations = 1
             max_tasks = None  # All available tasks
             mode_name = "COMPLETE"
-            description = "Exhaustive analysis - all tasks, 3 repetitions"
+            description = f"Exhaustive analysis - all tasks, {iterations} repetitions"
         else:
             # Default: top10
             iterations = 30
             max_tasks = 10
             mode_name = "TOP10"
-            description = "Main task analysis - 10 tasks, 30 repetitions"
+            description = f"Main task analysis - {max_tasks} tasks, {iterations} repetitions"
         
         # Confirm configuration
         print(f"\n SELECTED MODE: {mode_name}")
@@ -385,11 +399,17 @@ def benchmark_carbon(mode=None):
                 print(" Non-interactive mode detected, proceeding automatically...")
                 pass
         
-        print(f"\n Starting benchmark in {mode_name} mode...")
+        print(f"\n✅ Starting benchmark in {mode_name} mode...")
         print(" Use Ctrl+C to interrupt at any time")
         
-        # Start benchmark
-        benchmark = CarbonBenchmark(iterations=iterations)
+        # Start benchmark with mode parameter and export/viz options
+        benchmark = CarbonBenchmark(
+            iterations=iterations, 
+            mode=mode_name,
+            auto_export_csv=auto_export_csv,
+            auto_visualize=auto_visualize,
+            timeout=timeout
+        )
         
         # Select benchmark method based on mode
         if max_tasks is None:  # COMPLETE mode
@@ -413,7 +433,7 @@ def benchmark_carbon(mode=None):
 
 def clean_project(args=None):
     """Enhanced cleanup with options from new cleaner.py"""
-    print("\n🧹 PROJECT CLEANUP")
+    print("\n PROJECT CLEANUP")
     print("-" * 40)
     
     try:
@@ -447,7 +467,7 @@ def clean_project(args=None):
         print("\n✅ Cleanup completed!")
         
         if dry_run:
-            print("\n💡 To actually delete files, use: python main.py clean --execute")
+            print("\n To actually delete files, use: python main.py clean --execute")
         
         return True
         
@@ -524,6 +544,61 @@ def show_status():
     else:
         print("\nCompleted Executions: 0 (run 'execute' first)")
 
+def rankings_analysis(mode='COMPLETE', no_save=False, top=10):
+    """Generate multi-tier rankings from benchmark results"""
+    print("\nMULTI-TIER RANKINGS ANALYSIS")
+    print("-" * 40)
+    
+    try:
+        from src.ranking_analyzer import RankingAnalyzer
+        
+        # Load latest benchmark results for the specified mode
+        benchmark_dir = Path(f"results/carbon_benchmark/{mode.lower()}")
+        if not benchmark_dir.exists():
+            print(f"❌ No benchmark results found for mode '{mode}'")
+            print(f"   Expected directory: {benchmark_dir}")
+            print("\nRun a benchmark first with:")
+            print(f"  python main.py benchmark --mode {mode}")
+            return False
+        
+        json_files = list(benchmark_dir.glob("carbon_benchmark_detailed_*.json"))
+        if not json_files:
+            print(f"❌ No detailed benchmark JSON files found in {benchmark_dir}")
+            return False
+        
+        latest_file = max(json_files, key=lambda x: x.stat().st_mtime)
+        print(f"📊 Loading benchmark results from: {latest_file.name}")
+        
+        import json
+        with open(latest_file, 'r', encoding='utf-8') as f:
+            benchmark_results = json.load(f)
+        
+        # Create analyzer and generate rankings
+        analyzer = RankingAnalyzer(benchmark_results)
+        
+        # Generate all rankings
+        category_rankings, overall_rankings = analyzer.generate_all_rankings(
+            save=not no_save
+        )
+        
+        if category_rankings and overall_rankings:
+            print("\n✅ Rankings generated successfully!")
+            if not no_save:
+                print(f"   Rankings saved to: results/rankings/{mode.lower()}/")
+            return True
+        else:
+            print("\n❌ Failed to generate rankings")
+            return False
+            
+    except ImportError as e:
+        print(f"❌ Error importing ranking analyzer: {e}")
+        return False
+    except Exception as e:
+        print(f"❌ Error during ranking analysis: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
 def quality_analysis():
     """Performs advanced qualitative analysis of the dataset"""
     print("\nADVANCED QUALITATIVE ANALYSIS")
@@ -597,7 +672,7 @@ def main():
     parser.add_argument(
         'command', 
         nargs='?',
-        choices=['analyze', 'execute', 'smart', 'test', 'clean', 'status', 'carbon', 'benchmark', 'quality', 'find', 'help'],
+        choices=['analyze', 'execute', 'smart', 'test', 'clean', 'status', 'carbon', 'benchmark', 'quality', 'find', 'rankings', 'help'],
         default='help',
         help='Command to execute'
     )
@@ -606,6 +681,25 @@ def main():
         '--mode',
         choices=['fast', 'top10', 'complete'],
         help='Mode for the benchmark command (fast/top10/complete)'
+    )
+    
+    parser.add_argument(
+        '--no-csv',
+        action='store_true',
+        help='Disable automatic CSV export after benchmark'
+    )
+    
+    parser.add_argument(
+        '--no-viz',
+        action='store_true',
+        help='Disable automatic visualization generation after benchmark'
+    )
+    
+    parser.add_argument(
+        '--timeout',
+        type=int,
+        default=90,
+        help='Timeout for task execution in seconds (default: 90)'
     )
     
     parser.add_argument(
@@ -631,6 +725,19 @@ def main():
         '--stats',
         action='store_true',
         help='Show statistics about files without deleting'
+    )
+    
+    parser.add_argument(
+        '--top',
+        type=int,
+        default=10,
+        help='Number of top languages to show in rankings (default: 10)'
+    )
+    
+    parser.add_argument(
+        '--no-save',
+        action='store_true',
+        help='Disable saving rankings to JSON files (only print to console)'
     )
     
     parser.add_argument(
@@ -706,7 +813,12 @@ def main():
             print("Install CodeCarbon with: pip install codecarbon")
     elif args.command == 'benchmark':
         # Command to perform CO2 benchmark with multiple repetitions
-        success = benchmark_carbon(mode=args.mode)
+        success = benchmark_carbon(
+            mode=args.mode,
+            auto_export_csv=not args.no_csv,
+            auto_visualize=not args.no_viz,
+            timeout=args.timeout
+        )
         if success:
             print("\nCO2 benchmark completed!")
             print("Check the results in results/carbon_benchmark/")
@@ -721,6 +833,19 @@ def main():
             print("The results show the code quality in the dataset")
         else:
             print("\nQualitative analysis failed")
+            sys.exit(1)
+    elif args.command == 'rankings':
+        # Command for multi-tier rankings analysis
+        success = rankings_analysis(
+            mode=args.mode,
+            no_save=args.no_save,
+            top=getattr(args, 'top', 10)
+        )
+        if success:
+            print("\nRankings analysis completed!")
+            print("The results show language performance rankings by category")
+        else:
+            print("\nRankings analysis failed")
             sys.exit(1)
     else:
         print(f"Unrecognized command: {args.command}")

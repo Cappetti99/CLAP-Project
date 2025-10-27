@@ -15,20 +15,67 @@ import glob
 class SWAMCSVExporter:
     """Export the results in CSV format"""
     
-    def __init__(self):
-        self.results_dir = Path("results")
-        self.csv_dir = self.results_dir / "csv"
-        self.csv_dir.mkdir(exist_ok=True)
+    def __init__(self, mode=None):
+        """
+        Initialize CSV exporter
         
-    def find_latest_results(self):
-        """Find the latest result files"""
+        Args:
+            mode: Benchmark mode ('fast', 'top10', 'complete') for organized output.
+                  If None, auto-detects from source file or uses root csv/ directory.
+        """
+        self.results_dir = Path("results")
+        self.mode = mode.lower() if mode else None
+        
+        # Create mode-specific CSV directory
+        if self.mode:
+            self.csv_dir = self.results_dir / "csv" / self.mode
+        else:
+            self.csv_dir = self.results_dir / "csv"
+        self.csv_dir.mkdir(parents=True, exist_ok=True)
+        
+    def find_latest_results(self, mode=None):
+        """Find the latest result files, optionally filtered by mode
+        
+        Args:
+            mode: Filter results by mode ('fast', 'top10', 'complete').
+                  If None, searches all mode directories and root.
+        """
         results = {}
         
-        # Carbon benchmark results
-        carbon_files = list((self.results_dir / "carbon_benchmark").glob("carbon_benchmark_detailed_*.json"))
+        # Carbon benchmark results - search in mode-specific directories
+        search_dirs = []
+        if mode:
+            # Search only in specified mode directory
+            mode_dir = self.results_dir / "carbon_benchmark" / mode.lower()
+            if mode_dir.exists():
+                search_dirs.append(mode_dir)
+        else:
+            # Search in all mode directories and root
+            benchmark_dir = self.results_dir / "carbon_benchmark"
+            for subdir in ['fast', 'top10', 'complete']:
+                mode_dir = benchmark_dir / subdir
+                if mode_dir.exists():
+                    search_dirs.append(mode_dir)
+            # Also check root for legacy files
+            if benchmark_dir.exists():
+                search_dirs.append(benchmark_dir)
+        
+        # Find latest across all search directories
+        carbon_files = []
+        for search_dir in search_dirs:
+            carbon_files.extend(list(search_dir.glob("carbon_benchmark_detailed_*.json")))
+        
         if carbon_files:
             latest_carbon = max(carbon_files, key=lambda x: x.stat().st_mtime)
             results['carbon_detailed'] = latest_carbon
+            
+            # Detect mode from file path
+            detected_mode = None
+            for mode_name in ['fast', 'top10', 'complete']:
+                if f"/{mode_name}/" in str(latest_carbon):
+                    detected_mode = mode_name
+                    break
+            results['detected_mode'] = detected_mode
             
             # Find the corresponding summary file
             timestamp = latest_carbon.stem.split('_')[-1]
@@ -251,6 +298,13 @@ class SWAMCSVExporter:
             print("❌ No results found!")
             return
         
+        # Update csv_dir if mode was auto-detected
+        if 'detected_mode' in latest and latest['detected_mode']:
+            detected_mode = latest['detected_mode']
+            print(f"ℹ️  Using mode-specific directory: {detected_mode}")
+            self.csv_dir = self.results_dir / "csv" / detected_mode
+            self.csv_dir.mkdir(parents=True, exist_ok=True)
+        
         exported_files = []
         
         # Carbon benchmark
@@ -294,10 +348,12 @@ def main():
                        help="Type of export (default: all)")
     parser.add_argument("--latest", action="store_true", default=True,
                        help="Use latest results (default)")
+    parser.add_argument("--mode", choices=["FAST", "TOP10", "COMPLETE"], default=None,
+                       help="Benchmark mode (FAST/TOP10/COMPLETE). If not specified, auto-detected from results.")
     
     args = parser.parse_args()
     
-    exporter = SWAMCSVExporter()
+    exporter = SWAMCSVExporter(mode=args.mode)
     
     if args.type == "all":
         exporter.export_all_latest()

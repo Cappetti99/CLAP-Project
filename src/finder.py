@@ -26,15 +26,15 @@ class UnifiedTaskFinder:
     def __init__(self):
         self.results_dir = "results/task_analysis"
         self.code_snippets_dir = "data/generated/code_snippets"
-        self.df = None  # DataFrame 
-
-        # Create results directory if it doesn't exist
+        self.df = None  # DataFrame will be created by create_dataset_dataframe()
+        
         os.makedirs(self.results_dir, exist_ok=True)
+        os.makedirs(self.code_snippets_dir, exist_ok=True)
 
         # Supported languages and their extensions
         self.supported_languages = {
             'c': ['.c'],
-            'c++': ['.cpp'],
+            'cpp': ['.cpp'],
             'csharp': ['.cs'],
             'go': ['.go'],
             'haskell': ['.hs'],
@@ -50,7 +50,74 @@ class UnifiedTaskFinder:
             'rust': ['.rs'],
             'typescript': ['.ts']
         }
+
+        # Normalized language mapping (aligned with task_searcher)
+        self.standardized_languages = {
+            'python': 'python',
+            'java': 'java',
+            'javascript': 'javascript',
+            'c': 'c',
+            'cpp': 'cpp',
+            'c++': 'cpp',
+            'go': 'go',
+            'rust': 'rust',
+            'ruby': 'ruby',
+            'csharp': 'csharp',
+            'typescript': 'typescript',
+        }
         
+        # Initialize language mappings and quality patterns
+        self._init_language_mappings()
+        self._init_quality_patterns()
+    
+    @staticmethod
+    def clean_code_content(code):
+        """Cleans up the code from problematic invisible characters
+        
+        This method removes various Unicode whitespace and control characters
+        that can cause compilation/execution issues, especially in C/C++ code.
+        Common problematic characters include U+00A0 (non-breaking space).
+        
+        Args:
+            code (str): The source code to clean
+            
+        Returns:
+            str: Cleaned code with problematic characters replaced/removed
+        """
+        # Replaces directly the most common problematic characters
+        # U+00A0 (Non-Breaking Space) and other Unicode spaces
+        cleaned = code.replace('\u00a0', ' ') # Non-breaking space (NO-BREAK SPACE)
+        cleaned = cleaned.replace('\u2007', ' ') # Figure space
+        cleaned = cleaned.replace('\u202f', ' ') # Narrow no-break space
+        cleaned = cleaned.replace('\u2060', '') # Word joiner (invisible)
+        cleaned = cleaned.replace('\ufeff', '') # Byte order mark (BOM)
+        
+        # Additional problematic Unicode whitespace characters
+        cleaned = cleaned.replace('\u1680', ' ') # Ogham space mark
+        cleaned = cleaned.replace('\u180e', ' ') # Mongolian vowel separator
+        cleaned = cleaned.replace('\u2000', ' ') # En quad
+        cleaned = cleaned.replace('\u2001', ' ') # Em quad
+        cleaned = cleaned.replace('\u2002', ' ') # En space
+        cleaned = cleaned.replace('\u2003', ' ') # Em space
+        cleaned = cleaned.replace('\u2004', ' ') # Three-per-em space
+        cleaned = cleaned.replace('\u2005', ' ') # Four-per-em space
+        cleaned = cleaned.replace('\u2006', ' ') # Six-per-em space
+        cleaned = cleaned.replace('\u2008', ' ') # Punctuation space
+        cleaned = cleaned.replace('\u2009', ' ') # Thin space
+        cleaned = cleaned.replace('\u200a', ' ') # Hair space
+        cleaned = cleaned.replace('\u200b', '') # Zero-width space
+        cleaned = cleaned.replace('\u200c', '') # Zero-width non-joiner
+        cleaned = cleaned.replace('\u200d', '') # Zero-width joiner
+        cleaned = cleaned.replace('\u205f', ' ') # Medium mathematical space
+        cleaned = cleaned.replace('\u3000', ' ') # Ideographic space
+
+        # Removes other control characters (but preserves newlines \n and tabs \t)
+        cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', cleaned)
+
+        return cleaned
+    
+    def _init_language_mappings(self):
+        """Initialize language name mapping (called from __init__)"""
         # Language name mapping: directory name -> standardized name
         # Includes all possible variations found in the dataset
         self.language_name_mapping = {
@@ -87,9 +154,8 @@ class UnifiedTaskFinder:
             # Julia
             'julia': 'julia',
             
-            # MATLAB
+            # MATLAB (Octave is separate, not a variant)
             'matlab': 'matlab',
-            'octave': 'matlab',
             
             # OCaml
             'ocaml': 'ocaml',
@@ -120,7 +186,9 @@ class UnifiedTaskFinder:
             'typescript': 'typescript',
             'ts': 'typescript'
         }
-
+    
+    def _init_quality_patterns(self):
+        """Initialize quality patterns for code analysis (called from __init__)"""
         # Patterns for qualitative code analysis
         self.quality_patterns = {
             'comments': [
@@ -186,8 +254,7 @@ class UnifiedTaskFinder:
                         language = language_dir.name
                         
                         # Normalize language name (cplusplus -> cpp, c# -> csharp)
-                        normalized_language = self.language_name_mapping.get(language.lower(), language)
-                        
+                        normalized_language = self.standardized_languages.get(language.lower(), self.language_name_mapping.get(language.lower(), language))                        
                         for file_path in language_dir.iterdir():
                             if file_path.is_file():
                                 task_name = self.extract_task_name(file_path.name)
@@ -208,6 +275,9 @@ class UnifiedTaskFinder:
                                         try:
                                             with open(file_path, 'r', encoding='utf-8') as f:
                                                 code = f.read()
+                                            
+                                            # Clean problematic characters
+                                            code = self.clean_code_content(code)
                                             
                                             quality = self.analyze_code_quality(code, language)
                                             row.update(quality)
@@ -395,6 +465,9 @@ class UnifiedTaskFinder:
                 with open(selected_file, 'r', encoding='utf-8') as f:
                     code = f.read()
                 
+                # Clean problematic characters
+                code = self.clean_code_content(code)
+                
                 implementations[language] = {
                     'file_path': selected_file,
                     'code': code,
@@ -504,7 +577,7 @@ class UnifiedTaskFinder:
 
 def main():
     """Demo of the unified system with qualitative analysis"""
-    print("🚀 UNIFIED TASK FINDER - Optimized System with Quality Analysis")
+    print(" UNIFIED TASK FINDER - Optimized System with Quality Analysis")
     print("=" * 65)
     
     finder = UnifiedTaskFinder()

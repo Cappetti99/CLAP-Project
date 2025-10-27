@@ -2,36 +2,59 @@
 """
 Carbon Benchmark - Benchmarking system for measuring average CO2 emissions
 Runs each code 30 times to calculate accurate emissions statistics
+Refactored to use TaskSearcher for unified task management
 """
 
 import os
 import sys
 import json
 import time
-import glob
 import logging
 from pathlib import Path
-import re
 import statistics
 from datetime import datetime
-from pathlib import Path
 from tqdm import tqdm
 
 # Adds the path to import CLAP modules
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 modules_path = os.path.join(project_root, 'modules')
+scripts_path = os.path.join(project_root, 'scripts')
 sys.path.insert(0, modules_path)
+sys.path.insert(0, scripts_path)
+
+# Import TaskSearcher for unified task management
+try:
+    from task_searcher import TaskSearcher, CodeQualityAnalyzer
+    TASK_SEARCHER_AVAILABLE = True
+except ImportError:
+    TASK_SEARCHER_AVAILABLE = False
+    print("⚠️ TaskSearcher not available - using fallback mode")
+
+# Import export and visualization tools
+try:
+    from export_to_csv import SWAMCSVExporter
+    CSV_EXPORT_AVAILABLE = True
+except ImportError:
+    CSV_EXPORT_AVAILABLE = False
+    
+try:
+    from visualize_results import CLAPVisualizer
+    VISUALIZATION_AVAILABLE = True
+except ImportError:
+    VISUALIZATION_AVAILABLE = False
 
 try:
     from src.carbon_tracker import start_carbon_tracking, stop_carbon_tracking, CODECARBON_AVAILABLE
     from src.smart_executor import SmartExecutor
+    from src.finder import UnifiedTaskFinder
     CARBON_TRACKING_AVAILABLE = True
 except ImportError:
     try:
         # Fallback for direct import
         from carbon_tracker import start_carbon_tracking, stop_carbon_tracking, CODECARBON_AVAILABLE
         from smart_executor import SmartExecutor
+        from finder import UnifiedTaskFinder
         CARBON_TRACKING_AVAILABLE = True
     except ImportError:
         CARBON_TRACKING_AVAILABLE = False
@@ -40,24 +63,56 @@ except ImportError:
 class CarbonBenchmark:
     """Benchmarking system for measuring CO2 emissions with multiple repetitions"""
 
-    def __init__(self, iterations=30):
+    def __init__(self, iterations=30, mode='TOP10', auto_export_csv=True, auto_visualize=True, timeout=90):
+        """
+        Initialize Carbon Benchmark system
+        
+        Args:
+            iterations: Number of iterations per code execution
+            mode: Benchmark mode ('FAST', 'TOP10', 'COMPLETE')
+            auto_export_csv: Automatically export results to CSV after benchmark
+            auto_visualize: Automatically generate visualizations after benchmark
+            timeout: Maximum execution time per task in seconds (default: 90)
+        """
         self.iterations = iterations
+        self.mode = mode.upper()  # Store benchmark mode: FAST, TOP10, COMPLETE
+        self.auto_export_csv = auto_export_csv
+        self.auto_visualize = auto_visualize
+        self.timeout = timeout
         
         # Use absolute paths based on project root for robustness
-        self.results_dir = os.path.join(project_root, "results/carbon_benchmark")
+        base_results_dir = os.path.join(project_root, "results/carbon_benchmark")
+        
+        # Create mode-specific subdirectory
+        mode_dir_map = {
+            'FAST': 'fast',
+            'TOP10': 'top10',
+            'COMPLETE': 'complete'
+        }
+        mode_subdir = mode_dir_map.get(self.mode, 'other')
+        self.results_dir = os.path.join(base_results_dir, mode_subdir)
+        
         self.code_base_path = os.path.join(project_root, "data/generated/code_snippets")
         
         self.executor = SmartExecutor()
-
-        # Create a simple logger
-        self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(logging.DEBUG)
-        if not self.logger.handlers:
-            handler = logging.StreamHandler()
-            handler.setLevel(logging.DEBUG)
-            formatter = logging.Formatter('%(levelname)s - %(message)s')
-            handler.setFormatter(formatter)
-            self.logger.addHandler(handler)
+        
+        # Initialize TaskSearcher for unified task management
+        if TASK_SEARCHER_AVAILABLE:
+            self.task_searcher = TaskSearcher()
+            self.logger = logging.getLogger(__name__)
+            self.logger.setLevel(logging.DEBUG)
+            if not self.logger.handlers:
+                handler = logging.StreamHandler()
+                handler.setLevel(logging.DEBUG)
+                formatter = logging.Formatter('%(levelname)s - %(message)s')
+                handler.setFormatter(formatter)
+                self.logger.addHandler(handler)
+        else:
+            # Fallback to original finder
+            self.finder = UnifiedTaskFinder()
+            self.finder.create_dataset_dataframe(verbose=False)
+            self.task_searcher = None
+            self.logger = logging.getLogger(__name__)
             
         self.benchmark_results = {}
 
@@ -67,13 +122,67 @@ class CarbonBenchmark:
         # Create directories for results
         os.makedirs(self.results_dir, exist_ok=True)
 
-        print(f" CARBON BENCHMARK SYSTEM")
-        print(f" Configured for {self.iterations} iterations per code")
-        print(f" Results saved in: {self.results_dir}")
+        print(f"🔬 CARBON BENCHMARK SYSTEM - {self.mode} MODE")
+        print(f"⚙️  Configured for {self.iterations} iterations per code")
+        print(f"📁 Results saved in: {self.results_dir}")
 
         if not CARBON_TRACKING_AVAILABLE:
-            print(" Carbon tracking not available")
+            print("⚠️  Carbon tracking not available")
             return
+    
+    def save_checkpoint(self, benchmark_data, checkpoint_id):
+        """Save intermediate checkpoint to resume later if crash occurs"""
+        checkpoint_file = os.path.join(self.results_dir, f"checkpoint_{checkpoint_id}.json")
+        try:
+            with open(checkpoint_file, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'checkpoint_id': checkpoint_id,
+                    'timestamp': datetime.now().isoformat(),
+                    'mode': self.mode,
+                    'iterations': self.iterations,
+                    'data': benchmark_data
+                }, f, indent=2)
+            print(f"   💾 Checkpoint saved: {os.path.basename(checkpoint_file)}")
+            return True
+        except Exception as e:
+            print(f"   ⚠️ Error saving checkpoint: {e}")
+            return False
+    
+    def load_latest_checkpoint(self):
+        """Load the most recent checkpoint if exists"""
+        import glob
+        checkpoint_files = glob.glob(os.path.join(self.results_dir, "checkpoint_*.json"))
+        if not checkpoint_files:
+            return None
+        
+        # Get most recent checkpoint
+        latest_checkpoint = max(checkpoint_files, key=os.path.getmtime)
+        
+        try:
+            with open(latest_checkpoint, 'r', encoding='utf-8') as f:
+                checkpoint_data = json.load(f)
+            print(f"   📂 Found checkpoint: {os.path.basename(latest_checkpoint)}")
+            print(f"      Created: {checkpoint_data.get('timestamp', 'unknown')}")
+            print(f"      Tasks completed: {len(checkpoint_data.get('data', {}))}")
+            return checkpoint_data
+        except Exception as e:
+            print(f"   ⚠️ Error loading checkpoint: {e}")
+            return None
+    
+    def clear_checkpoints(self):
+        """Clear all checkpoint files after successful completion"""
+        import glob
+        checkpoint_files = glob.glob(os.path.join(self.results_dir, "checkpoint_*.json"))
+        for checkpoint_file in checkpoint_files:
+            try:
+                os.remove(checkpoint_file)
+            except Exception as e:
+                print(f"   ⚠️ Could not remove checkpoint {checkpoint_file}: {e}")
+    
+    def free_memory(self):
+        """Force garbage collection to free memory"""
+        import gc
+        gc.collect()
     
     def format_co2_value(self, kg_value, unit='mg'):
         """Converts and formats CO2 values from kg to more readable units."""
@@ -110,7 +219,7 @@ class CarbonBenchmark:
             self.executor.disable_carbon_tracking = True
 
             # Execute the code
-            result = self.executor.execute_code(code, language, f"{task_name}_benchmark_iter{iteration}")
+            result = self.executor.execute_code(code, language, f"{task_name}_benchmark_iter{iteration}", timeout=self.timeout)
 
             # Restore smart_executor tracking
             self.executor.disable_carbon_tracking = original_tracking
@@ -122,6 +231,17 @@ class CarbonBenchmark:
             if CARBON_TRACKING_AVAILABLE:
                 emissions = stop_carbon_tracking()
 
+            # Capture detailed error information if execution failed
+            error_info = {}
+            if not result['success']:
+                error_info = {
+                    'error_message': result.get('error', 'Unknown error'),
+                    'error_type': result.get('error_type', 'ExecutionError'),
+                    'exit_code': result.get('exit_code', None),
+                    'stdout': result.get('output', '')[:500] if result.get('output') else '',  # First 500 chars
+                    'stderr': result.get('stderr', '')[:500] if result.get('stderr') else ''   # First 500 chars
+                }
+
             return {
                 'iteration': iteration,
                 'success': result['success'],
@@ -129,12 +249,17 @@ class CarbonBenchmark:
                 'emissions': emissions if emissions else 0.0,
                 'session_id': session_id,
                 'error': result.get('error', '') if not result['success'] else '',
+                'error_details': error_info if error_info else None,
                 'timestamp': datetime.now().isoformat()
             }
 
         except Exception as e:
             if CARBON_TRACKING_AVAILABLE:
                 stop_carbon_tracking()
+
+            # Capture exception details
+            import traceback
+            error_traceback = traceback.format_exc()
 
             return {
                 'iteration': iteration,
@@ -143,206 +268,82 @@ class CarbonBenchmark:
                 'emissions': 0.0,
                 'session_id': session_id,
                 'error': str(e),
+                'error_details': {
+                    'error_message': str(e),
+                    'error_type': type(e).__name__,
+                    'traceback': error_traceback[:1000]  # First 1000 chars of traceback
+                },
                 'timestamp': datetime.now().isoformat()
             }
 
-    def determine_category(self, task_name, language):
-        """Determines the category of a task by searching all subdirectories."""
-        # Use REAL dataset categories (not fictional ones!)
-        categories = ['algorithms', 'basic', 'io', 'mathematics', 'misc', 'strings']
-        
-        for category in categories:
-            category_path = os.path.join(self.code_base_path, category, language)
-            if os.path.exists(category_path):
-                # Search for files in this category
-                files = glob.glob(os.path.join(category_path, "snippet_*.*"))
-                for file_path in files:
-                    filename = os.path.basename(file_path)
-                    name_part = filename.replace("snippet_", "").rsplit(".", 1)[0]
-
-                    # Remove the leading number if present
-                    if "_" in name_part:
-                        parts = name_part.split("_", 1)
-                        if parts[0].isdigit():
-                            task_in_filename = parts[1]
-                        else:
-                            task_in_filename = name_part
-                    else:
-                        task_in_filename = name_part
-                    
-                    # Compare with task name
-                    normalized_task_name = task_name.replace(" ", "_")
-                    
-                    if (task_in_filename.lower() == normalized_task_name.lower() or 
-                        normalized_task_name.lower() in task_in_filename.lower() or
-                        task_in_filename.lower() in normalized_task_name.lower()):
-                        return category
-
-        # Default to the first category if not found
-        return 'misc'  # Changed from 'scripting' to match real categories
-    
-    def load_task_code(self, task_name, language, category_subdir):
-        """Loads the code for a specific task from the CLAP dataset."""
+    def load_task_code(self, task_name, language):
+        """
+        Loads the code for a specific task using TaskSearcher for unified access.
+        Falls back to original method if TaskSearcher is not available.
+        """
         try:
-            # If category is provided, search there first; otherwise search all
-            if category_subdir:
-                categories = [category_subdir]  # Use provided category
+            if TASK_SEARCHER_AVAILABLE and self.task_searcher:
+                # Use TaskSearcher to find and load the task
+                found_tasks = self.task_searcher.search_tasks(task_name, fuzzy=False)
+                
+                if language in found_tasks and found_tasks[language]:
+                    file_path = found_tasks[language][0]
+                    
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                            # Apply cleaning using UnifiedTaskFinder
+                            content = UnifiedTaskFinder.clean_code_content(content)
+                            self.logger.debug(f"✅ Found code for '{task_name}' in {file_path}")
+                            return content
+                    except Exception as e:
+                        self.logger.warning(f"⚠️ Error reading file {file_path}: {e}")
+                        return None
+                else:
+                    self.logger.debug(f"❌ No file found for task '{task_name}' in {language}")
+                    return None
             else:
-                categories = ['algorithms', 'basic', 'io', 'mathematics', 'misc', 'strings']
-
-            # Map programming language names to the format used in the dataset
-            language_mapping = {
-                'python': 'python',
-                'javascript': 'javascript', 
-                'java': 'java',
-                'cpp': 'cplusplus',
-                'c': 'c',
-                'ruby': 'ruby',
-                'php': 'php',
-                'r': 'r',
-                'julia': 'julia',
-                'csharp': 'c#',
-                'go': 'go',
-                'rust': 'rust',
-                'haskell': 'haskell',
-                'ocaml': 'ocaml',
-                'typescript': 'typescript'
-            }
-            
-            dataset_language = language_mapping.get(language, language)
-            normalized_task_name = task_name.replace(" ", "_")
-
-            # Search in all categories
-            for category in categories:
-                base_path = os.path.join(self.code_base_path, category, dataset_language)
+                # Fallback to original method using finder
+                return self._load_task_code_fallback(task_name, language)
                 
-                if not os.path.exists(base_path):
-                    continue
-
-                # Pattern to find files containing the task name
-                pattern = f"snippet_*_{normalized_task_name}.*"
-                files = glob.glob(os.path.join(base_path, pattern))
-                
-                if not files:
-                    continue
-                
-                # Prioritize exact matches over partial matches
-                # Example: prefer "snippet_128_Exceptions.cpp" over "snippet_127_ExceptionsCatch_an_exception..."
-                exact_match = None
-                for file_path in files:
-                    filename = os.path.basename(file_path)
-                    # Check for exact match: snippet_XXX_{task_name}.{ext}
-                    # Remove extension and check if it ends with the task name
-                    name_without_ext = os.path.splitext(filename)[0]
-                    if name_without_ext.endswith(f"_{normalized_task_name}"):
-                        exact_match = file_path
-                        break
-                
-                # Use exact match if found, otherwise use first file
-                file_to_use = exact_match if exact_match else files[0]
-                
-                try:
-                    with open(file_to_use, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                        # Apply invisible character cleaning
-                        content = self.executor.clean_code_content(content)
-                        match_type = "exact" if exact_match else "fuzzy"
-                        self.logger.debug(f"Found code for '{task_name}' in {file_to_use} ({match_type} match)")
-                        return content
-                except Exception as e:
-                    self.logger.warning(f"Error reading file {file_to_use}: {e}")
-                    continue
-
-            # If not found with the exact pattern, try a more flexible pattern
-            for category in categories:
-                base_path = os.path.join(self.code_base_path, category, dataset_language)
-                
-                if not os.path.exists(base_path):
-                    continue
-                    
-                files = glob.glob(os.path.join(base_path, "snippet_*.*"))
-                
-                for file_path in files:
-                    filename = os.path.basename(file_path)
-                    
-                    # Check if the task name is contained in the file name
-                    if normalized_task_name.lower() in filename.lower():
-                        try:
-                            with open(file_path, 'r', encoding='utf-8') as f:
-                                content = f.read()
-                                # Apply invisible character cleaning
-                                content = self.executor.clean_code_content(content)
-                                self.logger.debug(f"Found code for '{task_name}' in {file_path} (flexible match)")
-                                return content
-                        except Exception as e:
-                            self.logger.warning(f"Error reading file {file_path}: {e}")
-                            continue
-
-            self.logger.debug(f"No file found for task '{task_name}' in {language}")
+        except Exception as e:
+            self.logger.error(f"❌ Error loading code for {task_name}: {e}")
             return None
+
+    def _load_task_code_fallback(self, task_name, language):
+        """Fallback method for loading code when TaskSearcher is not available"""
+        try:
+            df = self.finder.df
+            filtered = df[(df['task_name'] == task_name) & (df['language'].str.lower() == language.lower())]
+            
+            if filtered.empty:
+                self.logger.debug(f"No file found for task '{task_name}' in {language}")
+                return None
+            
+            file_path = filtered.iloc[0]['file_path']
+            
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    content = UnifiedTaskFinder.clean_code_content(content)
+                    self.logger.debug(f"Found code for '{task_name}' in {file_path}")
+                    return content
+            except Exception as e:
+                self.logger.warning(f"Error reading file {file_path}: {e}")
+                return None
                 
         except Exception as e:
             self.logger.error(f"Error loading code for {task_name}: {e}")
             return None
 
-    def is_code_executable(self, code, language):
-        """Check if the code is potentially executable"""
-        if not code or len(code.strip()) < 10:
-            return False, "Code too short"
-
-        # Patterns indicating non-executable code
-        problematic_patterns = {
-            'python': [
-                r'>>>\s',  # Interactive prompt
-                r'^\s*\.\.\.\s',  # Continuation prompt
-                r'Example:|example:|EXAMPLE:',  # Documentation
-                r'Output:|output:|OUTPUT:',  # Expected output
-            ],
-            'javascript': [
-                r'>\s',  # Browser console
-                r'Example:|example:|EXAMPLE:',
-                r'Output:|output:|OUTPUT:',
-            ],
-            'all': [
-                r'^\s*#.*Example',  # Comments with examples
-                r'^\s*//.*Example',
-                r'Sample\s+(output|run)',
-                r'Expected\s+(output|result)',
-                r'^\s*\*\s.*example',  # Commented examples
-            ]
-        }
-
-        # Check problematic patterns
-        patterns_to_check = problematic_patterns.get(language, []) + problematic_patterns.get('all', [])
-
-        for pattern in patterns_to_check:
-            if re.search(pattern, code, re.MULTILINE | re.IGNORECASE):
-                return False, f"Code not executable: contains pattern '{pattern[:20]}...'"
-
-        # Check if it's mostly comments
-        lines = code.split('\n')
-        code_lines = 0
-        comment_lines = 0
-
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-            if line.startswith('#') or line.startswith('//') or line.startswith('/*'):
-                comment_lines += 1
-            else:
-                code_lines += 1
-
-        if code_lines == 0:
-            return False, "Only comments, no executable code"
-
-        if comment_lines > code_lines * 2:
-            return False, "Too many comments compared to code"
-
-        return True, "OK"
-
     def benchmark_task_language(self, task_name, language, code):
+        """Benchmark a task in a specific language with quality analysis"""
         print(f"\n Benchmark: {task_name} in {language}")
+
+        # Perform quality analysis using TaskSearcher's analyzer
+        if TASK_SEARCHER_AVAILABLE:
+            metrics = CodeQualityAnalyzer.analyze(code, language)
+            print(f" Quality Score: {metrics.quality_score}/100 ({metrics.score_label})")
 
         iteration_results = []
         successful_runs = 0
@@ -394,6 +395,20 @@ class CarbonBenchmark:
                 sample_error = failed_results[0]['error'][:100] + "..." if len(failed_results[0]['error']) > 100 else failed_results[0]['error']
                 self.language_failures[language]['sample_errors'].add(sample_error)
 
+        # Collect detailed error information from all failed iterations
+        error_details = []
+        for r in iteration_results:
+            if not r['success'] and r.get('error_details'):
+                error_details.append({
+                    'iteration': r['iteration'],
+                    'error_type': r['error_details'].get('error_type', 'Unknown'),
+                    'error_message': r['error_details'].get('error_message', r.get('error', '')),
+                    'traceback': r['error_details'].get('traceback', None),
+                    'exit_code': r['error_details'].get('exit_code', None),
+                    'stdout': r['error_details'].get('stdout', None),
+                    'stderr': r['error_details'].get('stderr', None)
+                })
+
         # Filter only successful executions for statistics
         successful_results = [r for r in iteration_results if r['success']]
 
@@ -403,7 +418,8 @@ class CarbonBenchmark:
             'success_rate': success_rate,
             'emissions_stats': {},
             'execution_time_stats': {},
-            'all_iterations': iteration_results
+            'all_iterations': iteration_results,
+            'error_details': error_details if error_details else None
         }
 
         if successful_results:
@@ -438,79 +454,146 @@ class CarbonBenchmark:
         """Print a summary of the benchmark"""
         print(f"\n BENCHMARK RESULTS: {task_name} - {language}")
         print("-" * 60)
-        print(f" Successful executions: {stats['successful_runs']}/{stats['total_iterations']} ({stats['success_rate']:.1f}%)")
+        print(f"✅ Successful executions: {stats['successful_runs']}/{stats['total_iterations']} ({stats['success_rate']:.1f}%)")
 
         if stats['emissions_stats']:
             em = stats['emissions_stats']
             print(f" CO2 EMISSIONS:")
-            print(f" • Mean: {self.format_co2_value(em['mean'])}")
-            print(f" • Median: {self.format_co2_value(em['median'])}")
-            print(f" • Min-Max: {self.format_co2_value(em['min'])} - {self.format_co2_value(em['max'])}")
-            print(f" • Std Dev: {self.format_co2_value(em['std_dev'])}")
-            print(f" • Total {self.iterations} executions: {self.format_co2_value(em['total'])}")
+            print(f"   • Mean: {self.format_co2_value(em['mean'])}")
+            print(f"   • Median: {self.format_co2_value(em['median'])}")
+            print(f"   • Min-Max: {self.format_co2_value(em['min'])} - {self.format_co2_value(em['max'])}")
+            print(f"   • Std Dev: {self.format_co2_value(em['std_dev'])}")
+            print(f"   • Total {self.iterations} executions: {self.format_co2_value(em['total'])}")
 
             et = stats['execution_time_stats']
-            print(f" EXECUTION TIME:")
-            print(f" • Mean: {et['mean']:.3f}s")
-            print(f" • Median: {et['median']:.3f}s")
-            print(f" • Min-Max: {et['min']:.3f} - {et['max']:.3f}s")
-            print(f" • Std Dev: {et['std_dev']:.3f}s")
+            print(f"  EXECUTION TIME:")
+            print(f"   • Mean: {et['mean']:.3f}s")
+            print(f"   • Median: {et['median']:.3f}s")
+            print(f"   • Min-Max: {et['min']:.3f} - {et['max']:.3f}s")
+            print(f"   • Std Dev: {et['std_dev']:.3f}s")
         else:
-            print(" No successful executions - unable to calculate statistics")
+            print("❌ No successful executions - unable to calculate statistics")
 
-    def benchmark_all_tasks(self):
-        """Run benchmark on ALL tasks available in the dataset (FULL mode)"""
+    def get_available_languages(self):
+        """Get list of available languages using TaskSearcher"""
+        if TASK_SEARCHER_AVAILABLE and self.task_searcher:
+            return self.task_searcher.available_languages
+        else:
+            # Fallback to executor languages
+            return list(self.executor.available_languages.keys())
 
-        print(f"\n STARTING CARBON BENCHMARK SYSTEM - FULL MODE")
-        print("=" * 60)
+    def get_all_unique_tasks(self):
+        """Get all unique tasks from the dataset using TaskSearcher"""
+        if TASK_SEARCHER_AVAILABLE and self.task_searcher:
+            # Use TaskSearcher to scan all tasks
+            all_tasks = set()
+            
+            # Search for common patterns to discover all tasks
+            for category in ['algorithms', 'basic', 'io', 'mathematics', 'misc', 'strings']:
+                category_path = os.path.join(self.code_base_path, category)
+                if os.path.exists(category_path):
+                    for lang_dir in os.listdir(category_path):
+                        lang_path = os.path.join(category_path, lang_dir)
+                        if os.path.isdir(lang_path):
+                            for file_name in os.listdir(lang_path):
+                                if file_name.startswith('snippet_'):
+                                    task_name = self._extract_task_name_from_filename(file_name)
+                                    if task_name:
+                                        all_tasks.add(task_name)
+            
+            return sorted(all_tasks)
+        else:
+            # Fallback to original method
+            return self._get_all_unique_tasks_fallback()
 
-        if not CARBON_TRACKING_AVAILABLE:
-            print(" Carbon tracking not available - exiting")
-            return {}
+    def _extract_task_name_from_filename(self, filename):
+        """Extract the task name from the filename"""
+        try:
+            if filename.startswith('snippet_') and '_' in filename:
+                parts = filename.split('_', 2)
+                if len(parts) >= 3:
+                    task_name = parts[2].rsplit('.', 1)[0]
+                    return task_name
+            return None
+        except:
+            return None
 
-        # Detect available languages from the executor
-        available_languages = list(self.executor.available_languages.keys())
-
-        print(f" Available languages: {len(available_languages)}")
-        print(f" Languages: {', '.join(available_languages)}")
-
-        if not available_languages:
-            print(" No languages available for benchmarking")
-            return {}
-
-        # Scan the entire dataset to find ALL tasks
-        print(" Scanning complete dataset to find all tasks...")
+    def _get_all_unique_tasks_fallback(self):
+        """Fallback method to get all unique tasks"""
         all_tasks = set()
-
-        # Scan all categories
         categories = ['algorithms', 'basic', 'io', 'mathematics', 'misc', 'strings']
         
         for category in categories:
             category_path = os.path.join(self.code_base_path, category)
             if os.path.exists(category_path):
-                # For each programming language in the category
                 for lang_dir in os.listdir(category_path):
                     lang_path = os.path.join(category_path, lang_dir)
                     if os.path.isdir(lang_path):
-                        # Find all snippet files
                         for file_name in os.listdir(lang_path):
-                            if file_name.startswith('snippet_') and '_' in file_name:
-                                # Extract task name from filename
-                                task_name = self.extract_task_name_from_filename(file_name)
+                            if file_name.startswith('snippet_'):
+                                task_name = self._extract_task_name_from_filename(file_name)
                                 if task_name:
                                     all_tasks.add(task_name)
+        
+        return sorted(all_tasks)
+
+    def task_exists_for_language(self, task_name, language):
+        """Check if a task exists for a specific language using TaskSearcher"""
+        if TASK_SEARCHER_AVAILABLE and self.task_searcher:
+            found_tasks = self.task_searcher.search_tasks(task_name, fuzzy=False)
+            return language in found_tasks and len(found_tasks[language]) > 0
+        else:
+            # Fallback
+            code = self.load_task_code(task_name, language)
+            return code is not None
+
+    def benchmark_all_tasks(self):
+        """Run benchmark on ALL tasks available in the dataset (FULL mode)
+        With checkpoint support to handle crashes and memory issues"""
+
+        print(f"\n STARTING CARBON BENCHMARK SYSTEM - FULL MODE")
+        print("=" * 60)
+
+        if not CARBON_TRACKING_AVAILABLE:
+            print("⚠️  Carbon tracking not available - exiting")
+            return {}
+
+        # Check for existing checkpoint
+        checkpoint_data = self.load_latest_checkpoint()
+        resume_from_checkpoint = False
+        
+        if checkpoint_data:
+            try:
+                resume = input("   Resume from checkpoint? [S/n]: ").strip().lower()
+                resume_from_checkpoint = resume in ['', 's', 'si', 'sì', 'y', 'yes']
+            except (EOFError, KeyboardInterrupt):
+                print("\n   Starting fresh benchmark...")
+                resume_from_checkpoint = False
+        
+        # Get available languages using TaskSearcher
+        available_languages = self.get_available_languages()
+
+        print(f" Available languages: {len(available_languages)}")
+        print(f" Languages: {', '.join(available_languages)}")
+
+        if not available_languages:
+            print("❌ No languages available for benchmarking")
+            return {}
+
+        # Get all unique tasks using TaskSearcher
+        print(" Scanning complete dataset to find all tasks...")
+        all_tasks = self.get_all_unique_tasks()
 
         # Filter only tasks that have at least 2 available languages
         valid_tasks = []
-        print(" Checking task availability for available languages...")
+        print("✅ Checking task availability for available languages...")
 
-        for task_name in sorted(all_tasks):
+        for task_name in all_tasks:
             available_count = 0
             for language in available_languages:
                 if self.task_exists_for_language(task_name, language):
                     available_count += 1
 
-            # Include tasks that have at least 2 available languages
             if available_count >= 2:
                 valid_tasks.append({
                     'name': task_name,
@@ -523,15 +606,26 @@ class CarbonBenchmark:
 
         print(f" Total tasks found in dataset: {len(all_tasks)}")
         print(f" Valid tasks (≥2 available languages): {len(selected_tasks)}")
-        print(f" Estimated time: ~{len(selected_tasks) * len(available_languages) * self.iterations * 0.5 / 3600:.1f} hours")
+        print(f"  Estimated time: ~{len(selected_tasks) * len(available_languages) * self.iterations * 0.5 / 3600:.1f} hours")
 
         if not selected_tasks:
-            print(" No valid tasks found")
+            print("❌ No valid tasks found")
             return {}
+
+        # Initialize or resume benchmark data
+        if resume_from_checkpoint and checkpoint_data:
+            benchmark_data = checkpoint_data.get('data', {})
+            completed_tasks = set(benchmark_data.keys())
+            selected_tasks = [t for t in selected_tasks if t not in completed_tasks]
+            print(f"   ✅ Resuming: {len(completed_tasks)} tasks already completed")
+            print(f"   🔄 Remaining: {len(selected_tasks)} tasks to process")
+        else:
+            benchmark_data = {}
+            completed_tasks = set()
 
         # User confirmation for very large benchmarks
         if len(selected_tasks) > 100:
-            print(f"\n  WARNING: Very extensive benchmark!")
+            print(f"\n⚠️  WARNING: Very extensive benchmark!")
             print(f"   • {len(selected_tasks)} tasks")
             print(f"   • {len(available_languages)} languages")
             print(f"   • {self.iterations} iterations per combination")
@@ -546,21 +640,25 @@ class CarbonBenchmark:
                 print("\n❌ Benchmark cancelled")
                 return {}
 
+        # Checkpoint configuration
+        CHECKPOINT_INTERVAL = 2  # Save every 2 tasks
+        tasks_since_checkpoint = 0
+
         # Run benchmark for each task/language
-        benchmark_data = {}
         total_combinations = len(selected_tasks) * len(available_languages)
 
         print(f"\n Starting full benchmark: {len(selected_tasks)} tasks × {len(available_languages)} languages")
         print(f" Total combinations: {total_combinations:,}")
+        print(f" 💾 Checkpoint every {CHECKPOINT_INTERVAL} tasks")
         print("=" * 60)
 
         # Use tqdm for overall progress
         with tqdm(total=total_combinations, desc=" Benchmark Progress", unit="combo",
                   bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]") as main_pbar:
             
-            for task_name in selected_tasks:
+            for task_idx, task_name in enumerate(selected_tasks):
                 benchmark_data[task_name] = {}
-                main_pbar.set_description(f" Task: {task_name[:25]}")
+                main_pbar.set_description(f"🔬 Task: {task_name[:25]}")
 
                 for language in available_languages:
                     # Check if the task exists for this language
@@ -575,9 +673,8 @@ class CarbonBenchmark:
                         main_pbar.update(1)
                         continue
 
-                    # Load code for this task/language
-                    category_subdir = self.determine_category(task_name, language)
-                    code = self.load_task_code(task_name, language, category_subdir)
+                    # Load code for this task/language using TaskSearcher
+                    code = self.load_task_code(task_name, language)
 
                     if not code:
                         benchmark_data[task_name][language] = {
@@ -586,12 +683,12 @@ class CarbonBenchmark:
                             'success_rate': 0.0,
                             'error': 'Code not found in dataset'
                         }
-                        main_pbar.set_postfix({'Lang': language, 'Status': ' No Code'})
+                        main_pbar.set_postfix({'Lang': language, 'Status': '❌ No Code'})
                         main_pbar.update(1)
                         continue
 
                     # Update postfix with current info
-                    main_pbar.set_postfix({'Lang': language, 'Status': ' Running'})
+                    main_pbar.set_postfix({'Lang': language, 'Status': '🔄 Running'})
 
                     # Run benchmark for this language
                     stats = self.benchmark_task_language(task_name, language, code)
@@ -602,75 +699,72 @@ class CarbonBenchmark:
                     status = '✅' if success_rate > 50 else '❌' if success_rate == 0 else '⚠️'
                     main_pbar.set_postfix({'Lang': language, 'Status': f'{status} {success_rate:.0f}%'})
                     main_pbar.update(1)
+                
+                # Checkpoint management after each task
+                tasks_since_checkpoint += 1
+                
+                # Save checkpoint every N tasks
+                if tasks_since_checkpoint >= CHECKPOINT_INTERVAL:
+                    checkpoint_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    self.save_checkpoint(benchmark_data, checkpoint_id)
+                    tasks_since_checkpoint = 0
+                    
+                    # Free memory
+                    self.free_memory()
+                    main_pbar.set_description(f"🔬 Task: {task_name[:25]} [💾 Saved]")
 
-        # Save results
+        # Save final results
+        print("\n💾 Saving final results...")
         self.save_benchmark_results(benchmark_data)
         self.generate_benchmark_report(benchmark_data)
+        
+        # Clear checkpoints after successful completion
+        print("🧹 Cleaning up checkpoints...")
+        self.clear_checkpoints()
+        
+        # Generate rankings
+        self.generate_rankings(benchmark_data)
+        
+        # Auto-export and visualize if enabled
+        if self.auto_export_csv:
+            self.export_to_csv()
+        if self.auto_visualize:
+            self.generate_visualizations()
 
         return benchmark_data
-
-    def extract_task_name_from_filename(self, filename):
-        """Extract the task name from the filename"""
-        try:
-            # Typical format: snippet_123_Task_name.ext
-            if filename.startswith('snippet_') and '_' in filename:
-                parts = filename.split('_', 2)  # Split into max 3 parts
-                if len(parts) >= 3:
-                    # Remove extension from task name
-                    task_name = parts[2].rsplit('.', 1)[0]
-                    return task_name
-            return None
-        except:
-            return None
-
-    def task_exists_for_language(self, task_name, language):
-        """Check if a task exists for a specific language"""
-        try:
-            category_subdir = self.determine_category(task_name, language)
-            code = self.load_task_code(task_name, language, category_subdir)
-            return code is not None
-        except:
-            return False
 
     def benchmark_common_tasks(self, max_tasks=10):
         """Run benchmark on common tasks across languages"""
 
-        # Check if common tasks analysis file exists (using absolute path)
+        # Check if common tasks analysis file exists
         common_tasks_path = os.path.join(project_root, "results/task_analysis/common_tasks.json")
-        common_tasks_files = glob.glob(common_tasks_path)
-        if not common_tasks_files:
-            print(" Common tasks file not found.")
-            print(" To generate the common_tasks.json file, please run the following command:")
-            print(" python main.py analyze")
+        
+        if not os.path.exists(common_tasks_path):
+            print("❌ Common tasks file not found.")
+            print(" To generate the common_tasks.json file, please run:")
+            print("   python main.py analyze")
             return {}
 
-        # Now proceed with the existing logic
-        if not common_tasks_files:
-            print(" Unable to find or generate common tasks file")
-            return {}
-            
-        common_tasks_file = common_tasks_files[0]
-        
         print(f"\n START CARBON BENCHMARK SYSTEM")
         print("=" * 60)
 
         if not CARBON_TRACKING_AVAILABLE:
-            print(" Carbon tracking not available - exiting")
+            print("⚠️  Carbon tracking not available - exiting")
             return {}
 
-        # Detect available languages from executor
-        available_languages = list(self.executor.available_languages.keys())
+        # Get available languages using TaskSearcher
+        available_languages = self.get_available_languages()
 
         print(f" Available languages: {len(available_languages)}")
         print(f" Languages: {', '.join(available_languages)}")
 
         if not available_languages:
-            print(" No languages available for benchmarking")
+            print("❌ No languages available for benchmarking")
             return {}
 
         # Load common tasks from file
         try:
-            with open(common_tasks_file, 'r', encoding='utf-8') as f:
+            with open(common_tasks_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 
                 if 'common_tasks' in data and isinstance(data['common_tasks'], list):
@@ -685,19 +779,23 @@ class CarbonBenchmark:
                         print(f" Selected tasks for benchmark: {len(selected_tasks)}")
 
                     if not selected_tasks:
-                        print(" No common tasks found")
+                        print("❌ No common tasks found")
                         return {}
                 else:
-                    print(" Invalid common tasks format")
+                    print("❌ Invalid common tasks format")
                     return {}
         except Exception as e:
-            print(f" Errore caricamento task: {e}")
+            print(f"❌ Error loading tasks: {e}")
             return {}
 
         # Run benchmark for each task/language combination
         benchmark_data = {}
         total_combinations = len(selected_tasks) * len(available_languages)
         current_combination = 0
+        
+        # Checkpoint configuration (for larger benchmarks)
+        CHECKPOINT_INTERVAL = 2  # Save every 2 tasks for common tasks
+        tasks_since_checkpoint = 0
 
         for task_name in selected_tasks:
             benchmark_data[task_name] = {}
@@ -708,13 +806,11 @@ class CarbonBenchmark:
                 current_combination += 1
                 print(f"\n Progress: {current_combination}/{total_combinations} ({(current_combination/total_combinations)*100:.1f}%)")
 
-                # Load code for this task/language
-                category_subdir = self.determine_category(task_name, language)
-                code = self.load_task_code(task_name, language, category_subdir)
+                # Load code for this task/language using TaskSearcher
+                code = self.load_task_code(task_name, language)
 
                 if not code:
-                    print(f" ⚠️  File not found for {task_name} in {language} - skipping")
-                    # Skip this task/language if not available in dataset
+                    print(f"⚠️  File not found for {task_name} in {language} - skipping")
                     benchmark_data[task_name][language] = {
                         'total_iterations': self.iterations,
                         'successful_runs': 0,
@@ -728,15 +824,49 @@ class CarbonBenchmark:
                 # Run benchmark for this language
                 stats = self.benchmark_task_language(task_name, language, code)
                 benchmark_data[task_name][language] = stats
+            
+            # Checkpoint management after each task
+            tasks_since_checkpoint += 1
+            
+            # Save checkpoint every N tasks (only for larger benchmarks)
+            if len(selected_tasks) > 2 and tasks_since_checkpoint >= CHECKPOINT_INTERVAL:
+                checkpoint_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+                self.save_checkpoint(benchmark_data, checkpoint_id)
+                tasks_since_checkpoint = 0
+                print(f"   💾 Checkpoint saved")
+                
+                # Free memory
+                self.free_memory()
 
-        # Save results
+        # Save final results
+        print("\n💾 Saving final results...")
         self.save_benchmark_results(benchmark_data)
         self.generate_benchmark_report(benchmark_data)
+        
+        # Clear checkpoints after successful completion
+        if len(selected_tasks) > 2:
+            print("🧹 Cleaning up checkpoints...")
+            self.clear_checkpoints()
+        
+        # Generate rankings
+        self.generate_rankings(benchmark_data)
+        
+        # Auto-export and visualize if enabled
+        if self.auto_export_csv:
+            self.export_to_csv()
+        if self.auto_visualize:
+            self.generate_visualizations()
 
         return benchmark_data
 
     def save_benchmark_results(self, benchmark_data):
-        """Salva i risultati del benchmark"""
+        """Save benchmark results in mode-specific subdirectory
+        
+        Results are saved in:
+        - results/carbon_benchmark/fast/      (FAST mode)
+        - results/carbon_benchmark/top10/     (TOP10 mode)
+        - results/carbon_benchmark/complete/  (COMPLETE mode)
+        """
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         # Save detailed results
@@ -761,9 +891,118 @@ class CarbonBenchmark:
         with open(summary_file, 'w') as f:
             json.dump(summary_data, f, indent=2)
 
-        print(f"\n Results saved:")
-        print(f" Detailed: {detailed_file}")
-        print(f" Summary: {summary_file}")
+        print(f"\n💾 Results saved:")
+        print(f"   📄 Detailed: {detailed_file}")
+        print(f"   📄 Summary: {summary_file}")
+        
+        return detailed_file, summary_file
+    
+    def export_to_csv(self, auto_export=True):
+        """Export benchmark results to CSV format
+        
+        Args:
+            auto_export: If True, automatically exports latest results
+        
+        Returns:
+            List of exported CSV file paths, or None if export fails
+        """
+        if not CSV_EXPORT_AVAILABLE:
+            print("\n⚠️  CSV export not available (missing export_to_csv module)")
+            return None
+        
+        try:
+            print(f"\n📊 Exporting results to CSV (mode: {self.mode})...")
+            exporter = SWAMCSVExporter(mode=self.mode)
+            
+            if auto_export:
+                exported_files = exporter.export_all_latest()
+                return exported_files
+            else:
+                # Manual export with specific file
+                latest = exporter.find_latest_results()
+                if 'carbon_detailed' in latest:
+                    files = []
+                    files.append(exporter.export_carbon_detailed(latest['carbon_detailed']))
+                    files.append(exporter.export_carbon_individual_runs(latest['carbon_detailed']))
+                    files.append(exporter.export_language_rankings(latest['carbon_detailed']))
+                    return files
+                    
+        except Exception as e:
+            print(f"\n❌ CSV export failed: {e}")
+            return None
+    
+    def generate_visualizations(self, auto_visualize=True):
+        """Generate visualization charts from benchmark results
+        
+        Args:
+            auto_visualize: If True, automatically generates all charts
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        if not VISUALIZATION_AVAILABLE:
+            print("\n⚠️  Visualization not available - missing dependencies")
+            print("   Install with: conda install matplotlib seaborn pandas numpy")
+            print("   Or: pip install matplotlib seaborn pandas numpy")
+            print("   CSV files are still available in results/csv/")
+            return False
+        
+        try:
+            print(f"\n📈 Generating visualizations (mode: {self.mode})...")
+            visualizer = CLAPVisualizer(mode=self.mode)
+            
+            if auto_visualize:
+                visualizer.generate_all_plots()
+                return True
+            else:
+                # Could add selective visualization here
+                return False
+                
+        except Exception as e:
+            print(f"\n❌ Visualization failed: {e}")
+            print("   This might be due to:")
+            print("   - Missing data files")
+            print("   - Incompatible data format")
+            print("   - Display/backend issues")
+            print("\n   CSV files are still available for manual analysis")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    def generate_rankings(self, benchmark_data=None):
+        """Generate multi-tier rankings from benchmark results
+        
+        Args:
+            benchmark_data: Benchmark results dictionary (uses self.benchmark_results if None)
+        
+        Returns:
+            Tuple of (category_rankings, overall_rankings)
+        """
+        try:
+            from ranking_analyzer import RankingAnalyzer
+            
+            print(f"\n📊 Generating Multi-Tier Rankings...")
+            
+            # Use provided data or load from results
+            data_to_analyze = benchmark_data or self.benchmark_results
+            
+            if not data_to_analyze:
+                print("⚠️  No benchmark data available for ranking analysis")
+                return None, None
+            
+            analyzer = RankingAnalyzer(benchmark_results=data_to_analyze)
+            category_rankings, overall_rankings = analyzer.generate_all_rankings(save=True)
+            
+            return category_rankings, overall_rankings
+            
+        except ImportError:
+            print("\n⚠️  Ranking analyzer not available")
+            return None, None
+        except Exception as e:
+            print(f"\n❌ Ranking analysis failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return None, None
 
     def generate_benchmark_report(self, benchmark_data):
         """Generate a final benchmark report"""
@@ -800,33 +1039,30 @@ class CarbonBenchmark:
                 language_stats[language]['avg_emissions_per_execution'] = \
                     language_stats[language]['total_emissions'] / language_stats[language]['total_executions']
 
-        # Complete list of supported languages
-        all_languages = [
-            'python', 'javascript', 'java', 'cpp', 'c', 'ruby', 'php', 'r', 'julia', 
-            'csharp', 'go', 'rust', 'haskell', 'ocaml', 'typescript', 'matlab'
-        ]
+        # Get complete list of supported languages
+        all_languages = self.get_available_languages()
 
         # Calculate language statistics
         working_languages = set(language_stats.keys())
         failed_languages = set(all_languages) - working_languages
 
         print(f" GENERAL STATISTICS:")
-        print(f" Tasks benchmarked: {total_tasks}")
-        print(f" Supported languages: {len(all_languages)}")
-        print(f" Working languages: {len(working_languages)}/{len(all_languages)} ({len(working_languages)/len(all_languages)*100:.1f}%)")
-        print(f" Successful total executions: {total_executions}")
-        print(f" Total emissions: {self.format_co2_value(total_emissions)}")
-        print(f" Mean per execution: {self.format_co2_value(total_emissions/total_executions)}" if total_executions > 0 else " Mean per execution: N/A")
+        print(f"  Tasks benchmarked: {total_tasks}")
+        print(f"   Supported languages: {len(all_languages)}")
+        print(f"  Working languages: {len(working_languages)}/{len(all_languages)} ({len(working_languages)/len(all_languages)*100:.1f}%)")
+        print(f"   Successful total executions: {total_executions}")
+        print(f"   Total emissions: {self.format_co2_value(total_emissions)}")
+        print(f"   Mean per execution: {self.format_co2_value(total_emissions/total_executions)}" if total_executions > 0 else "   Mean per execution: N/A")
 
         print(f"\n✅ WORKING LANGUAGES ({len(working_languages)}):")
         if working_languages:
             sorted_languages = sorted(language_stats.items(),
                                       key=lambda x: x[1]['avg_emissions_per_execution'])
             for i, (language, stats) in enumerate(sorted_languages, 1):
-                print(f" {i:2d}. {language:12s}: {self.format_co2_value(stats['avg_emissions_per_execution'])}/run "
+                print(f"   {i:2d}. {language:12s}: {self.format_co2_value(stats['avg_emissions_per_execution'])}/run "
                       f"({stats['total_executions']} runs)")
         else:
-            print("   No language successfully completed the benchmark")
+            print("   ❌ No language successfully completed the benchmark")
 
         print(f"\n❌ LANGUAGES WITH ISSUES ({len(failed_languages)}):")
         if failed_languages:
@@ -857,13 +1093,13 @@ class CarbonBenchmark:
                 else:
                     print(f"   • {language:12s}: Not Tested")
         else:
-            print("   All languages are working correctly!")
+            print("   ✅ All languages are working correctly!")
 
         # Summary statistics of issues
         if self.language_failures:
-            print(f"\n ISSUE DETAILS:")
+            print(f"\n⚠️  ISSUE DETAILS:")
             total_failed_tasks = sum(len(info['failed_tasks']) for info in self.language_failures.values())
-            print(f"   Total failed tasks: {total_failed_tasks}")
+            print(f"   ❌ Total failed tasks: {total_failed_tasks}")
 
             # Categorize error types by language
             error_categories = {
@@ -890,23 +1126,24 @@ class CarbonBenchmark:
                         error_categories['Configuration Issues'].add(language)
                     else:
                         error_categories['Other Errors'].add(language)
+            
             for category, language_set in error_categories.items():
                 if len(language_set) > 0:
-                    print(f"   {category}: {len(language_set)} languages")
+                    print(f"   • {category}: {len(language_set)} languages")
 
-        # Stima impatto annuale
+        # Annual impact estimate
         if total_emissions > 0:
-            daily_estimate = total_emissions * (86400 / (self.iterations * len(language_stats)))  # 24h estimate
+            daily_estimate = total_emissions * (86400 / (self.iterations * len(language_stats)))
             yearly_estimate = daily_estimate * 365
-            print(f"\n🔮 IMPACT ESTIMATES:")
-            print(f" Daily estimate (continuous usage): {self.format_co2_value(daily_estimate, 'g')}/day")
-            print(f" Yearly estimate (continuous usage): {self.format_co2_value(yearly_estimate, 'g')}/year")
+            print(f"\n IMPACT ESTIMATES:")
+            print(f"   Daily estimate (continuous usage): {self.format_co2_value(daily_estimate, 'g')}/day")
+            print(f"   Yearly estimate (continuous usage): {self.format_co2_value(yearly_estimate, 'g')}/year")
 
 
 def benchmark_quick_test(iterations=5):
     """Quick test of the benchmarking system"""
-    print(" QUICK BENCHMARK TEST")
-    benchmark = CarbonBenchmark(iterations=iterations)
+    print("🧪 QUICK BENCHMARK TEST")
+    benchmark = CarbonBenchmark(iterations=iterations, mode='FAST')
 
     # Test with simple Python code
     test_code = '''
@@ -931,13 +1168,13 @@ if __name__ == "__main__":
         benchmark_quick_test(5)
     elif len(sys.argv) > 1 and sys.argv[1] == "debug":
         # Fast debug (3 iterations, 2 tasks) - for quick tests
-        benchmark = CarbonBenchmark(iterations=3)
+        benchmark = CarbonBenchmark(iterations=3, mode='FAST')
         benchmark.benchmark_common_tasks(max_tasks=2)
     elif len(sys.argv) > 1 and sys.argv[1] == "quick":
         # Quick benchmark (10 iterations, 3 tasks)
-        benchmark = CarbonBenchmark(iterations=10)
+        benchmark = CarbonBenchmark(iterations=10, mode='FAST')
         benchmark.benchmark_common_tasks(max_tasks=3)
     else:
-        # Default: Top10 (5 iterations, 10 tasks)
-        benchmark = CarbonBenchmark(iterations=30)
+        # Default: Top10 (30 iterations, 10 tasks)
+        benchmark = CarbonBenchmark(iterations=30, mode='TOP10')
         benchmark.benchmark_common_tasks(max_tasks=10)

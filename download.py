@@ -7,13 +7,12 @@ from Hugging Face in the format expected by the CLAP system
 import os
 import sys
 from pathlib import Path
-from datasets import load_dataset
 import re
 from collections import defaultdict
 
 def clean_filename(name):
     """Cleans the file name to make it filesystem-safe"""
-    # Removes special characters and spaces
+    # Remove special characters and spaces
     name = re.sub(r'[^\w\s-]', '', name)
     name = re.sub(r'[-\s]+', '_', name)
     return name.strip('_')
@@ -61,20 +60,30 @@ def organize_by_category(task_name):
 
 def download_rosetta_code():
     """Downloads and organizes the Rosetta Code dataset"""
-    print(" Downloading Rosetta Code dataset from Hugging Face...")
+    print("[*] Downloading Rosetta Code dataset from Hugging Face...")
     
     try:
+        # Try to import datasets
+        try:
+            from datasets import load_dataset
+        except ImportError:
+            print("[ERROR] The 'datasets' package is not installed.")
+            print("[*] Please install it with: pip install datasets")
+            return False
+        
         # Load the dataset
         dataset = load_dataset("christopher/rosetta-code")
-        print(f" Dataset loaded! Examples found: {len(dataset['train'])}")
+        print(f"[OK] Dataset loaded! Examples found: {len(dataset['train'])}")
         
         # Output directory
         output_dir = Path("data/generated/code_snippets")
         output_dir.mkdir(parents=True, exist_ok=True)
+        print(f"[*] Output directory: {output_dir.absolute()}")
         
         # Statistics
         stats = defaultdict(lambda: defaultdict(int))
         total_files = 0
+        skipped_files = 0
         
         # Process each example
         for idx, example in enumerate(dataset['train']):
@@ -83,6 +92,7 @@ def download_rosetta_code():
             code = example.get('code', '')
             
             if not code.strip():
+                skipped_files += 1
                 continue
                 
             # Clean names
@@ -101,47 +111,58 @@ def download_rosetta_code():
             filename = f"snippet_{stats[category][clean_lang] + 1}_{clean_task}{extension}"
             filepath = lang_dir / filename
             
-            # Write the file
+            # Write the file with error handling
             try:
-                with open(filepath, 'w', encoding='utf-8') as f:
+                with open(filepath, 'w', encoding='utf-8', errors='replace') as f:
                     f.write(code)
                 
                 stats[category][clean_lang] += 1
                 total_files += 1
                 
                 if total_files % 100 == 0:
-                    print(f"   Processed {total_files} files...")
+                    print(f"[*] Processed {total_files} files...")
                     
+            except OSError as e:
+                print(f"[WARNING] Error writing {filepath}: {e}")
+                skipped_files += 1
+                continue
             except Exception as e:
-                print(f" Error writing {filepath}: {e}")
+                print(f"[WARNING] Unexpected error with {filepath}: {e}")
+                skipped_files += 1
                 continue
         
         # Print final statistics
-        print(f"\n Download completed!")
-        print(f" Statistics:")
-        print(f"   Total files created: {total_files}")
+        print(f"\n[OK] Download completed!")
+        print(f"[*] Statistics:")
+        print(f"    Total files created: {total_files}")
+        print(f"    Skipped files: {skipped_files}")
+        print(f"\n[*] Files by category:")
         
-        for category, languages in stats.items():
-            print(f"    {category}:")
+        for category in sorted(stats.keys()):
+            languages = stats[category]
+            total_in_category = sum(languages.values())
+            print(f"    {category}: {total_in_category} files")
             for lang, count in sorted(languages.items()):
-                print(f"      {lang}: {count} files")
+                print(f"      - {lang}: {count} files")
         
         return True
         
     except Exception as e:
-        print(f" Error during download: {e}")
+        print(f"[ERROR] Error during download: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 if __name__ == "__main__":
-    print("=" * 50)
+    print("=" * 60)
     print("CLAP - Rosetta Code Dataset Downloader")
-    print("=" * 50)
+    print("=" * 60)
+    print()
     
     success = download_rosetta_code()
     
     if success:
-        print("\n Dataset downloaded and organized successfully!")
-        print("You can now run: python main.py analyze")
+        print("\n[OK] Dataset downloaded and organized successfully!")
     else:
-        print("\n Download failed!")
+        print("\n[ERROR] Download failed!")
         sys.exit(1)

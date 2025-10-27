@@ -30,6 +30,9 @@ class LanguageConfigManager:
         self.conda_env = conda_env
         self.conda_prefix = self._detect_conda_prefix() if self.use_conda else None
         
+        # Detect MATLAB path once during initialization
+        self._matlab_path = self._detect_matlab_path()
+        
         # Core configuration constants
         self.DEFAULT_TIMEOUTS = {
             'interpreted': 10,
@@ -72,6 +75,62 @@ class LanguageConfigManager:
             except:
                 pass
             return os.environ.get('CONDA_PREFIX')
+    
+    def _detect_matlab_path(self) -> Optional[str]:
+        """Detect MATLAB executable path dynamically"""
+        # 1. Check environment variable
+        matlab_path = os.environ.get('MATLAB_PATH')
+        if matlab_path:
+            matlab_bin = os.path.join(matlab_path, 'bin', 'matlab')
+            if os.path.isfile(matlab_bin) and os.access(matlab_bin, os.X_OK):
+                return matlab_bin
+        
+        # 2. Check if matlab is in PATH
+        try:
+            result = subprocess.run(
+                ['which', 'matlab'] if os.name != 'nt' else ['where', 'matlab'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip().split('\n')[0]
+        except:
+            pass
+        
+        # 3. Check standard installation paths
+        possible_paths = [
+            '/usr/local/MATLAB/R2025b/bin/matlab',
+            '/usr/local/MATLAB/R2025a/bin/matlab',
+            '/usr/local/MATLAB/R2024b/bin/matlab',
+            '/usr/local/MATLAB/R2024a/bin/matlab',
+            '/usr/local/MATLAB/R2023b/bin/matlab',
+            '/usr/local/MATLAB/R2023a/bin/matlab',
+            '/opt/MATLAB/R2025b/bin/matlab',
+            '/opt/MATLAB/R2024b/bin/matlab',
+            '/opt/MATLAB/R2024a/bin/matlab',
+            '/Applications/MATLAB_R2025b.app/bin/matlab',
+            '/Applications/MATLAB_R2024b.app/bin/matlab',
+        ]
+        
+        for path in possible_paths:
+            if os.path.isfile(path) and os.access(path, os.X_OK):
+                return path
+        
+        # 4. Search in common directories
+        search_dirs = ['/usr/local/MATLAB', '/opt/MATLAB', '/Applications']
+        for search_dir in search_dirs:
+            if os.path.isdir(search_dir):
+                try:
+                    for entry in sorted(os.listdir(search_dir), reverse=True):
+                        if 'MATLAB' in entry or entry.startswith('R20'):
+                            matlab_candidate = os.path.join(search_dir, entry, 'bin', 'matlab')
+                            if os.path.isfile(matlab_candidate) and os.access(matlab_candidate, os.X_OK):
+                                return matlab_candidate
+                except PermissionError:
+                    pass
+        
+        return None
     
     def get_conda_command(self, command: str) -> str:
         """Get conda-aware command path"""
@@ -193,12 +252,13 @@ main = putStrLn "Hello from Haskell!"''',
             },
             'matlab': {
                 'extension': '.m',
-                'executor': self.get_conda_command('matlab'),
-                'timeout': self.DEFAULT_TIMEOUTS['interpreted'],
-                'test_code': 'disp("Hello from MATLAB!")',
+                'executor': self._matlab_path or 'matlab',  # Dynamic detection
+                'timeout': 60,  # MATLAB needs more time for startup
+                'test_code': 'fprintf("Hello from MATLAB!\\n");',
                 'type': 'interpreted',
                 'compile_cmd': None,
-                'executor_flags': ['-batch']
+                'executor_flags': ['-batch'],
+                'available': self._matlab_path is not None
             },
             'ocaml': {
                 'extension': '.ml',
@@ -267,6 +327,42 @@ main = putStrLn "Hello from Haskell!"''',
         
         config = self.get_language_config(language)
         return config.get('timeout', self.DEFAULT_TIMEOUTS['interpreted'])
+    
+    def is_language_available(self, language: str) -> bool:
+        """Check if a language is available on the system"""
+        config = self.get_language_config(language)
+        
+        # Special handling for MATLAB
+        if language.lower() == 'matlab':
+            return config.get('available', False)
+        
+        # For other languages, check if executor/compiler exists
+        if config.get('type') == 'compiled':
+            compiler = config.get('compiler')
+            if compiler:
+                try:
+                    result = subprocess.run(
+                        ['which', compiler] if os.name != 'nt' else ['where', compiler],
+                        capture_output=True,
+                        timeout=5
+                    )
+                    return result.returncode == 0
+                except:
+                    return False
+        else:
+            executor = config.get('executor')
+            if executor:
+                try:
+                    result = subprocess.run(
+                        ['which', executor] if os.name != 'nt' else ['where', executor],
+                        capture_output=True,
+                        timeout=5
+                    )
+                    return result.returncode == 0
+                except:
+                    return False
+        
+        return False
 
 
 # Legacy compatibility constants
