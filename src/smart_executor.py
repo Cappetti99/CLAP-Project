@@ -22,10 +22,16 @@ sys.path.insert(0, modules_path)
 # Import modular components
 try:
     from modules.language_config import LanguageConfigManager
+    from src.finder import UnifiedTaskFinder
     MODULAR_COMPONENTS_AVAILABLE = True
 except ImportError as e:
     MODULAR_COMPONENTS_AVAILABLE = False
     print(f"⚠️  Modular components not available: {e}")
+    try:
+        # Fallback for direct import
+        from finder import UnifiedTaskFinder
+    except ImportError:
+        UnifiedTaskFinder = None
 
 # Import the carbon tracker to monitor environmental impact (lazy import)
 CARBON_TRACKING_AVAILABLE = False  # Temporarily disabled for debugging
@@ -49,6 +55,9 @@ class SmartExecutor:
         self.analysis_dir = "results/task_analysis"
         self.temp_files = []
         self.available_languages = {}
+        # Optional components (set when modular tools are wired)
+        self.logger = None
+        self.dependency_analyzer = None
         
         # Initialize modular components
         if MODULAR_COMPONENTS_AVAILABLE:
@@ -58,13 +67,18 @@ class SmartExecutor:
             self.config_manager = None
             print("⚠️  LEGACY: Using fallback configuration")
         
-        # Add homebrew to PATH to locate all compilers
-        homebrew_path = "/opt/homebrew/bin"
-        if homebrew_path not in os.environ.get("PATH", ""):
-            os.environ["PATH"] = homebrew_path + ":" + os.environ.get("PATH", "")
-
-            # Full configuration for all supported languages (aligned with LanguageTester)
-            self.language_config = {
+        # Initialize finder for robust file search
+        if UnifiedTaskFinder is not None:
+            self.finder = UnifiedTaskFinder()
+            self.finder.create_dataset_dataframe(verbose=False)
+            self.use_finder = True
+        else:
+            self.finder = None
+            self.use_finder = False
+            print("⚠️  Finder not available, using legacy file search")
+        
+        # Full configuration for all supported languages (aligned with LanguageTester)
+        self.language_config = {
             'python': {
                 'extension': '.py',
                 'executor': ['conda', 'run', '-n', 'CLAP', 'python'],
@@ -192,6 +206,11 @@ func main() {
                 'test_code': '''console.log("test");'''
             }
         }
+
+        # Add homebrew to PATH to locate all compilers (no longer gates config init)
+        homebrew_path = "/opt/homebrew/bin"
+        if homebrew_path not in os.environ.get("PATH", ""):
+            os.environ["PATH"] = homebrew_path + ":" + os.environ.get("PATH", "")
 
         # Detect available languages from test results or fallback
         self.load_available_languages_from_test()
@@ -477,8 +496,15 @@ func main() {
         for lang in sorted(self.available_languages.keys()):
             print(f" • {lang.upper()}")
 
-    def execute_code(self, code, language, task_name):
-        """Executes the given code in the specified language and tracks emissions"""
+    def execute_code(self, code, language, task_name, timeout=None):
+        """Executes the given code in the specified language and tracks emissions
+        
+        Args:
+            code: Code to execute
+            language: Programming language
+            task_name: Name of the task
+            timeout: Optional timeout in seconds (overrides language default)
+        """
 
         # Start CO2 tracking for this execution (only if not disabled)
         should_track = CARBON_TRACKING_AVAILABLE and not getattr(self, 'disable_carbon_tracking', False)
@@ -528,7 +554,7 @@ func main() {
                     }
 
             # Execution
-            exec_result = self.run_code(temp_file, config, language, temp_dir)
+            exec_result = self.run_code(temp_file, config, language, temp_dir, timeout=timeout)
             execution_time = time.time() - start_time
 
             result = {
@@ -575,6 +601,29 @@ func main() {
             
             # Remove/replace GUI elements that could open windows
             cleaned = self._clean_python_gui_code(cleaned)
+        
+        elif language in ['c', 'cpp', 'c++']:
+            # Add main() function if missing (for code snippets)
+            if 'int main' not in cleaned and 'void main' not in cleaned:
+                # Check if there are functions defined
+                has_functions = bool(re.search(r'(void|int|char|float|double)\s+\w+\s*\([^)]*\)\s*\{', cleaned))
+                
+                if has_functions:
+                    # Code has functions, wrap with minimal main that calls first function if possible
+                    function_match = re.search(r'(void|int)\s+(\w+)\s*\([^)]*\)', cleaned)
+                    if function_match:
+                        func_name = function_match.group(2)
+                        if function_match.group(1) == 'void':
+                            main_body = f'    {func_name}();\n    return 0;'
+                        else:
+                            main_body = f'    {func_name}();\n    return 0;'
+                        cleaned = f'{cleaned}\n\nint main() {{\n{main_body}\n}}\n'
+                    else:
+                        # Just add empty main
+                        cleaned = f'{cleaned}\n\nint main() {{\n    return 0;\n}}\n'
+                else:
+                    # No functions, might be simple statements, wrap them in main
+                    cleaned = f'int main() {{\n{cleaned}\n    return 0;\n}}\n'
             
         elif language == 'javascript':
             # Removes references to window/DOM for Node.js
@@ -875,8 +924,16 @@ func main() {
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
-    def run_code(self, filepath, config, language, temp_dir):
-        """Runs the code"""
+    def run_code(self, filepath, config, language, temp_dir, timeout=None):
+        """Runs the code
+        
+        Args:
+            filepath: Path to the code file
+            config: Language configuration
+            language: Programming language
+            temp_dir: Temporary directory
+            timeout: Optional timeout in seconds (overrides config default)
+        """
         try:
             if 'compiler' in config:
                 if language == 'java':
@@ -934,7 +991,7 @@ func main() {
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=config.get('timeout', 45),
+                timeout=timeout if timeout is not None else config.get('timeout', 45),
                 cwd=temp_dir,
                 env=self.get_swam_env(language)
             )
@@ -942,11 +999,18 @@ func main() {
             return {
                 'success': result.returncode == 0,
                 'output': result.stdout,
-                'error': result.stderr if result.returncode != 0 else ''
+                'error': result.stderr if result.returncode != 0 else '',
+                'exit_code': result.returncode
             }
 
         except subprocess.TimeoutExpired:
-            return {'success': False, 'error': 'Timeout durante esecuzione', 'output': ''}
+            return {
+                'success': False,
+                'error': f'Timeout ({timeout if timeout else config.get("timeout", 45)}s) durante esecuzione',
+                'output': '',
+                'error_type': 'TimeoutError',
+                'exit_code': -1
+            }
         except Exception as e:
             return {'success': False, 'error': str(e), 'output': ''}
 
@@ -975,7 +1039,21 @@ func main() {
                 print(f" Errore cleanup {filepath}: {e}")
 
     def find_task_file(self, task_name, language):
-        """Finds the file for a task and language in the hierarchical structure"""
+        """Finds the file for a task and language using UnifiedTaskFinder for consistency"""
+        
+        # Use finder if available for consistent, robust file search
+        if self.use_finder and self.finder is not None:
+            try:
+                df = self.finder.df
+                # Filter by task name and language
+                filtered = df[(df['task_name'] == task_name) & (df['language'].str.lower() == language.lower())]
+                
+                if not filtered.empty:
+                    return filtered.iloc[0]['file_path']
+            except Exception as e:
+                print(f"⚠️  Finder search failed, falling back to legacy: {e}")
+        
+        # Fallback to legacy search if finder not available or fails
         code_base_dir = "data/generated/code_snippets"
 
         # Normalizes language names
@@ -1032,21 +1110,16 @@ func main() {
         return None
 
     def clean_code_content(self, code):
-        """Cleans up the code from problematic invisible characters"""
-
-        # Replaces directly the most common problematic characters
-        # U+00A0 (Non-Breaking Space) and other Unicode spaces
-        cleaned = code.replace('\u00a0', ' ') # Non-breaking space
-        cleaned = cleaned.replace('\u2007', ' ') # Figure space
-        cleaned = cleaned.replace('\u202f', ' ') # Narrow no-break space
-        cleaned = cleaned.replace('\u2060', '') # Word joiner (invisible)
-        cleaned = cleaned.replace('\ufeff', '') # Byte order mark
-
-        # Removes other control characters
-        import re
-        cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', cleaned)
-
-        return cleaned
+        """Cleans up the code from problematic invisible characters
+        
+        This method delegates to UnifiedTaskFinder.clean_code_content()
+        to ensure consistent code cleaning across all modules.
+        """
+        if UnifiedTaskFinder is not None:
+            return UnifiedTaskFinder.clean_code_content(code)
+        else:
+            # Fallback to basic cleaning if finder not available
+            return code.replace('\u00a0', ' ').replace('\ufeff', '')
 
     def execute_task_all_available_languages(self, task_name):
         """Executes a task in all available languages"""
