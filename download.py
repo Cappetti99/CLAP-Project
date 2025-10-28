@@ -36,8 +36,7 @@ def get_file_extension(language):
         'ocaml': '.ml',
         'r': '.r',
         'julia': '.jl',
-        'typescript': '.ts',
-        'matlab': '.m'
+        'typescript': '.ts'
     }
     return extensions.get(language.lower(), '.txt')
 

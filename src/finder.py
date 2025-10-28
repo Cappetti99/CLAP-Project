@@ -1,7 +1,20 @@
 #!/usr/bin/env python3
 """
-Unified Task Finder - Unified system for common task analysis
-Combines AdvancedTaskFinder + PandasAnalyzer into a single optimal solution
+Unified Task Finder - Comprehensive system for common task analysis
+
+This module provides the complete task discovery and analysis pipeline:
+- Searches for common programming tasks across all implemented languages
+- Finds tasks with implementations in multiple languages
+- Extracts random implementations for benchmarking
+- Analyzes code quality metrics for each implementation
+- Generates statistics and reports on available tasks
+- Creates optimized Pandas DataFrames for analysis
+
+Key algorithms:
+- Task frequency analysis to find most widely-implemented challenges
+- Quality scoring based on code characteristics
+- Language coverage analysis
+- Pandas-based efficient data processing
 """
 
 import pandas as pd
@@ -13,25 +26,47 @@ import re
 import random
 from collections import defaultdict
 
-class UnifiedTaskFinder:
-    """
-    Optimized system for common task analysis with Pandas
 
-    Main features:
-    - Dataset analysis with optimized Pandas DataFrame
-    - Search for common tasks across supported languages
-    - Random extraction of implementations for benchmarking
+class UnifiedTaskFinder:
+    """Optimized system for common task analysis with Pandas DataFrame.
+    
+    This class provides:
+    - Efficient dataset analysis using Pandas
+    - Search for common programming tasks across languages
+    - Random sampling of implementations for benchmarking
+    - Code quality analysis and metrics
+    - Language coverage statistics
+    - Dataset export and reporting
+    
+    Workflow:
+    1. Initialize with supported languages and file extensions
+    2. Create DataFrame from all available code snippets
+    3. Analyze task frequency across languages
+    4. Extract common tasks meeting minimum language threshold
+    5. Return ranked tasks and implementation samples
+    
+    Attributes:
+        results_dir: Output directory for analysis results
+        code_snippets_dir: Directory containing all code snippets
+        df: Pandas DataFrame with task and code metadata
+        supported_languages: Mapping of language names to file extensions
     """
     
     def __init__(self):
+        """Initialize the task finder with language mappings and directories."""
+        # ===== DIRECTORIES =====
+        # Set up output and data directories for analysis
         self.results_dir = "results/task_analysis"
         self.code_snippets_dir = "data/generated/code_snippets"
         self.df = None  # DataFrame will be created by create_dataset_dataframe()
         
+        # Create directories if they don't exist
         os.makedirs(self.results_dir, exist_ok=True)
         os.makedirs(self.code_snippets_dir, exist_ok=True)
 
-        # Supported languages and their extensions
+        # ===== LANGUAGE CONFIGURATION =====
+        # Map language names to their file extensions
+        # Used for discovering code files in the dataset
         self.supported_languages = {
             'c': ['.c'],
             'cpp': ['.cpp'],
@@ -41,7 +76,6 @@ class UnifiedTaskFinder:
             'java': ['.java'],
             'javascript': ['.js'],
             'julia': ['.jl'],
-            'matlab': ['.m'],
             'ocaml': ['.ml'],
             'php': ['.php'],
             'python': ['.py'],
@@ -51,7 +85,9 @@ class UnifiedTaskFinder:
             'typescript': ['.ts']
         }
 
-        # Normalized language mapping (aligned with task_searcher)
+        # ===== LANGUAGE NORMALIZATION =====
+        # Normalize language names to standard form (aligned with task_searcher)
+        # Allows flexible input while maintaining consistent internal representation
         self.standardized_languages = {
             'python': 'python',
             'java': 'java',
@@ -153,9 +189,6 @@ class UnifiedTaskFinder:
             
             # Julia
             'julia': 'julia',
-            
-            # MATLAB (Octave is separate, not a variant)
-            'matlab': 'matlab',
             
             # OCaml
             'ocaml': 'ocaml',

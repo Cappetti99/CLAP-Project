@@ -31,7 +31,7 @@ class RankingAnalyzer:
             'Scripting': ['python', 'ruby', 'javascript', 'typescript'],
             'Imperative': ['c', 'go', 'rust', 'php'],
             'Functional': ['haskell', 'ocaml'],
-            'Scientific': ['r', 'matlab', 'julia']
+            'Scientific': ['r', 'julia']
         }
         
         # Reverse mapping: language -> paradigm

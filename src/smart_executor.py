@@ -126,12 +126,6 @@ class SmartExecutor:
                 'timeout': 30,
                 'test_code': 'println("test")'
             },
-            'matlab': {
-                'extension': '.m',
-                'executor': [self._get_matlab_command(), '-batch'],  
-                'timeout': 30,
-                'test_code': 'fprintf("test\\n");'
-            },
             'csharp': {
                 'extension': '.cs',
                 'compiler': ['mcs'], 
@@ -214,36 +208,6 @@ func main() {
 
         # Detect available languages from test results or fallback
         self.load_available_languages_from_test()
-
-    def _get_matlab_command(self):
-        """Get MATLAB command path, supporting custom installation via MATLAB_PATH env var"""
-        # Check if user has specified custom MATLAB path
-        matlab_path = os.environ.get('MATLAB_PATH')
-        if matlab_path:
-            matlab_bin = os.path.join(matlab_path, 'bin', 'matlab')
-            if os.path.exists(matlab_bin):
-                return matlab_bin
-        
-        # Check standard installation paths
-        possible_paths = [
-            '/usr/local/MATLAB/R2025b/bin/matlab',  # User's installation
-            '/usr/local/MATLAB/R2024b/bin/matlab',
-            '/usr/local/MATLAB/R2024a/bin/matlab', 
-            '/usr/local/MATLAB/R2023b/bin/matlab',
-            '/usr/local/MATLAB/R2023a/bin/matlab',
-            '/opt/MATLAB/R2025b/bin/matlab',
-            '/opt/MATLAB/R2024b/bin/matlab',
-            '/opt/MATLAB/R2024a/bin/matlab',
-            '/opt/MATLAB/R2023b/bin/matlab',
-            '/opt/MATLAB/R2023a/bin/matlab'
-        ]
-        
-        for path in possible_paths:
-            if os.path.exists(path):
-                return path
-        
-        # Fallback to 'matlab' in PATH or 'octave' as substitute
-        return os.environ.get('MATLAB_COMMAND', 'matlab')
 
     def get_modular_config(self, language):
         """Get language configuration from modular components if available"""
@@ -370,12 +334,7 @@ func main() {
                     else:
                         run_cmd = config['executor']
                 else:
-                    if language == 'matlab':
-                        # MATLAB requires only the script name without extension
-                        script_name = os.path.splitext(os.path.basename(temp_file))[0]
-                        run_cmd = config['executor'] + [script_name]
-                    else:
-                        run_cmd = config['executor'] + [temp_file]
+                    run_cmd = config['executor'] + [temp_file]
 
                 run_result = subprocess.run(
                     run_cmd,
@@ -440,7 +399,6 @@ func main() {
                         'haskell': 'haskell',
                         'ocaml': 'ocaml',
                         'r': 'r',
-                        'matlab': 'matlab',
                         'julia': 'julia'
                     }
                     
@@ -641,14 +599,6 @@ func main() {
         elif language == 'typescript':
             # Fixes compiler options
             cleaned = re.sub(r'-o\s+', '--outFile ', cleaned)
-            
-        elif language == 'matlab':
-            # Handle MATLAB function definitions vs executable scripts
-            if self._is_matlab_function_only(cleaned):
-                cleaned = self._make_matlab_executable(cleaned)
-            
-            # Remove/replace graphics elements that could open GUI windows
-            cleaned = self._clean_matlab_graphics_code(cleaned)
             
         elif language == 'java':
             # If no class is defined, create a Main class
@@ -980,12 +930,7 @@ func main() {
                     cmd = [executable_path]
             else:
                 # Interpreted languages
-                if language == 'matlab':
-                    # MATLAB requires only the script name without extension
-                    script_name = Path(filepath).stem
-                    cmd = config['executor'] + [script_name]
-                else:
-                    cmd = config['executor'] + [filepath]
+                cmd = config['executor'] + [filepath]
 
             result = subprocess.run(
                 cmd,
@@ -1261,116 +1206,6 @@ func main() {
         else:
             print(f"\n No executions completed")
 
-    def _is_matlab_function_only(self, code):
-        """Check if MATLAB code contains only function definitions without executable statements"""
-        lines = [line.strip() for line in code.split('\n') if line.strip()]
-        if not lines:
-            return False
-        
-        # Check if the code starts with 'function' and doesn't have executable statements
-        starts_with_function = any(line.startswith('function ') for line in lines)
-        
-        # Look for executable statements (not comments, not function definitions, not 'end')
-        executable_statements = []
-        in_function = False
-        
-        for line in lines:
-            if line.startswith('%'):  # Comment
-                continue
-            if line.startswith('function '):
-                in_function = True
-                continue
-            if line == 'end':
-                in_function = False
-                continue
-            if not in_function and not line.startswith('function ') and not line.startswith('%'):
-                executable_statements.append(line)
-        
-        return starts_with_function and len(executable_statements) == 0
-
-    def _make_matlab_executable(self, code):
-        """Transform MATLAB function-only code into executable script"""
-        lines = code.split('\n')
-        
-        # Find function name and parameters
-        function_info = self._extract_matlab_function_info(code)
-        
-        if not function_info:
-            return code  # Return as-is if we can't parse
-        
-        func_name = function_info['name']
-        params = function_info['params']
-        
-        # Create sample test calls based on function name and common patterns
-        test_calls = self._generate_matlab_test_calls(func_name, params)
-        
-        # Add test calls to make it executable
-        executable_code = code + '\n\n% Auto-generated test calls\ntry\n'
-        for call in test_calls:
-            executable_code += f'    result = {call};\n'
-            executable_code += f'    disp(result);\n'
-        executable_code += 'catch ME\n    disp([\'Error: \' ME.message]);\nend\n'
-        
-        return executable_code
-
-    def _extract_matlab_function_info(self, code):
-        """Extract function name and parameters from MATLAB function definition"""
-        function_pattern = r'function\s+(?:\[?([^\]]*)\]?\s*=\s*)?(\w+)\s*\(([^)]*)\)'
-        match = re.search(function_pattern, code)
-        
-        if match:
-            output_vars = match.group(1) if match.group(1) else None
-            func_name = match.group(2)
-            params_str = match.group(3).strip() if match.group(3) else ''
-            params = [p.strip() for p in params_str.split(',') if p.strip()] if params_str else []
-            
-            return {
-                'name': func_name,
-                'params': params,
-                'output_vars': output_vars
-            }
-        return None
-
-    def _generate_matlab_test_calls(self, func_name, params):
-        """Generate appropriate test calls for MATLAB functions based on name and parameters"""
-        test_calls = []
-        
-        # Common test values based on parameter count
-        if len(params) == 0:
-            test_calls.append(f'{func_name}()')
-        elif len(params) == 1:
-            # Generate different test values based on function name hints
-            if any(keyword in func_name.lower() for keyword in ['median', 'mean', 'average', 'sum']):
-                test_calls.append(f'{func_name}([1, 2, 3, 4, 5])')
-                test_calls.append(f'{func_name}([10, 20, 30])')
-            elif any(keyword in func_name.lower() for keyword in ['gcd', 'divisor']):
-                test_calls.append(f'{func_name}(48, 18)')
-            elif any(keyword in func_name.lower() for keyword in ['roman', 'rom']):
-                test_calls.append(f'{func_name}(\'VII\')')
-                test_calls.append(f'{func_name}(\'XIV\')')
-            elif any(keyword in func_name.lower() for keyword in ['factorial', 'fact']):
-                test_calls.append(f'{func_name}(5)')
-            elif 'halve' in func_name.lower():
-                test_calls.append(f'{func_name}(10)')
-                test_calls.append(f'{func_name}(7)')
-            else:
-                # Generic test values
-                test_calls.append(f'{func_name}(5)')
-                test_calls.append(f'{func_name}([1, 2, 3])')
-        elif len(params) == 2:
-            if any(keyword in func_name.lower() for keyword in ['gcd', 'divisor']):
-                test_calls.append(f'{func_name}(48, 18)')
-                test_calls.append(f'{func_name}(12, 8)')
-            else:
-                test_calls.append(f'{func_name}(5, 3)')
-                test_calls.append(f'{func_name}(10, 2)')
-        else:
-            # For functions with many parameters, create a simple call
-            simple_params = ', '.join(['1'] * len(params))
-            test_calls.append(f'{func_name}({simple_params})')
-        
-        return test_calls if test_calls else [f'{func_name}()']
-
     def _clean_python_gui_code(self, code):
         """Remove or replace GUI elements in Python code to prevent windows from opening"""
         
@@ -1454,35 +1289,6 @@ matplotlib.use('Agg')  # Non-interactive backend
         
         # Replace browser() debugging calls
         code = re.sub(r'browser\s*\(\)', '# browser() disabled', code)
-        
-        return code
-
-    def _clean_matlab_graphics_code(self, code):
-        """Remove or replace graphics elements in MATLAB code to prevent GUI windows from opening"""
-        
-        # Replace figure creation with invisible figures
-        code = re.sub(r'figure\s*\(\s*\)', "figure('Visible', 'off')", code)
-        code = re.sub(r'figure\s*\(\s*(\d+)\s*\)', r"figure(\1, 'Visible', 'off')", code)
-        
-        # Replace plot commands to save to file instead of displaying
-        code = re.sub(r'plot\s*\(([^)]*)\)', r"plot(\1); print('/tmp/matlab_plot.png', '-dpng');", code)
-        code = re.sub(r'scatter\s*\(([^)]*)\)', r"scatter(\1); print('/tmp/matlab_scatter.png', '-dpng');", code)
-        code = re.sub(r'histogram\s*\(([^)]*)\)', r"histogram(\1); print('/tmp/matlab_hist.png', '-dpng');", code)
-        code = re.sub(r'bar\s*\(([^)]*)\)', r"bar(\1); print('/tmp/matlab_bar.png', '-dpng');", code)
-        
-        # Remove interactive elements
-        code = re.sub(r'input\s*\([^)]*\)', "'simulated_input'", code)
-        code = re.sub(r'pause\s*\(\s*\)', '% pause() disabled', code)
-        code = re.sub(r'waitforbuttonpress\s*\(\s*\)', '% waitforbuttonpress() disabled', code)
-        
-        # Replace GUI creation commands
-        code = re.sub(r'uicontrol\s*\([^)]*\)', '% uicontrol() disabled', code)
-        code = re.sub(r'uifigure\s*\([^)]*\)', '% uifigure() disabled', code)
-        code = re.sub(r'uimenu\s*\([^)]*\)', '% uimenu() disabled', code)
-        
-        # Remove debugging stops
-        code = re.sub(r'keyboard\s*;?', '% keyboard disabled', code)
-        code = re.sub(r'dbstop\s+[^;\n]*', '% dbstop disabled', code)
         
         return code
 

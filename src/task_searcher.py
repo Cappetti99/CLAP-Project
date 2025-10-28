@@ -1,7 +1,20 @@
 #!/usr/bin/env python3
 """
 Task Searcher - Targeted search and execution system for specific tasks
-Allows you to search for tasks by name, display available languages and measure CO2
+
+This module enables users to:
+1. Search for specific programming tasks by name or keyword
+2. Display available languages that implement a particular task
+3. Execute tasks across all available language implementations
+4. Measure CO2 emissions for targeted execution
+5. Analyze code quality metrics for each implementation
+
+Key features:
+- Intelligent language name normalization
+- Code quality metrics and analysis
+- CO2 tracking integration (if available)
+- Interactive task selection and execution
+- Comprehensive output formatting
 """
 
 import os
@@ -15,12 +28,15 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 
-# Adds the path to import CLAP modules
+# ===== PATH CONFIGURATION =====
+# Add project modules to Python path for imports
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 modules_path = os.path.join(project_root, 'modules')
 sys.path.insert(0, modules_path)
 
+# ===== IMPORT EXTERNAL DEPENDENCIES =====
+# Import CLAP modules with graceful degradation if dependencies missing
 try:
     from carbon_tracker import start_carbon_tracking, stop_carbon_tracking, CODECARBON_AVAILABLE
     from smart_executor import SmartExecutor
@@ -31,7 +47,8 @@ except ImportError:
     print("WARNING: Some dependencies not available - limited functionality")
 
 
-# Constants
+# ===== CONSTANTS =====
+# Configuration constants for output formatting and quality analysis
 MAX_FILES_DISPLAY = 3
 QUALITY_WEIGHTS = {
     'comments': 25,
@@ -45,7 +62,18 @@ MIN_NON_TRIVIAL_LINES = 10
 
 @dataclass
 class QualityMetrics:
-    """Code quality metrics"""
+    """Code quality metrics data class for tracking code characteristics.
+    
+    Attributes:
+        has_comments: Whether code contains comments
+        has_functions: Whether code defines functions/procedures
+        has_error_handling: Whether code includes error handling
+        has_imports: Whether code imports libraries/modules
+        code_length: Total length of code in characters
+        line_count: Total number of lines
+        non_empty_lines: Count of non-empty lines
+        language: Programming language name
+    """
     has_comments: bool = False
     has_functions: bool = False
     has_error_handling: bool = False
@@ -57,7 +85,18 @@ class QualityMetrics:
     
     @property
     def quality_score(self) -> int:
-        """Calculate quality score (0-100)"""
+        """Calculate overall quality score based on code characteristics.
+        
+        Scoring breakdown:
+        - Comments: 25 points
+        - Functions: 30 points
+        - Error handling: 25 points
+        - Imports: 10 points
+        - Non-trivial code: 10 points
+        
+        Returns:
+            int: Quality score from 0-100
+        """
         score = 0
         if self.has_comments:
             score += QUALITY_WEIGHTS['comments']
@@ -73,7 +112,11 @@ class QualityMetrics:
     
     @property
     def score_label(self) -> str:
-        """Get quality label based on score"""
+        """Get human-readable quality label based on score.
+        
+        Returns:
+            str: One of "EXCELLENT", "GOOD", "FAIR", or "NEEDS IMPROVEMENT"
+        """
         score = self.quality_score
         if score >= 80:
             return "EXCELLENT"
@@ -85,9 +128,16 @@ class QualityMetrics:
 
 
 class LanguageMapper:
-    """Handles language name normalization and mapping"""
+    """Handles language name normalization and mapping.
     
-    # Single source of truth for language mappings
+    This class provides a single source of truth for language aliases and
+    normalizes user input to standard language names used throughout the system.
+    Supports multiple aliases for each language (e.g., 'c++', 'cpp', 'cc' -> 'cpp').
+    """
+    
+    # ===== LANGUAGE ALIASES =====
+    # Dictionary mapping standard language names to all known aliases
+    # Enables flexible user input while maintaining consistent internal representation
     LANGUAGE_STANDARDS = {
         'c': ['c'],
         'cpp': ['cpp', 'c++', 'cplusplus', 'c plus plus', 'cc', 'cxx'],
@@ -97,7 +147,6 @@ class LanguageMapper:
         'java': ['java'],
         'javascript': ['javascript', 'js', 'ecmascript', 'node', 'nodejs'],
         'julia': ['julia', 'jl'],
-        'matlab': ['matlab', 'm', 'octave'],
         'ocaml': ['ocaml', 'ml', 'mli', 'objective caml', 'o caml'],
         'php': ['php'],
         'python': ['python', 'python3', 'py'],
@@ -293,7 +342,6 @@ class TaskSearcher:
             'csharp': ['.cs', '.txt'],
             'haskell': ['.hs', '.txt'],
             'julia': ['.jl', '.txt'],
-            'matlab': ['.m', '.txt'],
             'ocaml': ['.ml', '.mli', '.txt'],
             'php': ['.php', '.txt'],
             'r': ['.r', '.txt'],

@@ -7,20 +7,20 @@
 **Advanced modular system for multi-language analysis and execution with CO2 emissions tracking.**
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
-[![Languages](https://img.shields.io/badge/Languages-16-green.svg)](#supported-languages)
+[![Languages](https://img.shields.io/badge/Languages-15-green.svg)](#supported-languages)
 [![CodeCarbon](https://img.shields.io/badge/CodeCarbon-Enabled-green.svg)](https://codecarbon.io)
 [![Status](https://img.shields.io/badge/Status-Active-brightgreen.svg)](https://github.com)
 
 ## Overview
 
-**CLAP** is an automated system for executing and analyzing code across **16 programming languages** with real-time CO2 emissions tracking. Perfect for:
+**CLAP** is an automated system for executing and analyzing code across **15 programming languages** with real-time CO2 emissions tracking. Perfect for:
 
 - 🔬 **Academic research** on language efficiency
 - ⚡ **Performance benchmarking** across languages
 - 🌱 **Energy consumption analysis**
 - 📊 **Comparative programming studies**
 
-**Supported Languages:** C, C++, C#, Java, Python, JavaScript, TypeScript, Ruby, PHP, Go, Rust, Haskell, OCaml, R, MATLAB, Julia.
+**Supported Languages:** C, C++, C#, Java, Python, JavaScript, TypeScript, Ruby, PHP, Go, Rust, Haskell, OCaml, R, Julia.
 
 ## 🚀 Quick Start (5 minutes)
 
@@ -202,7 +202,7 @@ Paradigm groups:
 - 🟢 **Scripting** (Python, Ruby, JavaScript, TypeScript)
 - 🟡 **Imperative** (C, Go, Rust, PHP)
 - 🟣 **Functional** (Haskell, OCaml)
-- 🔴 **Scientific** (R, MATLAB, Julia)
+- 🔴 **Scientific** (R, Julia)
 
 Each paradigm is tested on a single common task to ensure fair comparison. This reveals which language within each programming paradigm offers the best performance characteristics.
 

@@ -1,6 +1,14 @@
 """
 Modern Language Configuration Manager for CLAP Project
-Dynamic, conda-aware configuration system with single responsibility principle
+
+This module provides a dynamic, conda-aware configuration system for managing
+language support across the CLAP project. It handles:
+- Language-specific compiler/interpreter configurations
+- Timeout settings for different execution types
+- Conda environment detection and integration
+- Command path resolution with fallbacks
+- Language capability detection
+- Quality pattern definitions
 """
 
 import os
@@ -10,12 +18,33 @@ from typing import Dict, Optional, List
 
 
 class LanguageConfigManager:
-    """
-    Single Responsibility: Manage language configurations dynamically
-    Conda-aware, environment-adaptive configuration system
+    """Single-responsibility configuration management for all supported languages.
+    
+    This class provides:
+    - Centralized configuration for 15 programming languages
+    - Conda environment support for isolated execution
+    - Dynamic command resolution with fallback chains
+    - Timeout configuration by language and operation type
+    - Language capability detection and availability checking
+    
+    The class follows the single responsibility principle: it only manages
+    language configurations and leaves execution to other modules.
+    
+    Attributes:
+        use_conda: Whether to use conda environments for execution
+        conda_env: Conda environment name to use (default: 'CLAP')
+        conda_prefix: Full path to conda environment
+        DEFAULT_TIMEOUTS: Timeout values for different operation types
     """
     
     def __init__(self, conda_env: Optional[str] = None, use_conda: Optional[bool] = None):
+        """Initialize language configuration manager.
+        
+        Args:
+            conda_env: Conda environment name to use (defaults to 'CLAP' if use_conda=True)
+            use_conda: Whether to use conda environments (defaults to environment variable)
+        """
+        # ===== CONDA CONFIGURATION =====
         # By default prefer the CLAP environment only if explicitly requested via env or flag
         # use_conda can be set via environment variable CLAP_USE_CONDA ("1"/"true")
         if use_conda is None:
@@ -28,27 +57,40 @@ class LanguageConfigManager:
             conda_env = 'CLAP' if self.use_conda else None
 
         self.conda_env = conda_env
+        # Detect conda environment path if conda is enabled
         self.conda_prefix = self._detect_conda_prefix() if self.use_conda else None
         
-        # Detect MATLAB path once during initialization
-        self._matlab_path = self._detect_matlab_path()
-        
-        # Core configuration constants
+        # ===== CORE CONFIGURATION CONSTANTS =====
+        # Timeout values for different types of operations
+        # These can be overridden per-language in get_language_config()
         self.DEFAULT_TIMEOUTS = {
-            'interpreted': 10,
-            'compiled': 30,
-            'compilation': 60
+            'interpreted': 10,   # Interpreted languages usually run quickly
+            'compiled': 30,      # Compiled binaries typically finish faster
+            'compilation': 60    # Compilation can take longer
         }
         
+        # Maximum code snippets per language to load in memory
         self.MAX_SNIPPETS_PER_LANGUAGE = 500
         
     def _detect_conda_prefix(self) -> Optional[str]:
-        """Detect conda environment prefix, prioritizing CLAP"""
-        # If no conda env requested, skip detection
+        """Detect conda environment prefix, prioritizing CLAP environment.
+        
+        Strategy:
+        1. Check common hardcoded paths for CLAP environment
+        2. Query conda for environment information
+        3. Fall back to CONDA_PREFIX environment variable
+        
+        Returns:
+            str: Full path to conda environment, or None if not found
+        """
+        # ===== STEP 1: SKIP IF NO CONDA ENV REQUESTED =====
+        # If no conda env requested, skip detection entirely
         if not self.conda_env:
             return None
 
+        # ===== STEP 2: CHECK COMMON PATHS FOR CLAP ENVIRONMENT =====
         # If we are looking for CLAP, try common paths before using conda info
+        # This is faster and more reliable than querying conda
         if self.conda_env == 'CLAP':
             possible_paths = [
                 '/home/lollo/miniconda3/envs/CLAP',
@@ -57,10 +99,12 @@ class LanguageConfigManager:
                 os.path.expanduser('~/anaconda3/envs/CLAP')
             ]
             
+            # Return first existing path
             for path in possible_paths:
                 if os.path.exists(path):
                     return path
         
+        # ===== STEP 3: QUERY CONDA IF ENV NOT FOUND =====
         # Fallback to conda info only if conda_env is set
         if self.conda_env:
             try:
@@ -68,72 +112,30 @@ class LanguageConfigManager:
                     ['conda', 'info', '--envs'], 
                     capture_output=True, text=True, timeout=10
                 )
+                # Parse conda output to find environment path
                 for line in result.stdout.split('\n'):
                     if self.conda_env in line and not line.startswith('#'):
                         parts = line.split()
                         return parts[-1] if len(parts) > 1 else None
             except:
+                # If conda query fails, try environment variable
                 pass
             return os.environ.get('CONDA_PREFIX')
     
-    def _detect_matlab_path(self) -> Optional[str]:
-        """Detect MATLAB executable path dynamically"""
-        # 1. Check environment variable
-        matlab_path = os.environ.get('MATLAB_PATH')
-        if matlab_path:
-            matlab_bin = os.path.join(matlab_path, 'bin', 'matlab')
-            if os.path.isfile(matlab_bin) and os.access(matlab_bin, os.X_OK):
-                return matlab_bin
-        
-        # 2. Check if matlab is in PATH
-        try:
-            result = subprocess.run(
-                ['which', 'matlab'] if os.name != 'nt' else ['where', 'matlab'],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            if result.returncode == 0 and result.stdout.strip():
-                return result.stdout.strip().split('\n')[0]
-        except:
-            pass
-        
-        # 3. Check standard installation paths
-        possible_paths = [
-            '/usr/local/MATLAB/R2025b/bin/matlab',
-            '/usr/local/MATLAB/R2025a/bin/matlab',
-            '/usr/local/MATLAB/R2024b/bin/matlab',
-            '/usr/local/MATLAB/R2024a/bin/matlab',
-            '/usr/local/MATLAB/R2023b/bin/matlab',
-            '/usr/local/MATLAB/R2023a/bin/matlab',
-            '/opt/MATLAB/R2025b/bin/matlab',
-            '/opt/MATLAB/R2024b/bin/matlab',
-            '/opt/MATLAB/R2024a/bin/matlab',
-            '/Applications/MATLAB_R2025b.app/bin/matlab',
-            '/Applications/MATLAB_R2024b.app/bin/matlab',
-        ]
-        
-        for path in possible_paths:
-            if os.path.isfile(path) and os.access(path, os.X_OK):
-                return path
-        
-        # 4. Search in common directories
-        search_dirs = ['/usr/local/MATLAB', '/opt/MATLAB', '/Applications']
-        for search_dir in search_dirs:
-            if os.path.isdir(search_dir):
-                try:
-                    for entry in sorted(os.listdir(search_dir), reverse=True):
-                        if 'MATLAB' in entry or entry.startswith('R20'):
-                            matlab_candidate = os.path.join(search_dir, entry, 'bin', 'matlab')
-                            if os.path.isfile(matlab_candidate) and os.access(matlab_candidate, os.X_OK):
-                                return matlab_candidate
-                except PermissionError:
-                    pass
-        
-        return None
-    
     def get_conda_command(self, command: str) -> str:
-        """Get conda-aware command path"""
+        """Get conda-aware command path for execution.
+        
+        Resolves command location with fallback chain:
+        1. If conda enabled: check conda environment bin directory
+        2. Fall back to system PATH
+        
+        Args:
+            command: Command name to resolve (e.g., 'python3', 'gcc')
+            
+        Returns:
+            str: Full command path or just the command name for system PATH lookup
+        """
+        # ===== CONDA-AWARE RESOLUTION =====
         # Return the binary inside the conda prefix only when use_conda is enabled
         if self.use_conda and self.conda_prefix:
             conda_bin = Path(self.conda_prefix) / 'bin' / command
@@ -250,16 +252,6 @@ main = putStrLn "Hello from Haskell!"''',
                 'type': 'interpreted',
                 'compile_cmd': None
             },
-            'matlab': {
-                'extension': '.m',
-                'executor': self._matlab_path or 'matlab',  # Dynamic detection
-                'timeout': 60,  # MATLAB needs more time for startup
-                'test_code': 'fprintf("Hello from MATLAB!\\n");',
-                'type': 'interpreted',
-                'compile_cmd': None,
-                'executor_flags': ['-batch'],
-                'available': self._matlab_path is not None
-            },
             'ocaml': {
                 'extension': '.ml',
                 'compiler': self.get_conda_command('ocamlc'),
@@ -308,7 +300,7 @@ main = putStrLn "Hello from Haskell!"''',
     def get_all_supported_languages(self) -> List[str]:
         """Get list of all supported languages"""
         return ['python', 'javascript', 'java', 'c', 'cpp', 'go', 'rust', 
-                'csharp', 'haskell', 'julia', 'matlab', 'ocaml', 'php', 'r', 'ruby', 'typescript']
+                'csharp', 'haskell', 'julia', 'ocaml', 'php', 'r', 'ruby', 'typescript']
     
     def get_file_extensions(self) -> Dict[str, str]:
         """Get mapping of languages to file extensions"""
@@ -331,10 +323,6 @@ main = putStrLn "Hello from Haskell!"''',
     def is_language_available(self, language: str) -> bool:
         """Check if a language is available on the system"""
         config = self.get_language_config(language)
-        
-        # Special handling for MATLAB
-        if language.lower() == 'matlab':
-            return config.get('available', False)
         
         # For other languages, check if executor/compiler exists
         if config.get('type') == 'compiled':
@@ -453,12 +441,6 @@ PROBLEMATIC_PATTERNS = {
  r"scan\s*\(",
  r"while\s*\(\s*TRUE\s*\)"
  ],
- "MATLAB": [
- r"input\s*\(",
- r"ginput\s*\(",
- r"while\s+true",
- r"uicontrol"  # GUI
- ],
  "Julia": [
  r"readline\s*\(",
  r"read\s*\(\s*stdin",
@@ -480,6 +462,5 @@ PROBLEMATIC_PACKAGES = {
  "Rust": ["std::io::stdin"],
  "Haskell": ["System.IO"],
  "OCaml": ["Graphics"],
- "MATLAB": ["uicontrol", "figure"],
  "Julia": ["Gtk", "Plots"]
 }

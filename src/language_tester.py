@@ -1,7 +1,20 @@
 #!/usr/bin/env python3
 """
 Language Environment Tester - Test the availability of all programming languages
-Check compilers, interpreters, and execution capabilities for 16 supported languages.
+
+This module provides comprehensive testing of all supported programming languages:
+- Tests compiler/interpreter installation and functionality
+- Creates temporary test files in each language
+- Compiles/runs simple "Hello World" programs
+- Generates test results JSON for downstream tools
+- Provides detailed error messages and installation suggestions
+
+Supported languages by paradigm:
+- OOP: C++, C#, Java
+- Scripting: Python, Ruby, JavaScript, TypeScript
+- Imperative: C, Go, Rust, PHP
+- Functional: Haskell, OCaml
+- Scientific: R, Julia
 """
 
 import sys
@@ -15,23 +28,33 @@ from datetime import datetime
 
 
 class LanguageTester:
-    """
-    Tests the availability and functionality of all languages supported by the CLAP system.
-
-    # OOP: C++, C#, Java
-    # Scripting: Python, Ruby, Javascript, typescript
-    # "Imperative": C, GO, Rust, PHP
-    # Functional: Haskell, Ocamel
-    # Scientific: R, Matlab, Julia
+    """Tests the availability and functionality of all supported languages.
+    
+    This class:
+    1. Defines test programs for each language
+    2. Creates temporary files and directories for testing
+    3. Compiles/executes test programs
+    4. Collects results (available, errors, timing)
+    5. Saves results to JSON for downstream processing
+    6. Provides installation guidance for missing languages
+    
+    Attributes:
+        test_results: Dictionary mapping language names to test results
+        temp_dirs: List of temporary directories created during testing
+        test_programs: Dictionary of test code and execution configuration per language
     """
 
     def __init__(self):
+        """Initialize the language tester with test programs and result storage."""
         self.test_results = {}
         self.temp_dirs = []
 
-        # Test configuration for each language
+        # ===== TEST PROGRAM CONFIGURATION =====
+        # Define test code and execution parameters for each language
+        # Each language has: extension, code snippet, compilation, and execution commands
         self.test_programs = {
-            # === OOP LANGUAGES ===
+            # ===== OOP LANGUAGES (C++, C#, Java) =====
+            # Object-oriented programming paradigm
             'cpp': {
                 'extension': '.cpp',
                 'code': '''#include <iostream>
@@ -162,14 +185,6 @@ main = putStrLn "Hello from Haskell!"''',
                 'compile_cmd': None,
                 'type': 'scientific'
             },
-            'matlab': {
-                'extension': '.m',
-                'code': 'fprintf("Hello from MATLAB!\\n");',
-                'run_cmd': ['matlab', '-batch'],  # Will be updated in __init__
-                'compile_cmd': None,
-                'type': 'scientific',
-                'special_execution': True  # Flag for special handling
-            },
             'julia': {
                 'extension': '.jl',
                 'code': 'println("Hello from Julia!")',
@@ -178,84 +193,6 @@ main = putStrLn "Hello from Haskell!"''',
                 'type': 'scientific'
             }
         }
-
-        # Initialize MATLAB command path and update configuration
-        self._matlab_cmd = self._get_matlab_command()
-        if self._matlab_cmd:
-            self.test_programs['matlab']['run_cmd'] = [self._matlab_cmd, '-batch']
-        print(f"ℹ️  MATLAB command detected: {self._matlab_cmd or 'Not found'}")
-
-    def _get_matlab_command(self):
-        """Get MATLAB command path with improved detection"""
-        # 1. Check if user has specified custom MATLAB path via environment variable
-        matlab_path = os.environ.get('MATLAB_PATH')
-        if matlab_path:
-            matlab_bin = os.path.join(matlab_path, 'bin', 'matlab')
-            if os.path.isfile(matlab_bin) and os.access(matlab_bin, os.X_OK):
-                print(f"ℹ️  Using MATLAB from MATLAB_PATH: {matlab_bin}")
-                return matlab_bin
-            else:
-                print(f"⚠️  MATLAB_PATH set but executable not found at: {matlab_bin}")
-        
-        # 2. Check if 'matlab' is in PATH and executable
-        try:
-            result = subprocess.run(
-                ['which', 'matlab'] if os.name != 'nt' else ['where', 'matlab'],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            if result.returncode == 0 and result.stdout.strip():
-                matlab_in_path = result.stdout.strip().split('\n')[0]
-                print(f"ℹ️  Found MATLAB in PATH: {matlab_in_path}")
-                return matlab_in_path
-        except Exception as e:
-            print(f"⚠️  Error checking MATLAB in PATH: {e}")
-        
-        # 3. Check standard installation paths
-        possible_paths = [
-            '/usr/local/MATLAB/R2025b/bin/matlab',
-            '/usr/local/MATLAB/R2025a/bin/matlab',
-            '/usr/local/MATLAB/R2024b/bin/matlab',
-            '/usr/local/MATLAB/R2024a/bin/matlab', 
-            '/usr/local/MATLAB/R2023b/bin/matlab',
-            '/usr/local/MATLAB/R2023a/bin/matlab',
-            '/opt/MATLAB/R2025b/bin/matlab',
-            '/opt/MATLAB/R2025a/bin/matlab',
-            '/opt/MATLAB/R2024b/bin/matlab',
-            '/opt/MATLAB/R2024a/bin/matlab',
-            '/opt/MATLAB/R2023b/bin/matlab',
-            '/opt/MATLAB/R2023a/bin/matlab',
-            '/Applications/MATLAB_R2025b.app/bin/matlab',  # macOS
-            '/Applications/MATLAB_R2024b.app/bin/matlab',
-            '/Applications/MATLAB_R2024a.app/bin/matlab',
-        ]
-        
-        print("ℹ️  Searching for MATLAB in standard locations...")
-        for path in possible_paths:
-            if os.path.isfile(path) and os.access(path, os.X_OK):
-                print(f"✓ Found MATLAB at: {path}")
-                return path
-        
-        # 4. Try to find any MATLAB installation
-        search_dirs = ['/usr/local/MATLAB', '/opt/MATLAB', '/Applications']
-        for search_dir in search_dirs:
-            if os.path.isdir(search_dir):
-                try:
-                    for entry in os.listdir(search_dir):
-                        if 'MATLAB' in entry or entry.startswith('R20'):
-                            matlab_candidate = os.path.join(search_dir, entry, 'bin', 'matlab')
-                            if os.path.isfile(matlab_candidate) and os.access(matlab_candidate, os.X_OK):
-                                print(f"✓ Found MATLAB installation: {matlab_candidate}")
-                                return matlab_candidate
-                except PermissionError:
-                    pass
-        
-        print("⚠️  MATLAB not found in standard locations")
-        print("💡 You can set MATLAB_PATH environment variable:")
-        print("   export MATLAB_PATH=/path/to/MATLAB/R2024b")
-        
-        return None  # Return None instead of 'matlab'
 
     def check_command_exists(self, command):
         """Check whether a command is available in the system"""
@@ -312,12 +249,6 @@ main = putStrLn "Hello from Haskell!"''',
 
         print(f"🔍 Testing {language.upper()} ({config['type']})...")
 
-        # Special handling for MATLAB
-        if language == 'matlab' and not self._matlab_cmd:
-            result['error'] = "MATLAB executable not found"
-            print(f"❌ MATLAB not available")
-            return result
-
         if self._check_commands(config, result, language):
             return result
 
@@ -344,15 +275,6 @@ main = putStrLn "Hello from Haskell!"''',
     def _check_commands(self, config, result, language):
         """Check the availability of required commands"""
         run_command = config['run_cmd'][0]
-
-        # For MATLAB, we already checked in __init__
-        if language == 'matlab':
-            result['interpreter_found'] = self._matlab_cmd is not None
-            result['compiler_found'] = True
-            if not result['interpreter_found']:
-                result['error'] = "MATLAB not found"
-                return True
-            return False
 
         # For compiled languages that generate binaries, do not check for the existence of the binary
         # but only for the compiler
@@ -409,14 +331,7 @@ main = putStrLn "Hello from Haskell!"''',
         """Execute the compiled or interpreted program"""
         print(f"▶️  Executing...")
 
-        # Special handling for MATLAB
-        if language == 'matlab':
-            # Extract the script name without extension
-            script_name = os.path.splitext(os.path.basename(filepath))[0]
-            # Use the full MATLAB command with -batch flag and script content
-            # MATLAB -batch expects the command directly, not a file reference
-            run_cmd = [self._matlab_cmd, '-batch', f"run('{script_name}.m'); exit;"]
-        elif config['run_cmd'][0].startswith('./'):
+        if config['run_cmd'][0].startswith('./'):
             # For compiled languages that generate binaries
             run_cmd = config['run_cmd']
         else:
@@ -431,7 +346,7 @@ main = putStrLn "Hello from Haskell!"''',
                 run_cmd,
                 capture_output=True,
                 text=True,
-                timeout=120,  # Increased timeout for MATLAB
+                timeout=90,
                 cwd=temp_dir,
                 env=os.environ.copy()  # Pass environment variables
             )
@@ -536,38 +451,32 @@ main = putStrLn "Hello from Haskell!"''',
                     missing_commands.add((config['compile_cmd'][0], lang))
 
             for cmd, lang in sorted(missing_commands):
-                if cmd == 'matlab' or lang == 'matlab':
-                    print(f"   matlab:")
-                    print(f"      - Commercial license required")
-                    print(f"      - Set MATLAB_PATH env var: export MATLAB_PATH=/path/to/MATLAB/R2024b")
-                    print(f"      - Or add MATLAB bin directory to PATH")
-                else:
-                    # Platform-aware suggestions
-                    if os.name == 'posix':  # Linux/Unix
-                        if cmd in ['gcc', 'g++']:
-                            print(f"   {cmd}: sudo apt install build-essential")
-                        elif cmd == 'javac':
-                            print(f"   {cmd}: sudo apt install openjdk-11-jdk")
-                        elif cmd == 'node':
-                            print(f"   {cmd}: sudo apt install nodejs")
-                        elif cmd == 'go':
-                            print(f"   {cmd}: sudo apt install golang-go")
-                        elif cmd == 'rustc':
-                            print(f"   {cmd}: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh")
-                        elif cmd == 'ghc':
-                            print(f"   {cmd}: sudo apt install ghc")
-                        elif cmd == 'ocamlc':
-                            print(f"   {cmd}: sudo apt install ocaml")
-                        elif cmd == 'Rscript':
-                            print(f"   {cmd}: sudo apt install r-base")
-                        elif cmd == 'julia':
-                            print(f"   {cmd}: sudo snap install julia --classic")
-                        elif cmd == 'python3':
-                            print(f"   {cmd}: sudo apt install python3")
-                        else:
-                            print(f"   {cmd}: sudo apt install {cmd}")
-                    else:  # macOS or others
-                        print(f"   {cmd}: brew install {cmd}")
+                # Platform-aware suggestions
+                if os.name == 'posix':  # Linux/Unix
+                    if cmd in ['gcc', 'g++']:
+                        print(f"   {cmd}: sudo apt install build-essential")
+                    elif cmd == 'javac':
+                        print(f"   {cmd}: sudo apt install openjdk-11-jdk")
+                    elif cmd == 'node':
+                        print(f"   {cmd}: sudo apt install nodejs")
+                    elif cmd == 'go':
+                        print(f"   {cmd}: sudo apt install golang-go")
+                    elif cmd == 'rustc':
+                        print(f"   {cmd}: curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh")
+                    elif cmd == 'ghc':
+                        print(f"   {cmd}: sudo apt install ghc")
+                    elif cmd == 'ocamlc':
+                        print(f"   {cmd}: sudo apt install ocaml")
+                    elif cmd == 'Rscript':
+                        print(f"   {cmd}: sudo apt install r-base")
+                    elif cmd == 'julia':
+                        print(f"   {cmd}: sudo snap install julia --classic")
+                    elif cmd == 'python3':
+                        print(f"   {cmd}: sudo apt install python3")
+                    else:
+                        print(f"   {cmd}: sudo apt install {cmd}")
+                else:  # macOS or others
+                    print(f"   {cmd}: brew install {cmd}")
 
     def save_results(self):
         """Save results in JSON format with timestamp"""

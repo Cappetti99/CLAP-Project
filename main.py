@@ -2,6 +2,14 @@
 """
 CLAP Project - Main Entry Point
 Comprehensive system for analyzing and executing multi-language code with CO2 monitoring
+
+This module serves as the main entry point for the CLAP project. It provides:
+- Language detection and testing capabilities
+- Task analysis and discovery algorithms
+- Adaptive code execution across multiple programming languages
+- CO2 emission monitoring and benchmarking
+- Multi-tier ranking analysis for language performance
+- Cleanup and project management utilities
 """
 
 import sys
@@ -11,7 +19,8 @@ import glob
 import shutil
 from pathlib import Path
 
-# Add the path to import CLAP modules
+# ===== PATH CONFIGURATION =====
+# Add the modules and src directories to the Python path for proper imports
 script_dir = os.path.dirname(os.path.abspath(__file__))
 modules_path = os.path.join(script_dir, 'modules')
 src_path = os.path.join(script_dir, 'src')
@@ -19,14 +28,23 @@ sys.path.insert(0, modules_path)
 sys.path.insert(0, src_path)
 
 def print_banner():
-    """Prints the project banner with version information"""
+    """Prints the project banner with version information and ASCII art"""
+    # Display the main header with project name and author information
     print("=" * 40)
     print("CLAP PROJECT")
     print("Author: Lorenzo Cappetti")
     print("=" * 40)
 
 def print_help():
-    """Prints concise help for using the system"""
+    """Prints concise help information showing all available commands and usage patterns.
+    
+    Displays:
+    - Main commands (test, analyze, smart, benchmark, carbon, rankings)
+    - Additional commands (execute, find, quality, clean, status)
+    - Quick start workflows
+    - Benchmark usage examples
+    """
+    # Display main command group
     print("\nMAIN COMMANDS:")
     print("  test       - Check available languages")
     print("  analyze    - Find common tasks")
@@ -35,6 +53,7 @@ def print_help():
     print("  carbon     - Emissions report")
     print("  rankings   - Multi-tier rankings analysis")
     
+    # Display additional/advanced command group
     print("\nADDITIONAL COMMANDS:")
     print("  execute    - Full execution (all languages)")
     print("  find       - Search task + quality analysis + CO2")
@@ -42,21 +61,27 @@ def print_help():
     print("  clean      - Cache cleanup")
     print("  status     - Project status")
     
+    # Show quick start example workflow
     print("\n QUICK START:")
     print("  python main.py test && python main.py analyze && python main.py smart")
     
-    print("\n BENCHMARK WORKFLOW:")
-    print("  python main.py benchmark --mode fast")
-    print("  python main.py benchmark --mode top10 --timeout 120")
-    print("  python main.py rankings --mode fast")
-    print("  # Rankings are also generated automatically after benchmarks")
-    
 def analyze_tasks():
-    """Performs the analysis of common tasks"""
+    """Performs task analysis to find the most common programming challenges across available languages.
+    
+    This function:
+    1. Loads language test results to determine available languages
+    2. Searches for common tasks that can be executed in multiple languages
+    3. Returns the TOP 10 most widely supported tasks
+    4. Saves results for use by the smart executor
+    
+    Returns:
+        bool: True if analysis completed successfully, False otherwise
+    """
     print("\nANALYSIS OF COMMON TASKS")
     print("-" * 40)
     
-    # First, check if there are recent test results
+    # ===== STEP 1: LOAD AVAILABLE LANGUAGES FROM TEST RESULTS =====
+    # Check for recent language test results to determine which languages are available
     available_languages = []
     test_results_dir = Path("results/execution")
     
@@ -64,11 +89,13 @@ def analyze_tasks():
         # Look for the most recent test file
         test_files = list(test_results_dir.glob("language_test_results_*.json"))
         if test_files:
+            # Get the latest test results file
             latest_test = max(test_files, key=lambda x: x.stat().st_mtime)
             try:
                 import json
                 with open(latest_test, 'r') as f:
                     test_data = json.load(f)
+                    # Extract available languages from test results
                     for lang, result in test_data['results'].items():
                         if result['available']:
                             available_languages.append(lang)
@@ -81,13 +108,15 @@ def analyze_tasks():
                 print(f"Error reading test results: {e}")
                 available_languages = []
     
-    # Verify that we have available languages
+    # ===== STEP 2: VERIFY AVAILABLE LANGUAGES =====
+    # Ensure that language test has been run and languages are available
     if not available_languages:
         print("  No test results found.")
         print("  REQUIRED ACTION: Run 'python main.py test' first to detect available languages.")
         print("  The 'analyze' command requires test results to work properly.")
         return False
     
+    # ===== STEP 3: FIND TOP 10 COMMON TASKS =====
     try:
         from src.finder import UnifiedTaskFinder
         finder = UnifiedTaskFinder()
@@ -106,15 +135,18 @@ def analyze_tasks():
         if common_tasks:
             print(f"TOP 10 tasks with the most available languages:")
                 
+            # Display the top 10 tasks in a formatted list
             for i, task in enumerate(common_tasks[:10], 1):  # Show top 10
                 lang_info = f"{task['language_count']} languages"
                 print(f"  {i:2d}. {task['name']} - {lang_info}")
             
-            # Save the results to a file for smart execution
+            # ===== STEP 4: SAVE ANALYSIS RESULTS =====
+            # Save the results to a JSON file for later use by smart executor
             import json
             import os
             os.makedirs("results/task_analysis", exist_ok=True)
             
+            # Structure the result data with metadata
             result_data = {
                 "analysis_type": "top_10_available_languages",
                 "total_tasks": len(common_tasks),
@@ -147,7 +179,16 @@ def analyze_tasks():
     return True
 
 def execute_codes():
-    """Executes the code of common tasks"""
+    """Executes the code of common tasks found during analysis.
+    
+    This function:
+    1. Loads the common tasks from the analysis results
+    2. Executes each task across all available languages
+    3. Records execution results and performance metrics
+    
+    Returns:
+        bool: True if execution completed successfully, False otherwise
+    """
     print("\nEXECUTING CODES")
     print("-" * 40)
     
@@ -165,20 +206,35 @@ def execute_codes():
     return True
 
 def test_languages():
-    """Tests the availability of all languages"""
+    """Tests the availability of all supported programming languages.
+    
+    This function:
+    1. Attempts to compile/run a simple test program in each language
+    2. Detects which compilers or interpreters are installed
+    3. Generates a test results report
+    4. Provides installation suggestions for missing languages
+    
+    The test results are saved to JSON for later use by the analyzer.
+    
+    Returns:
+        bool: True if tests completed successfully, False otherwise
+    """
     print("\nTEST LANGUAGES")
     print("-" * 40)
     
     try:
+        # Import the language tester module
         from language_tester import LanguageTester
         tester = LanguageTester()
+        # Run tests for all supported languages
         tester.test_all_languages()
         
-        # Show detailed results
+        # ===== DISPLAY DETAILED TEST RESULTS =====
         print("\n" + "="*60)
         print(" DETAILED TEST RESULTS")
         print("="*60)
         
+        # Separate working and non-working languages
         working = []
         not_working = []
         
@@ -188,13 +244,15 @@ def test_languages():
             else:
                 not_working.append(language)
         
-        # Languages working
+        # ===== SECTION: WORKING LANGUAGES =====
+        # Display all languages that passed the test
         if working:
             print(f"\n[OK] LANGUAGES WORKING ({len(working)}/{len(tester.test_results)}):")
             for lang in sorted(working):
                 print(f"   [OK] {lang.upper()}")
         
-        # Languages not working
+        # ===== SECTION: NON-WORKING LANGUAGES =====
+        # Display languages that failed and their error messages
         if not_working:
             print(f"\n[FAIL] LANGUAGES NOT WORKING ({len(not_working)}/{len(tester.test_results)}):")
             for lang in sorted(not_working):
@@ -202,7 +260,8 @@ def test_languages():
                 error_msg = result.get('error', 'Unknown error')[:60]
                 print(f"   [FAIL] {lang.upper()}: {error_msg}")
         
-        # Final statistics
+        # ===== STATISTICS SECTION =====
+        # Calculate and display overall statistics
         success_rate = len(working) / len(tester.test_results) * 100
         print(f"\n STATISTICS:")
         print(f"   - Total tested: {len(tester.test_results)}")
@@ -210,6 +269,8 @@ def test_languages():
         print(f"   - Not working: {len(not_working)}")
         print(f"   - Success rate: {success_rate:.1f}%")
         
+        # ===== INSTALLATION SUGGESTIONS =====
+        # Provide installation commands for missing languages
         if not_working:
             print(f"\n SUGGESTIONS FOR INSTALLATION:")
             print(f"   Commands to install missing languages on Linux:")
@@ -217,6 +278,7 @@ def test_languages():
             for lang in sorted(not_working):
                 print(f"   - {lang.upper()}:", end=" ")
                 
+                # Provide platform-specific installation command for each language
                 if lang == 'c':
                     print("sudo apt install gcc build-essential")
                 elif lang == 'cpp':
@@ -255,8 +317,6 @@ def test_languages():
                     print("sudo apt install ocaml")
                 elif lang == 'fortran':
                     print("sudo apt install gfortran")
-                elif lang == 'matlab':
-                    print(" Need license - mathworks.com")
                 elif lang == 'r':
                     print("sudo apt install r-base")
                 elif lang == 'julia':
@@ -264,6 +324,7 @@ def test_languages():
                 else:
                     print(f"sudo apt install {lang} (verify package name)")
             
+            # Display installation tips for other operating systems
             print(f"\n   Other OS:")
             print(f"   • macOS: use 'brew install <language>'")
             print(f"   • Windows: use Windows Package Manager 'winget install'")
@@ -284,11 +345,24 @@ def test_languages():
     return True
 
 def smart_execute():
-    """Executes the TOP 10 common tasks only in tested and available languages"""
+    """Executes the TOP 10 common tasks only in tested and available languages.
+    
+    This is the recommended execution mode because:
+    1. It only executes on languages that passed the test phase
+    2. It focuses on the most common programming tasks
+    3. Results are optimized for multi-language comparison
+    4. Automatically handles language-specific timeouts
+    
+    Workflow: test -> analyze -> smart -> (optional) benchmark
+    
+    Returns:
+        bool: True if execution completed successfully, False otherwise
+    """
     print("\nADAPTIVE EXECUTION")
     print("-" * 40)
     
-    # Check if analyze has been run first
+    # ===== VALIDATION: CHECK IF ANALYSIS HAS BEEN COMPLETED =====
+    # Verify that analyze has been run first to generate common tasks
     import os
     from pathlib import Path
     common_tasks_file = Path("results/task_analysis/common_tasks.json")
@@ -304,9 +378,11 @@ def smart_execute():
         print("    3. python main.py smart    # Execute those tasks")
         return False
     
+    # ===== EXECUTION PHASE =====
     try:
         from src.smart_executor import SmartExecutor
         executor = SmartExecutor()
+        # Execute all common tasks that were found during analysis
         executor.execute_all_common_tasks()
     except ImportError as e:
         print(f"Error importing smart executor module: {e}")
