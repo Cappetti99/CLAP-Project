@@ -984,7 +984,14 @@ func main() {
                 print(f" Errore cleanup {filepath}: {e}")
 
     def find_task_file(self, task_name, language):
-        """Finds the file for a task and language using UnifiedTaskFinder for consistency"""
+        """Finds the file for a task and language using UnifiedTaskFinder for consistency
+        
+        When multiple files match, selects the one with the best match quality:
+        1. Exact match (task name matches exactly)
+        2. Suffix match (filename ends with task name)
+        3. Shortest filename (likely more specific)
+        4. Lexicographically first (consistent ordering)
+        """
         
         # Use finder if available for consistent, robust file search
         if self.use_finder and self.finder is not None:
@@ -994,6 +1001,9 @@ func main() {
                 filtered = df[(df['task_name'] == task_name) & (df['language'].str.lower() == language.lower())]
                 
                 if not filtered.empty:
+                    # If multiple matches, apply best match selection
+                    if len(filtered) > 1:
+                        return self._select_best_match(filtered['file_path'].tolist(), task_name)
                     return filtered.iloc[0]['file_path']
             except Exception as e:
                 print(f"⚠️  Finder search failed, falling back to legacy: {e}")
@@ -1009,7 +1019,9 @@ func main() {
         # List of categories present in the dataset
         categories = ['algorithms', 'strings', 'mathematics', 'io', 'basic', 'misc']
 
-        # Searches for the file in all categories
+        # Collect ALL matching files from ALL categories
+        all_matching_files = []
+        
         for category in categories:
             language_dir = os.path.join(code_base_dir, category, lang_normalized)
             if not os.path.exists(language_dir):
@@ -1023,36 +1035,138 @@ func main() {
                 task_name.replace(' ', '-')
             ]
 
-            # Collect all matching files first
-            matching_files = []
+            # Collect matching files in this category
             for filename in os.listdir(language_dir):
                 filename_lower = filename.lower()
                 for pattern in task_patterns:
                     if pattern.lower() in filename_lower:
-                        matching_files.append(filename)
+                        full_path = os.path.join(language_dir, filename)
+                        all_matching_files.append(full_path)
                         break  # Don't add the same file multiple times
-            
-            if not matching_files:
-                continue
-            
-            # Prioritize exact matches over partial matches
-            # Example: prefer "snippet_128_Exceptions.cpp" over "snippet_127_ExceptionsCatch_an_exception..."
-            normalized_task = task_name.replace('-', '_').replace(' ', '_')
-            exact_match = None
-            
-            for filename in matching_files:
-                # Remove extension and check if it ends with the task name
-                name_without_ext = os.path.splitext(filename)[0]
-                # Check if ends with _{task_name} (exact match)
-                if name_without_ext.lower().endswith(f"_{normalized_task.lower()}"):
-                    exact_match = filename
-                    break
-            
-            # Use exact match if found, otherwise use first matching file
-            file_to_use = exact_match if exact_match else matching_files[0]
-            return os.path.join(language_dir, file_to_use)
+        
+        if not all_matching_files:
+            return None
+        
+        # Select the best match from all candidates
+        return self._select_best_match(all_matching_files, task_name)
 
-        return None
+    def _select_best_match(self, file_paths, task_name):
+        """Selects the best matching file from a list of candidates
+        
+        Scoring system (higher is better):
+        - Exact match: +10000 points (massima priorità)
+        - Exact match case-insensitive: +5000 points
+        - Suffix exact match: +1000 points
+        - Word boundary match: +500 points
+        - Starts with match (but longer): +100 points
+        - Contains match: +10 points
+        - Shorter filename bonus: proportional to brevity
+        
+        Args:
+            file_paths: List of absolute file paths
+            task_name: The task name to match against
+            
+        Returns:
+            The path of the best matching file
+        """
+        if not file_paths:
+            return None
+        
+        if len(file_paths) == 1:
+            return file_paths[0]
+        
+        # Normalize task name for comparison (preserve original for case-sensitive comparison)
+        normalized_task = task_name.replace('-', '_').replace(' ', '_')
+        normalized_task_lower = normalized_task.lower()
+        
+        scored_files = []
+        
+        for filepath in file_paths:
+            filename = os.path.basename(filepath)
+            name_without_ext = os.path.splitext(filename)[0]
+            name_lower = name_without_ext.lower()
+            
+            score = 0
+            
+            # Extract task name from filename (format: snippet_N_TaskName)
+            parts = name_without_ext.split('_', 2)
+            if len(parts) >= 3:
+                file_task_name = parts[2]
+                file_task_name_lower = file_task_name.lower()
+            else:
+                file_task_name = name_without_ext
+                file_task_name_lower = name_lower
+            
+            # ===== PRIORITY 1: EXACT MATCH (case-sensitive) =====
+            if file_task_name == normalized_task:
+                score += 10000
+            
+            # ===== PRIORITY 2: EXACT MATCH (case-insensitive) =====
+            elif file_task_name_lower == normalized_task_lower:
+                score += 5000
+            
+            # ===== PRIORITY 3: SUFFIX EXACT MATCH =====
+            # E.g., "snippet_128_Exceptions" matches "Exceptions" exactly at the end
+            elif name_without_ext.endswith(f"_{normalized_task}"):
+                score += 1000
+            elif name_lower.endswith(f"_{normalized_task_lower}"):
+                score += 900
+            
+            # ===== PRIORITY 4: WORD BOUNDARY MATCH =====
+            # Task name appears as complete word (surrounded by underscores)
+            elif f"_{normalized_task_lower}_" in name_lower or name_lower.endswith(f"_{normalized_task_lower}"):
+                score += 500
+            
+            # ===== PRIORITY 5: STARTS WITH (exact prefix) =====
+            # E.g., "Sort" should NOT match "Topological_sort"
+            # But "Sort" SHOULD match "Sorting_algorithms"
+            elif file_task_name_lower.startswith(normalized_task_lower):
+                # Check if the next character is a separator (not alphanumeric)
+                if len(file_task_name_lower) > len(normalized_task_lower):
+                    next_char = file_task_name_lower[len(normalized_task_lower)]
+                    if next_char in ['_', '-', ' ']:
+                        # Good prefix match: "Sort_stability", "Sort_an_array"
+                        score += 100
+                    else:
+                        # Bad prefix match: "Sorting" when looking for "Sort"
+                        score += 10
+                else:
+                    # Exact length match (already caught above, but defensive)
+                    score += 100
+            
+            # ===== PRIORITY 6: CONTAINS MATCH =====
+            # E.g., "Topological_sort" contains "sort" but shouldn't be preferred for "Sort"
+            elif normalized_task_lower in file_task_name_lower:
+                # Penalize if task appears in the middle
+                score += 10
+            
+            # ===== BONUS: SHORTER FILENAME (tie-breaker) =====
+            # Prefer more specific/shorter filenames
+            max_length = 200
+            length_bonus = max(0, (max_length - len(filename)) / max_length) * 50
+            score += length_bonus
+            
+            # ===== BONUS: FEWER UNDERSCORES (simpler name) =====
+            # Prefer "Sort" over "Sort_an_array_of_composite_structures"
+            underscore_penalty = file_task_name_lower.count('_') * 5
+            score -= underscore_penalty
+            
+            scored_files.append((score, filepath, filename, file_task_name))
+        
+        # Sort by score (descending), then by filename (ascending) for consistency
+        scored_files.sort(key=lambda x: (-x[0], x[2]))
+        
+        # Debug output for verification (always show top 3 if multiple matches)
+        if len(scored_files) > 1:
+            top_score = scored_files[0][0]
+            # Show matches if there are multiple candidates
+            if len(scored_files) > 3 or (len(scored_files) > 1 and abs(scored_files[0][0] - scored_files[1][0]) < 100):
+                print(f"  🔍 Matching '{task_name}' (showing top {min(3, len(scored_files))} candidates):")
+                for score, path, fname, task in scored_files[:3]:
+                    indicator = "✓" if score == top_score else " "
+                    print(f"     {indicator} [{score:6.1f}] {fname}")
+        
+        return scored_files[0][1]  # Return path of best match
 
     def clean_code_content(self, code):
         """Cleans up the code from problematic invisible characters
