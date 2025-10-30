@@ -78,16 +78,13 @@ python3 main.py benchmark --mode top10
 CLAP generates professional visualizations of benchmark results with a single unified script:
 
 ```bash
-# Generate all 7 charts at once
+# Generate all charts at once
 python3 scripts/visualize_results.py --all
 
 # Or generate specific charts
 python3 scripts/visualize_results.py --ranking        # Energy ranking
-python3 scripts/visualize_results.py --scatter        # CO2 vs Time
 python3 scripts/visualize_results.py --tasks          # Top tasks heatmap
-python3 scripts/visualize_results.py --boxplot        # CO2 distribution
 python3 scripts/visualize_results.py --success-rates  # Success rates
-python3 scripts/visualize_results.py --success-breakdown  # Detailed breakdown
 python3 scripts/visualize_results.py --heatmap        # Task × Language heatmap
 ```
 
@@ -139,88 +136,48 @@ Note: More frequent checkpoints (every 2 tasks) increase resilience but also cre
 
 **Shows:** CO2 emissions and execution time by programming language. Compiled languages (C, C++, Rust) typically show lower emissions than interpreted languages (Python, Ruby).
 
-### 2. CO2 vs Execution Time
-
-<div align="center">
-    <img src="results/visualizations/top10/co2_vs_time_scatter.png" alt="CO2 vs Time Scatter" width="650"/>
-</div>
-
-**Shows:** Relationship between execution time and CO2 emissions. Bubble size = number of successful runs. Clear correlation: longer execution → higher emissions.
-
-### 3. Top 10 Tasks Heatmap
+### 2. Top 10 Tasks Heatmap
 
 <div align="center">
     <img src="results/visualizations/top10/top_tasks_co2_heatmap.png" alt="Top Tasks Heatmap" width="650"/>
 </div>
 
-**Shows:** CO2 emissions for the 10 most common tasks across all languages. Reveals which algorithms are most energy-intensive and language-specific optimizations.
+**Shows:** CO2 emissions for the 10 most common tasks across all languages. Reveals which algorithms are most energy-intensive and language-specific optimizations. Languages ​​tend to have the same power consumption in tasks.
 
-### 4. Language Success Rates
+### 3. Language Success Rates
 
 <div align="center">
     <img src="results/visualizations/top10/language_success_rates.png" alt="Language Success Rates" width="700"/>
 </div>
 
-**Shows:** Percentage of tasks with 100% successful iterations for each language. Color-coded: 🟢 Green (≥80%), 🟠 Orange (50-79%), 🔴 Red (<50%). Reveals language reliability and compilation/runtime issues.
+**Shows:** Percentage of tasks with 100% successful iterations for each language. Color-coded: 🟢 Green (≥80%), 🟠 Orange (50-79%), 🔴 Red (<50%). Reveals language reliability and compilation/runtime issues. PHP success in all 10 task.
 
-### 5. Success Breakdown (Full/Partial/Failed)
-
-<div align="center">
-    <img src="results/visualizations/top10/language_success_breakdown.png" alt="Success Breakdown" width="700"/>
-</div>
-
-**Shows:** Detailed breakdown of task success by language. Stacked bars show: Full Success (100%), Partial Success (1-99%), and Complete Failures. Helps identify systematic issues.
-
-### 6. Task × Language Heatmap
+### 4. Task × Language Heatmap
 
 <div align="center">
     <img src="results/visualizations/top10/language_task_heatmap.png" alt="Task-Language Heatmap" width="800"/>
 </div>
 
-**Shows:** Success rate heatmap for each task-language combination. Green = 100% success, Yellow = partial, Red = failure. Reveals task-specific compatibility issues.
+**Shows:** Success rate heatmap for each task-language combination. Green = 100% success, Red = failure. Reveals task-specific compatibility issues. The results are consistent with the previous graph.
 
-### 7. CO2 Distribution
-
-<div align="center">
-    <img src="results/visualizations/top10/co2_distribution_boxplot.png" alt="CO2 Distribution Boxplot" width="650"/>
-</div>
-
-**Shows:** Statistical distribution of emissions per language. Box height indicates variability, median line shows typical emissions.
-
-### 8. Paradigm-Based Efficiency Rankings
+### 5. Paradigm-Based Efficiency Rankings
 
 <div align="center">
-    <img src="results/visualizations/top10/efficiency_rankings.png" alt="Efficiency Rankings by Paradigm" width="900"/>
+    <img src="results/visualizations/top10/efficiency_rankings.png" alt="Efficiency Rankings by Paradigm" width="1000"/>
 </div>
 
 **Shows:** Multi-paradigm efficiency analysis comparing languages within their paradigm categories. Two plots side-by-side:
-- **Left:** 100% normalized CO₂ emissions per paradigm (lower is better)
-- **Right:** 100% normalized execution time per paradigm (lower is faster)
+- **Up:** 100% normalized CO₂ emissions per paradigm (lower is better)
+- **Down:** 100% normalized execution time per paradigm (lower is faster)
 
 Paradigm groups:
-- 🔵 **OOP** (C++, C#, Java)
-- 🟢 **Scripting** (Python, Ruby, JavaScript, TypeScript)
-- 🟡 **Imperative** (C, Go, Rust, PHP)
-- 🟣 **Functional** (Haskell, OCaml)
-- 🔴 **Scientific** (R, Julia)
+- **OOP** (C++, C#, Java)
+- **Scripting** (Python, Ruby, JavaScript, TypeScript)
+- **Imperative** (C, Go, Rust, PHP)
+- **Functional** (Haskell, OCaml)
+- **Scientific** (R, Julia)
 
 Each paradigm is tested on a single common task to ensure fair comparison. This reveals which language within each programming paradigm offers the best performance characteristics.
-
-## 📈 Example Benchmark Results
-
-Based on TOP10 benchmark (10 tasks × 30 iterations × 15 languages):
-
-| Category | Languages | Avg CO2 (mg) | Avg Time (s) |
-|----------|-----------|--------------|--------------|
-| ⚡ **Low Emissions** | C, C++, Rust, Go | 8-13 | 0.18-0.29 |
-| 🟢 **Medium** | Java, JavaScript, PHP | 38-45 | 0.95-1.12 |
-| 🔴 **High** | Python, Ruby, Julia, R | 48-67 | 1.38-1.89 |
-
-**Key Insights:**
-- **Compiled languages** (C, C++, Rust) are 5-6× more efficient than interpreted languages.
-- **Python** has highest success rate (99.6%) but higher emissions.
-- **C/C++/Rust** optimal for compute-intensive tasks.
-- **Python/JavaScript** good balance between productivity and performance.
 
 ## 📁 Project Structure
 
@@ -278,7 +235,7 @@ chmod -R 755 src/ modules/
 
 ## 📚 Additional Resources
 
-- **Dataset:** [Rosetta Code](https://huggingface.co/datasets/christopher/rosetta-code) implementations (1000+ tasks)
+- **Dataset:** [Rosetta Code](https://huggingface.co/datasets/christopher/rosetta-code) implementations (1100+ tasks)
 - **CO2 Tracking:** Powered by [CodeCarbon](https://codecarbon.io)
 - **Python Libraries:** pandas, matplotlib, seaborn
 - **Supported Paradigms:** OOP, Functional, Systems, Scientific
