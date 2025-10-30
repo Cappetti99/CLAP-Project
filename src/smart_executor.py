@@ -23,6 +23,7 @@ sys.path.insert(0, modules_path)
 try:
     from modules.language_config import LanguageConfigManager
     from src.finder import UnifiedTaskFinder
+    from src.dependency_manager import DependencyManager
     MODULAR_COMPONENTS_AVAILABLE = True
 except ImportError as e:
     MODULAR_COMPONENTS_AVAILABLE = False
@@ -30,8 +31,10 @@ except ImportError as e:
     try:
         # Fallback for direct import
         from finder import UnifiedTaskFinder
+        from dependency_manager import DependencyManager
     except ImportError:
         UnifiedTaskFinder = None
+        DependencyManager = None
 
 # Import the carbon tracker to monitor environmental impact (lazy import)
 CARBON_TRACKING_AVAILABLE = False  # Temporarily disabled for debugging
@@ -55,9 +58,20 @@ class SmartExecutor:
         self.analysis_dir = "results/task_analysis"
         self.temp_files = []
         self.available_languages = {}
+        
         # Optional components (set when modular tools are wired)
         self.logger = None
-        self.dependency_analyzer = None
+        
+        # Initialize Dependency Manager for automatic library installation/removal
+        self.dependency_manager = None
+        if DependencyManager is not None:
+            self.dependency_manager = DependencyManager(conda_env='CLAP', verbose=True)
+            print("✅ DEPENDENCY MANAGER: Automatic package installation enabled")
+        else:
+            print("⚠️  Dependency Manager not available")
+        
+        # Flag to enable/disable automatic dependency installation
+        self.auto_install_dependencies = True  # Set to False to skip auto-installation
         
         # Initialize modular components
         if MODULAR_COMPONENTS_AVAILABLE:
@@ -233,11 +247,24 @@ func main() {
                 self.logger.log_error(language, task_name, "ExecutionError", str(error), "")
 
     def analyze_dependencies(self, code, language):
-        """Analyze code dependencies using modular analyzer if available"""
-        if self.dependency_analyzer:
-            dependencies = self.dependency_analyzer.get_external_dependencies(code, language)
-            return dependencies
-        return []
+        """Analyze code dependencies and install them if needed
+        
+        Args:
+            code: Source code to analyze
+            language: Programming language
+            
+        Returns:
+            InstallationSession if dependencies were installed, None otherwise
+        """
+        if not self.auto_install_dependencies or self.dependency_manager is None:
+            return None
+        
+        try:
+            session = self.dependency_manager.install_dependencies(code, language)
+            return session if session.packages else None
+        except Exception as e:
+            print(f"⚠️  Dependency analysis failed: {e}")
+            return None
 
     def get_swam_env(self, language=None):
         """Gets the modified environment to include the binaries of the CLAP environment"""
@@ -457,6 +484,12 @@ func main() {
     def execute_code(self, code, language, task_name, timeout=None):
         """Executes the given code in the specified language and tracks emissions
         
+        Workflow with dependency management:
+        1. Analyze code for external dependencies
+        2. Install missing packages temporarily
+        3. Execute code
+        4. Remove installed packages (cleanup)
+        
         Args:
             code: Code to execute
             language: Programming language
@@ -482,10 +515,28 @@ func main() {
             }
 
         config = self.available_languages[language]
+        dependency_session = None
 
         try:
             start_time = time.time()
+            
+            # ===== PHASE 1: DEPENDENCY INSTALLATION =====
+            # Analyze and install missing dependencies before execution
+            if self.auto_install_dependencies and self.dependency_manager:
+                dependency_session = self.analyze_dependencies(code, language)
+                
+                # If installation failed, report error
+                if dependency_session and not dependency_session.success:
+                    failed_packages = [dep.name for dep in dependency_session.packages 
+                                     if not dep.installed]
+                    return {
+                        'success': False,
+                        'error': f'Failed to install dependencies: {", ".join(failed_packages)}',
+                        'output': '',
+                        'execution_time': time.time() - start_time
+                    }
 
+            # ===== PHASE 2: CODE EXECUTION =====
             # Create temporary file
             temp_file = self.create_temp_file(code, config['extension'], task_name, language)
             if not temp_file:
@@ -521,6 +572,10 @@ func main() {
                 'output': exec_result.get('output', ''),
                 'execution_time': execution_time
             }
+            
+            # Add dependency info to result if packages were installed
+            if dependency_session and dependency_session.packages:
+                result['dependencies_installed'] = [dep.name for dep in dependency_session.packages]
 
             # Stop CO2 tracking
             if should_track and stop_carbon_tracking:
@@ -540,8 +595,16 @@ func main() {
                 'execution_time': time.time() - start_time if 'start_time' in locals() else 0
             }
         finally:
-            # Cleanup
+            # ===== PHASE 3: CLEANUP =====
+            # Always cleanup: temp files AND installed dependencies
             self.cleanup_temp_files([temp_file] if 'temp_file' in locals() else [])
+            
+            # Remove temporarily installed packages
+            if dependency_session and self.dependency_manager:
+                try:
+                    self.dependency_manager.cleanup_session(dependency_session)
+                except Exception as e:
+                    print(f"⚠️  Dependency cleanup warning: {e}")
 
     def clean_code(self, code, language):
         """Cleans the code by removing interactive syntax and common issues"""
@@ -554,11 +617,8 @@ func main() {
         
         # Language-specific cleaning
         if language == 'python':
-            # Adds parentheses to Python 2 print statements
-            cleaned = re.sub(r'\bprint\s+([^(][^\n]*)', r'print(\1)', cleaned)
-            
-            # Remove/replace GUI elements that could open windows
-            cleaned = self._clean_python_gui_code(cleaned)
+            # No modifications - preserve original Python code
+            pass
         
         elif language in ['c', 'cpp', 'c++']:
             # Add main() function if missing (for code snippets)
@@ -584,21 +644,12 @@ func main() {
                     cleaned = f'int main() {{\n{cleaned}\n    return 0;\n}}\n'
             
         elif language == 'javascript':
-            # Removes references to window/DOM for Node.js
-            cleaned = re.sub(r'if\s*\(\s*window\.DOMParser\s*\)', 'if (false)', cleaned)
-            cleaned = re.sub(r'window\.', '', cleaned)
-            # Adds missing declarations
-            if 'Matrix' in cleaned and 'function Matrix' not in cleaned:
-                cleaned = 'function Matrix() {}\n' + cleaned
-            
-            # Remove browser-specific code that might try to open windows
-            cleaned = re.sub(r'window\.open\([^)]*\)', 'console.log("Window opening disabled")', cleaned)
-            cleaned = re.sub(r'alert\([^)]*\)', 'console.log', cleaned)
-            cleaned = re.sub(r'confirm\([^)]*\)', 'true', cleaned)
+            # No modifications - keep original code as-is
+            pass
                 
         elif language == 'typescript':
-            # Fixes compiler options
-            cleaned = re.sub(r'-o\s+', '--outFile ', cleaned)
+            # No modifications - keep original code as-is
+            pass
             
         elif language == 'java':
             # If no class is defined, create a Main class
@@ -621,11 +672,9 @@ func main() {
                     cleaned = f'public class Main {{\n    public static void main(String[] args) {{\n{cleaned}\n    }}\n}}'
                     
         elif language == 'go':
-            # Removes imports of non-standard external libraries
+            # Fix package declaration if needed
             lines = cleaned.split('\n')
             filtered_lines = []
-            in_import_block = False
-            removed_packages = []
             package_declared = False
             
             for line in lines:
@@ -640,58 +689,8 @@ func main() {
                             filtered_lines.append(line)
                         package_declared = True
                     continue
-                
-                # Handles import blocks
-                elif line_stripped.startswith('import ('):
-                    in_import_block = True
-                    filtered_lines.append(line)
-                    continue
-                elif line_stripped == ')' and in_import_block:
-                    in_import_block = False
-                    filtered_lines.append(line)
-                    continue
-                elif in_import_block:
-                    # Keeps only standard imports
-                    if any(std_pkg in line_stripped for std_pkg in ['"fmt"', '"os"', '"strings"', '"strconv"', '"math"', '"time"', '"io"', '"sort"', '"net"']):
-                        filtered_lines.append(line)
-                    else:
-                        # Tracks removed packages for code cleanup
-                        if '"' in line_stripped:
-                            pkg_name = line_stripped.split('"')[1].split('/')[-1]
-                            removed_packages.append(pkg_name)
-                    continue
-                elif line_stripped.startswith('import "') and not any(std_pkg in line_stripped for std_pkg in ['"fmt"', '"os"', '"strings"', '"strconv"', '"math"', '"time"', '"io"', '"sort"', '"net"']):
-                    # Tracks and skips individual imports of external libraries
-                    if '"' in line_stripped:
-                        pkg_name = line_stripped.split('"')[1].split('/')[-1]
-                        removed_packages.append(pkg_name)
-                    continue
                 else:
                     filtered_lines.append(line)
-            
-            cleaned = '\n'.join(filtered_lines)
-            
-            # Cleans code from references to removed packages
-            for pkg in removed_packages:
-                # Removes calls to the package (e.g. mat.NewDense, mat.Formatted)
-                cleaned = re.sub(rf'\b{pkg}\.\w+\([^)]*\)', 'nil', cleaned)
-                cleaned = re.sub(rf'\*{pkg}\.\w+', 'interface{}', cleaned)
-                cleaned = re.sub(rf'\b{pkg}\.\w+', 'nil', cleaned)
-            
-            # Simplify problematic functions with basic versions
-            if 'mat.Dense' in cleaned or 'mat.NewDense' in cleaned:
-                # Replaces with simple implementation without external dependencies
-                cleaned = re.sub(r'func eye\([^}]*\}', '''func eye(n int) [][]int {
-    matrix := make([][]int, n)
-    for i := range matrix {
-        matrix[i] = make([]int, n)
-        matrix[i][i] = 1
-    }
-    return matrix
-}''', cleaned, flags=re.DOTALL)
-                
-            # Cleans the main function from calls to external functions
-            cleaned = re.sub(r'fmt\.Println\(mat\.Formatted\([^)]*\)\)', 'fmt.Println("Identity matrix created")', cleaned)
             
             cleaned = '\n'.join(filtered_lines)
             
@@ -704,27 +703,7 @@ func main() {
                 cleaned += '\n\nfunc main() {\n    // Generated main function\n}\n'
                 
         elif language == 'haskell':
-            # Removes imports of non-standard external modules and fix common issues
-            lines = cleaned.split('\n')
-            filtered_lines = []
-            
-            for line in lines:
-                line_stripped = line.strip()
-                # Skip problematic imports
-                if line_stripped.startswith('import ') and any(problematic in line_stripped for problematic in ['Control.Monad', 'hiding (odd)']):
-                    continue
-                # Fix join function usage
-                elif 'join (+)' in line:
-                    filtered_lines.append(line.replace('join (+)', '(\\x -> x + x)'))
-                else:
-                    filtered_lines.append(line)
-            
-            cleaned = '\n'.join(filtered_lines)
-            
-            # Remove redefined odd function to avoid conflicts
-            cleaned = re.sub(r'odd :: Int -> Bool\s*\n.*odd = .*\n', '', cleaned, flags=re.MULTILINE)
-            
-            # Ensure there is a main function
+            # Ensure there is a main function (necessary for compilation)
             if 'main =' not in cleaned and 'main::' not in cleaned:
                 # Find the first defined function to call it in main
                 function_match = re.search(r'^(\w+)\s+::', cleaned, re.MULTILINE)
@@ -736,30 +715,13 @@ func main() {
                     cleaned += '\n\nmain = putStrLn "Haskell execution completed"'
                 
         elif language == 'rust':
-            # Removes extern crate statements that may cause issues
-            cleaned = re.sub(r'extern\s+crate\s+\w+;\s*\n?', '', cleaned)
-            
-            # Removes use statements of external crates
-            cleaned = re.sub(r'use\s+\w+::\w+;\s*\n?', '', cleaned)
-            
-            # Replaces external traits with standard traits
-            cleaned = re.sub(r'num::\w+', 'Copy + Clone + Default', cleaned)
-            cleaned = re.sub(r'T::\w+\(\)', 'T::default()', cleaned)
-            
-            # Simplify structs with problematic generics
-            if 'num::' in cleaned or 'extern crate' in cleaned:
-                # Replace with a simpler implementation
-                cleaned = re.sub(r'struct Matrix<T>.*?where.*?\{', 'struct Matrix {\n    data: Vec<i32>,\n    size: usize,\n}\n\nimpl Matrix {', cleaned, flags=re.DOTALL)
-                cleaned = re.sub(r'T::[a-zA-Z_]\w*\(\)', '0', cleaned)
-                cleaned = re.sub(r'\bT\b', 'i32', cleaned)
-            
             # Ensure there is a main function
             if 'fn main()' not in cleaned:
                 cleaned += '\n\nfn main() {\n    println!("Rust execution completed");\n}\n'
         
         elif language == 'r':
-            # Remove/replace graphics elements that could open GUI windows
-            cleaned = self._clean_r_graphics_code(cleaned)
+            # No R graphics modifications - preserve original code
+            pass
                 
         return cleaned
     
@@ -1321,88 +1283,88 @@ func main() {
             print(f"\n No executions completed")
 
     def _clean_python_gui_code(self, code):
-        """Remove or replace GUI elements in Python code to prevent windows from opening"""
+        """Modify GUI elements in Python code to auto-close after execution"""
         
-        # Remove problematic imports
-        gui_imports = [
-            r'import\s+tkinter.*\n',
-            r'from\s+tkinter\s+import.*\n', 
-            r'import\s+turtle.*\n',
-            r'import\s+pygame.*\n',
-            r'import\s+webbrowser.*\n',
-            r'from\s+turtle\s+import.*\n',
-            r'from\s+OpenGL.*import.*\n',
-            r'import\s+OpenGL.*\n'
-        ]
+        # Add matplotlib backend setting at the top if matplotlib is used
+        if 'matplotlib' in code or 'pyplot' in code:
+            backend_code = '''import matplotlib
+matplotlib.use('Agg')  # Non-interactive backend
+'''
+            code = backend_code + code
+            
+            # Replace plt.show() with save + close
+            code = re.sub(r'plt\.show\(\)', 'plt.savefig("/tmp/plot.png"); plt.close("all")  # Auto-save and close', code)
+            code = re.sub(r'pyplot\.show\(\)', 'pyplot.savefig("/tmp/plot.png"); pyplot.close("all")  # Auto-save and close', code)
         
-        for pattern in gui_imports:
-            code = re.sub(pattern, '# GUI import removed\n', code, flags=re.IGNORECASE)
+        # For tkinter windows, add automatic destruction with timeout
+        if 'tkinter' in code.lower() or 'tk()' in code:
+            # Add after() call to close window automatically after 100ms
+            code = re.sub(r'(root|window|app)\.mainloop\(\)', 
+                         r'\1.after(100, \1.destroy); \1.mainloop()  # Auto-close after 100ms', 
+                         code)
         
-        # Replace matplotlib show() calls
-        code = re.sub(r'plt\.show\(\)', 'plt.savefig("/tmp/plot.png")  # plt.show() disabled', code)
-        code = re.sub(r'pyplot\.show\(\)', 'pyplot.savefig("/tmp/plot.png")  # pyplot.show() disabled', code)
+        # Replace PIL Image show() with save
+        code = re.sub(r'\.show\(\)', '.save("/tmp/image.png")  # Auto-save instead of show', code)
         
-        # Replace PIL Image show() and other general show() calls
-        code = re.sub(r'\.show\(\)', '.save("/tmp/image.png")  # .show() disabled', code)
-        
-        # Replace tkinter operations
-        code = re.sub(r'\.mainloop\(\)', '.quit()  # mainloop() disabled', code)
-        code = re.sub(r'root\.mainloop\(\)', 'pass  # root.mainloop() disabled', code)
-        code = re.sub(r'app\.run\(\)', 'pass  # app.run() disabled', code)
-        
-        # Replace webbrowser calls
+        # Replace webbrowser calls (these can't be auto-closed, so we disable them)
         code = re.sub(r'webbrowser\.open\([^)]*\)', 'print("Browser opening disabled")', code)
         
-        # Replace turtle graphics
-        code = re.sub(r'turtle\..*\n', '# Turtle graphics disabled\n', code)
+        # Replace turtle graphics end waiting
+        if 'turtle' in code.lower():
+            code = re.sub(r'turtle\.done\(\)', 'pass  # turtle.done() disabled', code)
+            code = re.sub(r'turtle\.mainloop\(\)', 'pass  # turtle.mainloop() disabled', code)
+            # Add automatic close at the end
+            code += '\n# Auto-close turtle graphics\ntry:\n    import turtle\n    turtle.bye()\nexcept: pass\n'
         
-        # Replace OpenGL/GLUT main loop and window creation
+        # Replace OpenGL/GLUT main loop (can't be easily auto-closed, so we disable it)
         code = re.sub(r'glutMainLoop\(\)', '# glutMainLoop() disabled', code)
-        code = re.sub(r'glutCreateWindow\([^)]*\)', '# glutCreateWindow() disabled', code)
-        code = re.sub(r'glutInit\([^)]*\)', '# glutInit() disabled', code)
         
         # Replace input() calls that might block execution
         code = re.sub(r'input\s*\([^)]*\)', '"simulated_input"', code)
         
-        # Add matplotlib backend setting at the top if matplotlib is used
-        if 'matplotlib' in code or 'pyplot' in code:
-            backend_code = '''
-import matplotlib
-matplotlib.use('Agg')  # Non-interactive backend
-'''
-            code = backend_code + code
-        
         return code
 
     def _clean_r_graphics_code(self, code):
-        """Remove or replace graphics elements in R code to prevent GUI windows from opening"""
+        """Modify graphics elements in R code to auto-close after execution"""
         
-        # Replace dev.new() and similar device creation calls
+        # Redirect graphics to file output and ensure dev.off() is called
+        # This allows plots to execute but saves them to files instead of opening windows
+        
+        # For plot commands, wrap with png() and dev.off()
+        code = re.sub(r'plot\s*\(', r'png("/tmp/plot.png"); on.exit(dev.off(), add=TRUE); plot(', code, count=1)
+        
+        # For other graphics, add file output
+        if 'hist(' in code and 'png(' not in code:
+            code = re.sub(r'hist\s*\(', r'png("/tmp/hist.png"); on.exit(dev.off(), add=TRUE); hist(', code, count=1)
+        if 'boxplot(' in code and 'png(' not in code:
+            code = re.sub(r'boxplot\s*\(', r'png("/tmp/boxplot.png"); on.exit(dev.off(), add=TRUE); boxplot(', code, count=1)
+        if 'barplot(' in code and 'png(' not in code:
+            code = re.sub(r'barplot\s*\(', r'png("/tmp/barplot.png"); on.exit(dev.off(), add=TRUE); barplot(', code, count=1)
+        
+        # Disable interactive device creation
         code = re.sub(r'dev\.new\(\)', '# dev.new() disabled', code)
         code = re.sub(r'x11\(\)', '# x11() disabled', code)
         code = re.sub(r'windows\(\)', '# windows() disabled', code)
         code = re.sub(r'quartz\(\)', '# quartz() disabled', code)
         
-        # Replace interactive plotting commands with file output
-        code = re.sub(r'plot\s*\(([^)]*)\)', r'png("/tmp/plot.png"); plot(\1); dev.off()  # plot() redirected to file', code)
-        code = re.sub(r'hist\s*\(([^)]*)\)', r'png("/tmp/hist.png"); hist(\1); dev.off()  # hist() redirected to file', code)
-        code = re.sub(r'boxplot\s*\(([^)]*)\)', r'png("/tmp/boxplot.png"); boxplot(\1); dev.off()  # boxplot() redirected to file', code)
-        code = re.sub(r'barplot\s*\(([^)]*)\)', r'png("/tmp/barplot.png"); barplot(\1); dev.off()  # barplot() redirected to file', code)
+        # Handle ggplot2 - add ggsave for auto-save
+        if 'ggplot' in code and 'ggsave' not in code:
+            # If there's a print(p) or just p at the end, replace with ggsave
+            code = re.sub(r'print\s*\(\s*(\w+)\s*\)\s*$', r'ggsave("/tmp/ggplot.png", \1)', code, flags=re.MULTILINE)
         
-        # Handle ggplot2 graphics
-        code = re.sub(r'ggsave\s*\([^)]*\)', 'ggsave("/tmp/ggplot.png")  # ggsave() redirected', code)
-        code = re.sub(r'print\s*\(\s*p\s*\)', 'ggsave("/tmp/ggplot.png", p)  # ggplot print() disabled', code)
-        
-        # Remove readline and interactive input
+        # Replace readline and interactive input
         code = re.sub(r'readline\s*\([^)]*\)', '"simulated_input"', code)
-        code = re.sub(r'readLines\s*\([^)]*\)', 'c("simulated_input")', code)
+        code = re.sub(r'readLines\s*\("stdin"\)', 'c("simulated_input")', code)
         
-        # Replace Shiny apps
+        # Disable Shiny apps (can't be auto-closed easily)
         code = re.sub(r'shinyApp\s*\([^)]*\)', '# Shiny app disabled', code)
         code = re.sub(r'runApp\s*\([^)]*\)', '# runApp() disabled', code)
         
-        # Replace browser() debugging calls
+        # Disable browser() debugging calls
         code = re.sub(r'browser\s*\(\)', '# browser() disabled', code)
+        
+        # Add final dev.off() at the end to ensure all devices are closed
+        code += '\n# Auto-close all graphics devices\ntryCatch(dev.off(), error=function(e) {})\n'
         
         return code
 
