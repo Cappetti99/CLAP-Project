@@ -81,6 +81,17 @@ class DependencyManager:
         self.verbose = verbose
         self.sessions: Dict[str, InstallationSession] = {}
         
+        # Languages that should NOT auto-install dependencies
+        # Reason: complex build environments, global pollution, or instability
+        self.no_auto_install = {
+            'haskell',  # cabal --package-env issues in temp dirs, crashes
+            'ocaml',    # opam requires dedicated switch, can conflict
+            'csharp',   # requires .csproj file, complex setup
+            'c',        # system package manager, requires sudo
+            'cpp',      # system package manager, requires sudo
+            'java',     # requires pom.xml/build.gradle
+        }
+        
         # Track pre-existing packages to avoid removing them
         self.preinstalled_packages = {
             'python': self._get_installed_python_packages(),
@@ -98,7 +109,53 @@ class DependencyManager:
                 'sklearn': 'scikit-learn',
                 'yaml': 'pyyaml',
                 'bs4': 'beautifulsoup4',
-                # Add more as needed
+            },
+            'haskell': {
+                # Common Haskell module -> package mappings
+                'Data.Aeson': 'aeson',
+                'Data.Text': 'text',
+                'Data.ByteString': 'bytestring',
+                'Data.Vector': 'vector',
+                'Data.Map': 'containers',
+                'Data.Set': 'containers',
+                'Network.HTTP': 'HTTP',
+                'Network.HTTP.Client': 'http-client',
+                'Network.HTTP.Conduit': 'http-conduit',
+                'Control.Monad.Trans': 'transformers',
+                'Control.Lens': 'lens',
+                'Text.Parsec': 'parsec',
+                'Text.Megaparsec': 'megaparsec',
+                'System.Random': 'random',
+                'Test.QuickCheck': 'QuickCheck',
+                'Test.Hspec': 'hspec',
+            },
+            'ocaml': {
+                # Common OCaml module -> package mappings
+                'Lwt': 'lwt',
+                'Async': 'async',
+                'Core': 'core',
+                'Yojson': 'yojson',
+                'Ppx_deriving': 'ppx_deriving',
+                'Re': 're',
+                'Cmdliner': 'cmdliner',
+                'Cohttp': 'cohttp',
+                'Batteries': 'batteries',
+            },
+            'csharp': {
+                # Common C# namespace -> package mappings
+                'Newtonsoft.Json': 'Newtonsoft.Json',
+                'System.Text.Json': 'System.Text.Json',
+                'Dapper': 'Dapper',
+                'NUnit': 'NUnit',
+                'NUnit.Framework': 'NUnit',
+                'xUnit': 'xunit',
+                'xunit': 'xunit',
+                'Moq': 'Moq',
+                'Serilog': 'Serilog',
+                'AutoMapper': 'AutoMapper',
+                'FluentValidation': 'FluentValidation',
+                'EntityFramework': 'EntityFramework',
+                'Microsoft.EntityFrameworkCore': 'Microsoft.EntityFrameworkCore',
             }
         }
     
@@ -131,6 +188,18 @@ class DependencyManager:
         
         if language == 'python':
             imports = self._extract_python_imports(code)
+        elif language in ['javascript', 'typescript']:
+            imports = self._extract_js_ts_imports(code)
+        elif language == 'ruby':
+            imports = self._extract_ruby_imports(code)
+        elif language == 'php':
+            imports = self._extract_php_imports(code)
+        elif language == 'haskell':
+            imports = self._extract_haskell_imports(code)
+        elif language == 'ocaml':
+            imports = self._extract_ocaml_imports(code)
+        elif language == 'csharp':
+            imports = self._extract_csharp_imports(code)
         elif language == 'go':
             imports = self._extract_go_imports(code)
         elif language == 'rust':
@@ -165,6 +234,157 @@ class DependencyManager:
                         imports.append(module)
         
         return list(set(imports))  # Remove duplicates
+    
+    def _extract_js_ts_imports(self, code: str) -> List[str]:
+        """Extract JavaScript/TypeScript import statements"""
+        imports = []
+        
+        # Patterns for ES6 imports and require()
+        patterns = [
+            r'^\s*import\s+.*\s+from\s+["\']([^"\']+)["\']',  # import ... from 'package'
+            r'^\s*import\s+["\']([^"\']+)["\']',              # import 'package'
+            r'^\s*(?:const|let|var)\s+.*\s*=\s*require\s*\(\s*["\']([^"\']+)["\']\s*\)',  # require('package')
+        ]
+        
+        for line in code.split('\n'):
+            for pattern in patterns:
+                match = re.match(pattern, line)
+                if match:
+                    module = match.group(1)
+                    # Only external packages (not relative paths starting with . or /)
+                    if not module.startswith('.') and not module.startswith('/'):
+                        # Extract package name (before any subpath)
+                        pkg = module.split('/')[0] if not module.startswith('@') else '/'.join(module.split('/')[:2])
+                        imports.append(pkg)
+        
+        return list(set(imports))
+    
+    def _extract_ruby_imports(self, code: str) -> List[str]:
+        """Extract Ruby require/gem statements"""
+        imports = []
+        
+        patterns = [
+            r'^\s*require\s+["\']([^"\']+)["\']',
+            r'^\s*gem\s+["\']([^"\']+)["\']',
+        ]
+        
+        for line in code.split('\n'):
+            for pattern in patterns:
+                match = re.match(pattern, line)
+                if match:
+                    gem = match.group(1)
+                    # Skip standard library (common ones)
+                    if gem not in ['date', 'json', 'yaml', 'fileutils', 'pathname', 
+                                  'tmpdir', 'stringio', 'csv', 'uri', 'net/http']:
+                        imports.append(gem)
+        
+        return list(set(imports))
+    
+    def _extract_php_imports(self, code: str) -> List[str]:
+        """Extract PHP use/require statements for Composer packages"""
+        imports = []
+        
+        # Match use statements with namespace (vendor/package pattern)
+        patterns = [
+            r'^\s*use\s+([A-Z]\w+(?:\\[A-Z]\w+)+)',  # use Vendor\Package\Class
+            r'^\s*new\s+([A-Z]\w+(?:\\[A-Z]\w+)+)',  # new Vendor\Package\Class
+        ]
+        
+        for line in code.split('\n'):
+            for pattern in patterns:
+                match = re.match(pattern, line)
+                if match:
+                    namespace = match.group(1)
+                    # Extract vendor/package (first two parts)
+                    parts = namespace.split('\\')
+                    if len(parts) >= 2:
+                        # Convert to composer format: vendor/package
+                        vendor_package = f"{parts[0].lower()}/{parts[1].lower()}"
+                        imports.append(vendor_package)
+        
+        return list(set(imports))
+    
+    def _extract_haskell_imports(self, code: str) -> List[str]:
+        """Extract Haskell import statements
+        
+        Returns full module names which will be mapped to packages
+        using package_mappings dictionary
+        """
+        imports = []
+        
+        # Match: import Module, import qualified Module as Alias
+        patterns = [
+            r'^\s*import\s+(?:qualified\s+)?([A-Z][\w\.]*)',
+        ]
+        
+        for line in code.split('\n'):
+            for pattern in patterns:
+                match = re.match(pattern, line)
+                if match:
+                    module = match.group(1)
+                    # Skip Prelude and base library modules (included with GHC)
+                    base_modules = ['Prelude', 'Data.List', 'Data.Maybe', 'Data.Either',
+                                   'Data.Char', 'Data.Bool', 'Data.Int', 'Data.Word',
+                                   'Control.Monad', 'Control.Applicative',
+                                   'System.IO', 'System.Environment',
+                                   'Text.Read', 'Text.Show']
+                    if module not in base_modules:
+                        imports.append(module)
+        
+        return list(set(imports))
+    
+    def _extract_ocaml_imports(self, code: str) -> List[str]:
+        """Extract OCaml open/module statements
+        
+        Returns module names which will be mapped to packages
+        using package_mappings dictionary
+        """
+        imports = []
+        
+        # Match: open Module, module M = Module
+        patterns = [
+            r'^\s*open\s+([A-Z]\w+)',
+            r'^\s*#require\s+"([^"]+)"',  # #require "package" (toplevel)
+        ]
+        
+        for line in code.split('\n'):
+            for pattern in patterns:
+                match = re.match(pattern, line)
+                if match:
+                    module = match.group(1)
+                    # Skip standard library modules
+                    stdlib = ['List', 'Array', 'String', 'Printf', 'Hashtbl', 
+                             'Map', 'Set', 'Queue', 'Stack', 'Sys', 'Unix',
+                             'Buffer', 'Char', 'Int', 'Float', 'Bool']
+                    if module not in stdlib:
+                        imports.append(module)
+        
+        return list(set(imports))
+    
+    def _extract_csharp_imports(self, code: str) -> List[str]:
+        """Extract C# using statements for NuGet packages"""
+        imports = []
+        
+        # Match using statements with multiple namespace levels
+        patterns = [
+            r'^\s*using\s+([A-Z]\w+(?:\.[A-Z]\w+)*)\s*;',  # using Namespace.Package;
+        ]
+        
+        for line in code.split('\n'):
+            for pattern in patterns:
+                match = re.match(pattern, line)
+                if match:
+                    namespace = match.group(1)
+                    # Skip System.* (built-in .NET) except specific packages
+                    if namespace.startswith('System') and namespace not in ['System.Text.Json']:
+                        continue
+                    # Skip Microsoft.* core namespaces (but allow EF, etc)
+                    if namespace.startswith('Microsoft.') and not namespace.startswith('Microsoft.EntityFrameworkCore'):
+                        continue
+                    # Return full namespace for mapping lookup
+                    imports.append(namespace)
+        
+        return list(set(imports))
     
     def _extract_go_imports(self, code: str) -> List[str]:
         """Extract Go import statements"""
@@ -322,6 +542,13 @@ class DependencyManager:
         session_id = f"{language}_{uuid.uuid4().hex[:8]}"
         session = InstallationSession(session_id=session_id, language=language)
         
+        # Check if language is blacklisted from auto-install
+        if language in self.no_auto_install:
+            if self.verbose:
+                print(f"⚠️  Auto-install disabled for {language} (using pre-installed packages only)")
+            session.success = True
+            return session
+        
         if self.verbose:
             print(f"📦 Analyzing dependencies for {language}...")
         
@@ -360,6 +587,88 @@ class DependencyManager:
         
         return session
     
+    def _get_install_command(self, package: str, language: str) -> Tuple[str, List[str]]:
+        """Get installation command for a package
+        
+        Args:
+            package: Package name
+            language: Programming language
+            
+        Returns:
+            Tuple of (human_readable_command, subprocess_command_list)
+            
+        Raises:
+            ValueError: If language is not supported
+        """
+        # Configuration dictionary for all supported languages
+        install_configs = {
+            'python': {
+                'display': f"pip install {package}",
+                'command': ['conda', 'run', '-n', self.conda_env, 'pip', 'install', 
+                           '--quiet', package]
+            },
+            'javascript': {
+                'display': f"npm install {package}",
+                'command': ['conda', 'run', '-n', self.conda_env, 'npm', 'install', 
+                           '--silent', package]
+            },
+            'typescript': {
+                'display': f"npm install {package}",
+                'command': ['conda', 'run', '-n', self.conda_env, 'npm', 'install', 
+                           '--silent', package]
+            },
+            'ruby': {
+                'display': f"gem install {package}",
+                'command': ['conda', 'run', '-n', self.conda_env, 'gem', 'install', 
+                           '--quiet', package]
+            },
+            'php': {
+                'display': f"composer require {package}",
+                'command': ['composer', 'require', '--quiet', package],
+                'note': 'Requires composer.json in working directory'
+            },
+            'go': {
+                'display': f"go get {package}",
+                'command': ['go', 'get', package]
+            },
+            'rust': {
+                'display': f"cargo add {package}",
+                'command': ['cargo', 'add', package],
+                'note': 'Requires cargo-edit and Cargo.toml'
+            },
+            'r': {
+                'display': f"install.packages('{package}')",
+                'command': ['conda', 'run', '-n', self.conda_env, 'Rscript', '-e',
+                           f"install.packages('{package}', repos='https://cloud.r-project.org/')"]
+            },
+            'julia': {
+                'display': f'Pkg.add("{package}")',
+                'command': ['conda', 'run', '-n', self.conda_env, 'julia', '-e',
+                           f'using Pkg; Pkg.add("{package}")']
+            },
+            'haskell': {
+                'display': f"cabal install {package}",
+                'command': ['cabal', 'install', '--lib', package, '--package-env=.'],
+                'note': 'Installs to local package environment (not global)'
+            },
+            'ocaml': {
+                'display': f"opam install {package}",
+                'command': ['opam', 'install', '-y', package],
+                'note': 'Requires active opam switch'
+            },
+            'csharp': {
+                'display': f"dotnet add package {package}",
+                'command': ['dotnet', 'add', 'package', package],
+                'note': 'Requires .csproj file in working directory'
+            }
+        }
+        
+        if language not in install_configs:
+            raise ValueError(f"Unsupported language: {language}")
+        
+        config = install_configs[language]
+        return config['display'], config['command']
+    
     def _install_package(self, package: str, language: str) -> DependencyInfo:
         """Install a single package
         
@@ -376,33 +685,9 @@ class DependencyManager:
             print(f"  📥 Installing {package}...")
         
         try:
-            if language == 'python':
-                dep.install_command = f"pip install {package}"
-                cmd = ['conda', 'run', '-n', self.conda_env, 'pip', 'install', 
-                       '--quiet', package]
-            
-            elif language == 'go':
-                dep.install_command = f"go get {package}"
-                cmd = ['go', 'get', package]
-            
-            elif language == 'rust':
-                dep.install_command = f"cargo add {package}"
-                # Note: cargo add requires cargo-edit
-                cmd = ['cargo', 'add', package]
-            
-            elif language == 'r':
-                dep.install_command = f"install.packages('{package}')"
-                cmd = ['conda', 'run', '-n', self.conda_env, 'Rscript', '-e',
-                       f"install.packages('{package}', repos='https://cloud.r-project.org/')"]
-            
-            elif language == 'julia':
-                dep.install_command = f"Pkg.add(\"{package}\")"
-                cmd = ['conda', 'run', '-n', self.conda_env, 'julia', '-e',
-                       f'using Pkg; Pkg.add("{package}")']
-            
-            else:
-                dep.error = f"Unsupported language: {language}"
-                return dep
+            # Get installation command
+            display_cmd, cmd = self._get_install_command(package, language)
+            dep.install_command = display_cmd
             
             # Execute installation
             result = subprocess.run(
@@ -433,6 +718,40 @@ class DependencyManager:
         
         return dep
     
+    def _get_uninstall_command(self, package: str, language: str) -> Optional[List[str]]:
+        """Get uninstall command for a package
+        
+        Args:
+            package: Package name
+            language: Programming language
+            
+        Returns:
+            Command list for subprocess, or None if no cleanup needed
+        """
+        # Configuration dictionary for cleanup commands
+        uninstall_configs = {
+            'python': ['conda', 'run', '-n', self.conda_env, 'pip', 'uninstall',
+                      '-y', '--quiet', package],
+            'javascript': ['conda', 'run', '-n', self.conda_env, 'npm', 'uninstall',
+                          '--silent', package],
+            'typescript': ['conda', 'run', '-n', self.conda_env, 'npm', 'uninstall',
+                          '--silent', package],
+            'ruby': ['conda', 'run', '-n', self.conda_env, 'gem', 'uninstall',
+                    '-x', package],  # -x for executables
+            'php': None,  # Composer requires manual removal or composer.json edit
+            'go': None,  # Go modules are workspace-specific
+            'rust': None,  # Rust crates are project-specific (Cargo.toml)
+            'r': ['conda', 'run', '-n', self.conda_env, 'Rscript', '-e',
+                 f"remove.packages('{package}')"],
+            'julia': ['conda', 'run', '-n', self.conda_env, 'julia', '-e',
+                     f'using Pkg; Pkg.rm("{package}")'],
+            'haskell': ['ghc-pkg', 'unregister', '--package-env=.', '--force', package],
+            'ocaml': ['opam', 'remove', '-y', package],
+            'csharp': ['dotnet', 'remove', 'package', package]
+        }
+        
+        return uninstall_configs.get(language)
+    
     def cleanup_session(self, session: InstallationSession) -> bool:
         """Remove all packages installed during session
         
@@ -443,6 +762,12 @@ class DependencyManager:
             True if cleanup successful, False otherwise
         """
         if not session.packages:
+            return True
+        
+        # Skip cleanup for blacklisted languages (no auto-install = no auto-cleanup)
+        if session.language in self.no_auto_install:
+            if self.verbose:
+                print(f"⏭️  Skipping cleanup for {session.language} (no auto-install)")
             return True
         
         if self.verbose:
@@ -465,31 +790,13 @@ class DependencyManager:
                 if self.verbose:
                     print(f"  🗑️  Removing {dep.name}...")
                 
-                if dep.language == 'python':
-                    cmd = ['conda', 'run', '-n', self.conda_env, 'pip', 'uninstall',
-                           '-y', '--quiet', dep.name]
+                # Get uninstall command
+                cmd = self._get_uninstall_command(dep.name, dep.language)
                 
-                elif dep.language == 'go':
-                    # Go modules are workspace-specific, no global uninstall needed
+                if cmd is None:
+                    # No cleanup needed (e.g., Go/Rust workspace-specific)
                     if self.verbose:
-                        print(f"    ⏭️  {dep.name} (Go module, no cleanup needed)")
-                    continue
-                
-                elif dep.language == 'rust':
-                    # Rust crates are project-specific
-                    if self.verbose:
-                        print(f"    ⏭️  {dep.name} (Rust crate, no cleanup needed)")
-                    continue
-                
-                elif dep.language == 'r':
-                    cmd = ['conda', 'run', '-n', self.conda_env, 'Rscript', '-e',
-                           f"remove.packages('{dep.name}')"]
-                
-                elif dep.language == 'julia':
-                    cmd = ['conda', 'run', '-n', self.conda_env, 'julia', '-e',
-                           f'using Pkg; Pkg.rm("{dep.name}")']
-                
-                else:
+                        print(f"    ⏭️  {dep.name} ({dep.language} - no cleanup needed)")
                     continue
                 
                 result = subprocess.run(cmd, capture_output=True, timeout=60)

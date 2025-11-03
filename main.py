@@ -55,9 +55,8 @@ def print_help():
     
     # Display additional/advanced command group
     print("\nADDITIONAL COMMANDS:")
-    print("  execute    - Full execution (all languages)")
     print("  find       - Search task + quality analysis + CO2")
-    print("  quality    - Qualitative analysis (experimental)")
+    print("  quality    - Qualitative analysis")
     print("  clean      - Cache cleanup")
     print("  status     - Project status")
     
@@ -171,33 +170,6 @@ def analyze_tasks():
             
     except ImportError as e:
         print(f"Error importing analysis module: {e}")
-        return False
-    except Exception as e:
-        print(f"Error: {e}")
-        return False
-    
-    return True
-
-def execute_codes():
-    """Executes the code of common tasks found during analysis.
-    
-    This function:
-    1. Loads the common tasks from the analysis results
-    2. Executes each task across all available languages
-    3. Records execution results and performance metrics
-    
-    Returns:
-        bool: True if execution completed successfully, False otherwise
-    """
-    print("\nEXECUTING CODES")
-    print("-" * 40)
-    
-    try:
-        from src.smart_executor import SmartExecutor
-        executor = SmartExecutor()
-        executor.execute_all_common_tasks()
-    except ImportError as e:
-        print(f"Error importing executor module: {e}")
         return False
     except Exception as e:
         print(f"Error: {e}")
@@ -414,7 +386,7 @@ def benchmark_carbon(mode=None, auto_export_csv=True, auto_visualize=True, timeo
         print("  TOP10 - Main Task Analysis")
         print("   • Only the top 10 most frequent tasks")
         print("   • 30 repetitions per task to calculate the average")
-        print("   • Estimated time: ~45-60 minutes")
+        print("   • Estimated time: ~ 2-3 hours")
         print("   • Ideal for regular analysis")
         print()
         print("  FAST - Functionality Test")
@@ -426,7 +398,7 @@ def benchmark_carbon(mode=None, auto_export_csv=True, auto_visualize=True, timeo
         print("  COMPLETE - Exhaustive Analysis")
         print("   • ALL tasks in the dataset (1000+ tasks)")
         print("   • 3 repetitions per task")
-        print("   • Estimated time: ~6-8 hours")
+        print("   • Estimated time: ~40-50 hours")
         print("   • Full coverage for scientific research")
         print()
         
@@ -748,7 +720,7 @@ def main():
     parser.add_argument(
         'command', 
         nargs='?',
-        choices=['analyze', 'execute', 'smart', 'test', 'clean', 'status', 'carbon', 'benchmark', 'quality', 'find', 'rankings', 'help'],
+        choices=['analyze', 'smart', 'test', 'clean', 'status', 'carbon', 'benchmark', 'quality', 'find', 'rankings', 'help'],
         default='help',
         help='Command to execute'
     )
@@ -832,17 +804,9 @@ def main():
         success = analyze_tasks()
         if success:
             print("\nAnalysis completed successfully!")
-            print("You can now run 'python main.py execute' to test the codes")
+            print("You can now run 'python main.py smart' to execute the codes")
         else:
             print("\nAnalysis failed")
-            sys.exit(1)
-    elif args.command == 'execute':
-        success = execute_codes()
-        if success:
-            print("\nExecution completed!")
-            print("Check the results in results/execution/")
-        else:
-            print("\nExecution failed")
             sys.exit(1)
     elif args.command == 'smart':
         success = smart_execute()
