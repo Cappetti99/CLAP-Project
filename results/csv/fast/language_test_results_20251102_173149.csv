@@ -1,0 +1,16 @@
+language,available,type,interpreter_found,compiler_found,compile_success,run_success,output,error,execution_time
+cpp,True,oop,True,True,True,True,Hello from C++!,,0.001
+java,True,oop,True,True,True,True,Hello from Java!,,0.024
+csharp,True,oop,True,True,True,True,Hello from C#!,,0.011
+python,True,scripting,True,True,True,True,Hello from Python!,,0.01
+ruby,True,scripting,True,True,True,True,Hello from Ruby!,,0.054
+javascript,True,scripting,True,True,True,True,Hello from JavaScript!,,0.124
+typescript,True,scripting,True,True,True,True,Hello from TypeScript!,,0.056
+c,True,imperative,True,True,True,True,Hello from C!,,0.001
+go,True,imperative,True,True,True,True,Hello from Go!,,0.001
+rust,True,imperative,True,True,True,True,Hello from Rust!,,0.001
+php,True,imperative,True,True,True,True,Hello from PHP!,,0.022
+haskell,True,functional,True,True,True,True,Hello from Haskell!,,0.011
+ocaml,True,functional,True,True,True,True,Hello from OCaml!,,0.003
+r,True,scientific,True,True,True,True,Hello from R!,,0.094
+julia,True,scientific,True,True,True,True,Hello from Julia!,,0.343
