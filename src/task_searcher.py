@@ -495,6 +495,9 @@ class TaskSearcher:
                                         result.get('success', False), emissions)
             self._display_execution_result(result, emissions)
             
+            # Print file path at the end
+            print(f"\n📁 File path: {file_path}")
+            
             return result.get('success', False)
             
         except Exception as e:
