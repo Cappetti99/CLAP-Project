@@ -1101,7 +1101,7 @@ class CLAPVisualizer:
         plt.show()
     
     def plot_paradigm_energy_consumption(self, save=True):
-        """Energy consumption per paradigm (like efficiency rankings)"""
+        """Energy Consumption (Wh) calculated from CO2 emissions"""
         rankings = self.load_latest_rankings()
         if not rankings:
             print("❌ No rankings data available")
@@ -1124,13 +1124,19 @@ class CLAPVisualizer:
             'Scientific': '#98D8C8'
         }
         
-        # Prepare data
+        # CodeCarbon conversion constants
+        # FE = Emission Factor for Italy (average) in g CO₂ / Wh
+        EMISSION_FACTOR = 0.231  # g CO₂ per Wh (Italy average)
+        
+        # Prepare data - calculate energy consumption in Wh
         all_langs = []
         all_co2 = []
+        all_time = []
+        all_energy_wh = []  # Energy in Wh
         all_colors = []
         paradigm_tasks = {}
         
-        # Track where each paradigm starts for adding task labels
+        # Track where each paradigm starts
         paradigm_positions = {}
         current_position = 0
         
@@ -1139,15 +1145,28 @@ class CLAPVisualizer:
             paradigm_tasks[paradigm] = task_name
             lang_stats = paradigm_data.get('languages', {})
             
-            # Sort by CO2 (ascending - best first)
-            sorted_by_co2 = sorted(lang_stats.items(), key=lambda x: x[1]['emissions_mg'])
+            lang_energy = []
+            for lang, stats in lang_stats.items():
+                co2_mg = stats['emissions_mg']
+                time_s = stats['time_s']
+                
+                # Formula: E(Wh) = CO₂(mg) / (FE(g/Wh) × 10³)
+                # This converts CO₂ emissions back to energy consumed
+                energy_wh = co2_mg / (EMISSION_FACTOR * 1000)
+                
+                lang_energy.append((lang, co2_mg, time_s, energy_wh))
+            
+            # Sort by energy consumption (ascending - best first)
+            lang_energy.sort(key=lambda x: x[3])
             
             # Store starting position for this paradigm
-            paradigm_positions[paradigm] = current_position + len(sorted_by_co2) / 2
+            paradigm_positions[paradigm] = current_position + len(lang_energy) / 2
             
-            for lang, stats in sorted_by_co2:
+            for lang, co2, time, energy_wh in lang_energy:
                 all_langs.append(lang.upper())
-                all_co2.append(stats['emissions_mg'])
+                all_co2.append(co2)
+                all_time.append(time)
+                all_energy_wh.append(energy_wh)
                 all_colors.append(paradigm_colors.get(paradigm, '#CCCCCC'))
                 current_position += 1
         
@@ -1157,21 +1176,21 @@ class CLAPVisualizer:
         fig = plt.figure(figsize=(16, fig_height))
         
         # Main title
-        fig.suptitle('Energy Consumption by Paradigm\n(Single Task per Paradigm)', 
+        fig.suptitle('Energy Consumption by Paradigm', 
                      fontsize=18, fontweight='bold', y=0.995)
         
         # Create main chart
         ax = plt.subplot(1, 1, 1)
         
         # Create horizontal bars with gradient colors
-        bars = ax.barh(range(len(all_langs)), all_co2, color=all_colors, 
+        bars = ax.barh(range(len(all_langs)), all_energy_wh, color=all_colors, 
                       edgecolor='black', linewidth=1.0, height=0.6, alpha=0.85)
         
-        # Customize axes with more padding
+        # Customize axes
         ax.set_yticks(range(len(all_langs)))
         ax.set_yticklabels(all_langs, fontsize=11, fontweight='bold')
-        ax.set_xlabel('CO₂ Emissions (mg)', fontsize=13, fontweight='bold', labelpad=10)
-        ax.set_title('Languages Ranked by Energy Efficiency (Lower = Better)', 
+        ax.set_xlabel('Energy Consumption (Wh)', fontsize=13, fontweight='bold', labelpad=10)
+        ax.set_title('Languages Ranked by Energy Consumption (Lower = Better)', 
                     fontsize=14, fontweight='bold', pad=20)
         ax.invert_yaxis()
         
@@ -1180,14 +1199,18 @@ class CLAPVisualizer:
         ax.set_axisbelow(True)
         
         # Extend x-axis to make room for labels
-        ax.set_xlim(0, max(all_co2) * 1.2)
+        ax.set_xlim(0, max(all_energy_wh) * 1.3)
         
-        # Add value labels - black text with white background
-        for i, co2 in enumerate(all_co2):
-            x_pos = co2 + max(all_co2) * 0.01
-            ax.text(x_pos, i, f'{co2:.0f} mg',
+        # Add value labels with energy, CO2 and time details
+        for i, (energy_wh, co2, time) in enumerate(zip(all_energy_wh, all_co2, all_time)):
+            x_pos = energy_wh + max(all_energy_wh) * 0.01
+            
+            # Show energy (Wh) + CO2 (mg) + time (s)
+            label = f'{energy_wh:.2f} Wh ({co2:.0f}mg, {time:.3f}s)'
+            
+            ax.text(x_pos, i, label,
                    va='center', ha='left',
-                   fontsize=10, fontweight='bold',
+                   fontsize=9, fontweight='bold',
                    color='black',
                    bbox=dict(boxstyle='round,pad=0.3', 
                             facecolor='white', 
@@ -1195,10 +1218,10 @@ class CLAPVisualizer:
                             linewidth=0.5,
                             alpha=0.9))
         
-        # Add paradigm + task labels on the left side
+        # Add paradigm + task labels on the left
         for paradigm, position in paradigm_positions.items():
             task_name = paradigm_tasks.get(paradigm, 'N/A')
-            ax.text(-max(all_co2)*0.12, position, 
+            ax.text(-max(all_energy_wh)*0.15, position, 
                    f'{paradigm}\n[{task_name}]',
                    va='center', ha='right', fontsize=9, fontweight='bold',
                    color=paradigm_colors.get(paradigm, '#000'),
@@ -1207,21 +1230,26 @@ class CLAPVisualizer:
                             linewidth=1.5, alpha=0.9))
         
         # Calculate statistics
+        avg_energy = sum(all_energy_wh) / len(all_energy_wh)
+        min_energy = min(all_energy_wh)
+        max_energy = max(all_energy_wh)
         avg_co2 = sum(all_co2) / len(all_co2)
-        min_co2 = min(all_co2)
-        max_co2_val = max(all_co2)
+        avg_time = sum(all_time) / len(all_time)
+        total_energy = sum(all_energy_wh)
         
         # Add statistics
-        stats_line = f'Statistics: {len(all_langs)} languages across {len(paradigm_positions)} paradigms | Avg: {avg_co2:.1f} mg | Range: {min_co2:.0f} - {max_co2_val:.0f} mg'
+        stats_line = (f'Statistics: {len(all_langs)} languages across {len(paradigm_positions)} paradigms | '
+                     f'Avg Energy: {avg_energy:.2f} Wh | Total: {total_energy:.2f} Wh | '
+                     f'Avg CO₂: {avg_co2:.1f}mg | Avg Time: {avg_time:.3f}s')
         fig.text(0.5, 0.94, stats_line,
                 ha='center', fontsize=11, style='italic', color='#555555',
                 bbox=dict(boxstyle='round,pad=0.5', facecolor='#f0f0f0', 
                          edgecolor='#cccccc', alpha=0.8))
         
-        # Add methodology note
+        # Add methodology note with CodeCarbon formula
         fig.text(0.5, 0.01, 
-                'Methodology: Each paradigm uses ONE common task where ALL its languages succeeded. '
-                'Task selected based on most balanced emissions.',
+                f'Methodology: Energy (Wh) = CO₂(mg) / (FE × 10³), where FE = {EMISSION_FACTOR} g CO₂/Wh (Italy average). '
+                'Based on CodeCarbon conversion standard.',
                 ha='center', fontsize=10, style='italic', color='#555555',
                 bbox=dict(boxstyle='round,pad=0.5', facecolor='#f0f0f1', 
                          edgecolor='#cccccc', alpha=0.8))
@@ -1237,7 +1265,7 @@ class CLAPVisualizer:
     
     def generate_all_plots(self):
         """Generate all available charts"""
-        print("📊 Generating all CLAP charts...\n")
+        print(" Generating all CLAP charts...\n")
         
         print("1 - Language Energy Ranking...")
         self.plot_language_energy_ranking()
