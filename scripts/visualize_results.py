@@ -744,6 +744,148 @@ class CLAPVisualizer:
         else:
             self._plot_legacy_rankings(rankings, save)
     
+    def plot_energy_consumption_per_run(self, save=True):
+        """Chart 9: Average Energy Consumption per Run by Language"""
+        # Load individual runs CSV for detailed per-run statistics
+        csv_files = list(self.csv_dir.glob('carbon_individual_runs_*.csv'))
+        if not csv_files:
+            # Fallback to summary
+            csv_files = list(self.csv_dir.glob('carbon_benchmark_summary_*.csv'))
+        
+        if not csv_files:
+            print("❌ No data available for energy consumption analysis")
+            return
+        
+        latest = max(csv_files, key=lambda p: p.stat().st_mtime)
+        try:
+            df = pd.read_csv(latest)
+        except Exception as e:
+            print(f"❌ Error loading CSV: {e}")
+            return
+        
+        # Check which columns are available and calculate per-run energy
+        if 'co2_mg' in df.columns and 'language' in df.columns:
+            # Individual runs format - already per-run
+            df_valid = df[df['co2_mg'] > 0].copy()
+            
+            # Calculate average per language
+            lang_stats = df_valid.groupby('language').agg({
+                'co2_mg': ['mean', 'std', 'count']
+            }).reset_index()
+            
+            lang_stats.columns = ['language', 'avg_co2_per_run', 'std_co2', 'run_count']
+            
+        elif 'avg_co2_mg' in df.columns and 'language' in df.columns:
+            # Summary format - already has averages
+            df_valid = df[df['avg_co2_mg'] > 0].copy()
+            
+            lang_stats = df_valid.groupby('language').agg({
+                'avg_co2_mg': 'mean'
+            }).reset_index()
+            
+            lang_stats.columns = ['language', 'avg_co2_per_run']
+            lang_stats['std_co2'] = 0
+            lang_stats['run_count'] = len(df_valid)
+        else:
+            print("❌ No CO2 data columns found in CSV")
+            return
+        
+        if lang_stats.empty:
+            print("❌ No valid data available")
+            return
+        
+        # Sort by average CO2
+        lang_stats = lang_stats.sort_values('avg_co2_per_run')
+        
+        # Create single large figure with more height for spacing
+        num_langs = len(lang_stats)
+        fig_height = max(10, num_langs * 0.8)  # Dynamic height based on number of languages
+        fig = plt.figure(figsize=(16, fig_height))
+        
+        # Main title
+        fig.suptitle('Energy Consumption per Execution Run', 
+                     fontsize=18, fontweight='bold', y=0.98)
+        
+        # ===== MAIN CHART: Bar chart with gradient colors =====
+        ax = plt.subplot(1, 1, 1)
+        
+        languages = [lang.upper() for lang in lang_stats['language']]
+        avg_values = lang_stats['avg_co2_per_run'].values
+        std_values = lang_stats['std_co2'].values if 'std_co2' in lang_stats.columns else np.zeros(len(avg_values))
+        
+        # Create beautiful gradient from green (efficient) to red (inefficient)
+        norm = plt.Normalize(vmin=min(avg_values), vmax=max(avg_values))
+        colors = plt.cm.RdYlGn_r(norm(avg_values))
+        
+        # Create horizontal bars with more spacing
+        bars = ax.barh(range(len(languages)), avg_values, 
+                      color=colors, edgecolor='black', linewidth=1.2,
+                      height=0.6, alpha=0.85)
+        
+        # Add error bars if available (only if they won't clutter)
+        if std_values.max() > 0 and std_values.max() < max(avg_values) * 0.3:
+            ax.errorbar(avg_values, range(len(languages)), 
+                       xerr=std_values, fmt='none',
+                       ecolor='#555555', elinewidth=1.5, capsize=4, capthick=1.5,
+                       alpha=0.6, zorder=10)
+        
+        # Customize axes with more padding
+        ax.set_yticks(range(len(languages)))
+        ax.set_yticklabels(languages, fontsize=12, fontweight='bold')
+        ax.set_xlabel('Average CO₂ Emissions per Run (mg)', fontsize=13, fontweight='bold', labelpad=10)
+        ax.set_title('Languages Ranked by Energy Efficiency (Lower = Better)', 
+                    fontsize=14, fontweight='bold', pad=20)
+        
+        # Add grid
+        ax.grid(axis='x', alpha=0.25, linestyle='--', linewidth=0.8)
+        ax.set_axisbelow(True)
+        
+        # Extend x-axis to make room for labels
+        ax.set_xlim(0, max(avg_values) * 1.25)
+        
+        # Add value labels on bars - simplified
+        for i, (val, std) in enumerate(zip(avg_values, std_values)):
+            # Position label outside the bar
+            x_pos = val + max(avg_values) * 0.015
+            
+            # Simplified label - always black text
+            label = f'{val:.1f} mg'
+            
+            ax.text(x_pos, i, label,
+                   va='center', ha='left',
+                   fontsize=10, fontweight='bold',
+                   color='black',
+                   bbox=dict(boxstyle='round,pad=0.3', 
+                            facecolor='white', 
+                            edgecolor='gray',
+                            linewidth=0.5,
+                            alpha=0.9))
+        
+        # Calculate statistics
+        total_runs = lang_stats['run_count'].sum() if 'run_count' in lang_stats.columns else 0
+        avg_all = lang_stats['avg_co2_per_run'].mean()
+        min_co2 = lang_stats['avg_co2_per_run'].min()
+        max_co2 = lang_stats['avg_co2_per_run'].max()
+        
+        # Add compact statistics in title area instead of overlapping box
+        stats_line = f'Statistics: {len(lang_stats)} languages | Avg: {avg_all:.1f} mg | Range: {min_co2:.1f} - {max_co2:.1f} mg'
+        if total_runs > 0:
+            stats_line += f' | Total runs: {total_runs:,}'
+        
+        fig.text(0.5, 0.94, stats_line,
+                ha='center', fontsize=11, style='italic', color='#555555',
+                bbox=dict(boxstyle='round,pad=0.5', facecolor='#f0f0f0', 
+                         edgecolor='#cccccc', alpha=0.8))
+        
+        plt.tight_layout(rect=[0, 0.02, 1, 0.92])
+        
+        if save:
+            output_path = self.output_dir / 'energy_consumption_per_run.png'
+            plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
+            print(f"✅ Saved: {output_path}")
+        
+        plt.show()
+    
     def _plot_paradigm_rankings(self, paradigm_rankings, save=True):
         """Plot paradigm-based rankings with two separate charts: CO2 and Time"""
         # Define colors for each paradigm
@@ -754,11 +896,6 @@ class CLAPVisualizer:
             'Functional': '#FFA07A',
             'Scientific': '#98D8C8'
         }
-        
-        # Create figure with 2 subplots (CO2 and Time)
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 14))
-        fig.suptitle('Paradigm-Based Language Rankings\n(Single Task per Paradigm)', 
-                     fontsize=16, fontweight='bold', y=0.995)
         
         # Prepare data for CO2 plot
         all_langs_co2 = []
@@ -787,32 +924,6 @@ class CLAPVisualizer:
                 all_colors_co2.append(paradigm_colors.get(paradigm, '#CCCCCC'))
                 current_position += 1
         
-        # Plot 1: CO2 Emissions
-        bars1 = ax1.barh(all_langs_co2, all_co2, color=all_colors_co2, 
-                         edgecolor='black', linewidth=0.8)
-        
-        ax1.set_xlabel('CO₂ Emissions (mg)', fontsize=13, fontweight='bold')
-        ax1.set_ylabel('Language', fontsize=13, fontweight='bold')
-        ax1.set_title('Ranking by CO₂ Emissions (100%)', fontsize=14, fontweight='bold', pad=15)
-        ax1.invert_yaxis()
-        ax1.grid(axis='x', alpha=0.3)
-        
-        # Add value labels for CO2
-        for i, (bar, co2) in enumerate(zip(bars1, all_co2)):
-            ax1.text(bar.get_width() + max(all_co2)*0.01, bar.get_y() + bar.get_height()/2, 
-                    f'{co2:.0f} mg',
-                    va='center', fontsize=9, fontweight='bold')
-        
-        # Add paradigm + task labels on the left side
-        for paradigm, position in paradigm_positions_co2.items():
-            task_name = paradigm_tasks.get(paradigm, 'N/A')
-            ax1.text(-max(all_co2)*0.15, position, 
-                    f'{paradigm}\n[{task_name}]',
-                    va='center', ha='right', fontsize=9, fontweight='bold',
-                    color=paradigm_colors.get(paradigm, '#000'),
-                    bbox=dict(boxstyle='round,pad=0.3', facecolor='white', 
-                             edgecolor=paradigm_colors.get(paradigm, '#000'), linewidth=2))
-        
         # Prepare data for Time plot
         all_langs_time = []
         all_time = []
@@ -837,43 +948,104 @@ class CLAPVisualizer:
                 all_colors_time.append(paradigm_colors.get(paradigm, '#CCCCCC'))
                 current_position += 1
         
-        # Plot 2: Execution Time
-        bars2 = ax2.barh(all_langs_time, all_time, color=all_colors_time, 
-                         edgecolor='black', linewidth=0.8)
+        # Create figure with 2 subplots with dynamic height
+        num_langs = len(all_langs_co2)
+        fig_height = max(14, num_langs * 0.7)
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, fig_height))
+        fig.suptitle('Paradigm-Based Language Rankings\n(Single Task per Paradigm)', 
+                     fontsize=16, fontweight='bold', y=0.995)
         
-        ax2.set_xlabel('Execution Time (seconds)', fontsize=13, fontweight='bold')
-        ax2.set_ylabel('Language', fontsize=13, fontweight='bold')
-        ax2.set_title('Ranking by Execution Time (100%)', fontsize=14, fontweight='bold', pad=15)
-        ax2.invert_yaxis()
-        ax2.grid(axis='x', alpha=0.3)
+        # ===== Plot 1: CO2 Emissions =====
+        bars1 = ax1.barh(range(len(all_langs_co2)), all_co2, color=all_colors_co2, 
+                         edgecolor='black', linewidth=1.0, height=0.6, alpha=0.85)
         
-        # Add value labels for Time
-        for i, (bar, time) in enumerate(zip(bars2, all_time)):
-            ax2.text(bar.get_width() + max(all_time)*0.01, bar.get_y() + bar.get_height()/2, 
-                    f'{time:.3f}s',
-                    va='center', fontsize=9, fontweight='bold')
+        ax1.set_yticks(range(len(all_langs_co2)))
+        ax1.set_yticklabels(all_langs_co2, fontsize=11, fontweight='bold')
+        ax1.set_xlabel('CO₂ Emissions (mg)', fontsize=13, fontweight='bold', labelpad=10)
+        ax1.set_title('Ranking by CO₂ Emissions (100%)', fontsize=14, fontweight='bold', pad=15)
+        ax1.invert_yaxis()
+        ax1.grid(axis='x', alpha=0.25, linestyle='--', linewidth=0.8)
+        ax1.set_axisbelow(True)
         
-        # Add paradigm + task labels on the left side
-        for paradigm, position in paradigm_positions_time.items():
+        # Extend x-axis to make room for labels
+        ax1.set_xlim(0, max(all_co2) * 1.2)
+        
+        # Add value labels for CO2 - black text with white background
+        for i, co2 in enumerate(all_co2):
+            x_pos = co2 + max(all_co2) * 0.01
+            ax1.text(x_pos, i, f'{co2:.0f} mg',
+                    va='center', ha='left',
+                    fontsize=10, fontweight='bold',
+                    color='black',
+                    bbox=dict(boxstyle='round,pad=0.3', 
+                             facecolor='white', 
+                             edgecolor='gray',
+                             linewidth=0.5,
+                             alpha=0.9))
+        
+        # Add paradigm + task labels on the left side - better positioned
+        for paradigm, position in paradigm_positions_co2.items():
             task_name = paradigm_tasks.get(paradigm, 'N/A')
-            ax2.text(-max(all_time)*0.15, position, 
+            ax1.text(-max(all_co2)*0.12, position, 
                     f'{paradigm}\n[{task_name}]',
                     va='center', ha='right', fontsize=9, fontweight='bold',
                     color=paradigm_colors.get(paradigm, '#000'),
-                    bbox=dict(boxstyle='round,pad=0.3', facecolor='white', 
-                             edgecolor=paradigm_colors.get(paradigm, '#000'), linewidth=2))
+                    bbox=dict(boxstyle='round,pad=0.4', facecolor='white', 
+                             edgecolor=paradigm_colors.get(paradigm, '#000'), 
+                             linewidth=1.5, alpha=0.9))
+        
+        # ===== Plot 2: Execution Time =====
+        bars2 = ax2.barh(range(len(all_langs_time)), all_time, color=all_colors_time, 
+                         edgecolor='black', linewidth=1.0, height=0.6, alpha=0.85)
+        
+        ax2.set_yticks(range(len(all_langs_time)))
+        ax2.set_yticklabels(all_langs_time, fontsize=11, fontweight='bold')
+        ax2.set_xlabel('Execution Time (seconds)', fontsize=13, fontweight='bold', labelpad=10)
+        ax2.set_title('Ranking by Execution Time (100%)', fontsize=14, fontweight='bold', pad=15)
+        ax2.invert_yaxis()
+        ax2.grid(axis='x', alpha=0.25, linestyle='--', linewidth=0.8)
+        ax2.set_axisbelow(True)
+        
+        # Extend x-axis to make room for labels
+        ax2.set_xlim(0, max(all_time) * 1.2)
+        
+        # Add value labels for Time - black text with white background
+        for i, time in enumerate(all_time):
+            x_pos = time + max(all_time) * 0.01
+            ax2.text(x_pos, i, f'{time:.3f}s',
+                    va='center', ha='left',
+                    fontsize=10, fontweight='bold',
+                    color='black',
+                    bbox=dict(boxstyle='round,pad=0.3', 
+                             facecolor='white', 
+                             edgecolor='gray',
+                             linewidth=0.5,
+                             alpha=0.9))
+        
+        # Add paradigm + task labels on the left side - better positioned
+        for paradigm, position in paradigm_positions_time.items():
+            task_name = paradigm_tasks.get(paradigm, 'N/A')
+            ax2.text(-max(all_time)*0.12, position, 
+                    f'{paradigm}\n[{task_name}]',
+                    va='center', ha='right', fontsize=9, fontweight='bold',
+                    color=paradigm_colors.get(paradigm, '#000'),
+                    bbox=dict(boxstyle='round,pad=0.4', facecolor='white', 
+                             edgecolor=paradigm_colors.get(paradigm, '#000'), 
+                             linewidth=1.5, alpha=0.9))
         
         # Add methodology note
         fig.text(0.5, 0.01, 
                 'Ranking Method: Each paradigm uses ONE common task where ALL its languages succeeded. '
                 'Task selected based on most balanced emissions.',
-                ha='center', fontsize=10, style='italic', color='gray', wrap=True)
+                ha='center', fontsize=10, style='italic', color='#555555',
+                bbox=dict(boxstyle='round,pad=0.5', facecolor='#f0f0f0', 
+                         edgecolor='#cccccc', alpha=0.8))
         
         plt.tight_layout(rect=[0, 0.03, 1, 0.99])
         
         if save:
             output_path = self.output_dir / 'efficiency_rankings.png'
-            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
             print(f"✅ Saved: {output_path}")
         
         plt.show()
@@ -928,6 +1100,141 @@ class CLAPVisualizer:
         
         plt.show()
     
+    def plot_paradigm_energy_consumption(self, save=True):
+        """Energy consumption per paradigm (like efficiency rankings)"""
+        rankings = self.load_latest_rankings()
+        if not rankings:
+            print("❌ No rankings data available")
+            return
+        
+        # Check if it's paradigm-based format
+        is_paradigm_based = any(key in ['OOP', 'Scripting', 'Imperative', 'Functional', 'Scientific'] 
+                                for key in rankings.keys())
+        
+        if not is_paradigm_based:
+            print("❌ This chart requires paradigm-based rankings")
+            return
+        
+        # Define colors for each paradigm
+        paradigm_colors = {
+            'OOP': '#FF6B6B',
+            'Scripting': '#4ECDC4',
+            'Imperative': '#45B7D1',
+            'Functional': '#FFA07A',
+            'Scientific': '#98D8C8'
+        }
+        
+        # Prepare data
+        all_langs = []
+        all_co2 = []
+        all_colors = []
+        paradigm_tasks = {}
+        
+        # Track where each paradigm starts for adding task labels
+        paradigm_positions = {}
+        current_position = 0
+        
+        for paradigm, paradigm_data in sorted(rankings.items()):
+            task_name = paradigm_data.get('task', 'Unknown')
+            paradigm_tasks[paradigm] = task_name
+            lang_stats = paradigm_data.get('languages', {})
+            
+            # Sort by CO2 (ascending - best first)
+            sorted_by_co2 = sorted(lang_stats.items(), key=lambda x: x[1]['emissions_mg'])
+            
+            # Store starting position for this paradigm
+            paradigm_positions[paradigm] = current_position + len(sorted_by_co2) / 2
+            
+            for lang, stats in sorted_by_co2:
+                all_langs.append(lang.upper())
+                all_co2.append(stats['emissions_mg'])
+                all_colors.append(paradigm_colors.get(paradigm, '#CCCCCC'))
+                current_position += 1
+        
+        # Create figure with dynamic height
+        num_langs = len(all_langs)
+        fig_height = max(12, num_langs * 0.7)
+        fig = plt.figure(figsize=(16, fig_height))
+        
+        # Main title
+        fig.suptitle('Energy Consumption by Paradigm\n(Single Task per Paradigm)', 
+                     fontsize=18, fontweight='bold', y=0.995)
+        
+        # Create main chart
+        ax = plt.subplot(1, 1, 1)
+        
+        # Create horizontal bars with gradient colors
+        bars = ax.barh(range(len(all_langs)), all_co2, color=all_colors, 
+                      edgecolor='black', linewidth=1.0, height=0.6, alpha=0.85)
+        
+        # Customize axes with more padding
+        ax.set_yticks(range(len(all_langs)))
+        ax.set_yticklabels(all_langs, fontsize=11, fontweight='bold')
+        ax.set_xlabel('CO₂ Emissions (mg)', fontsize=13, fontweight='bold', labelpad=10)
+        ax.set_title('Languages Ranked by Energy Efficiency (Lower = Better)', 
+                    fontsize=14, fontweight='bold', pad=20)
+        ax.invert_yaxis()
+        
+        # Add grid
+        ax.grid(axis='x', alpha=0.25, linestyle='--', linewidth=0.8)
+        ax.set_axisbelow(True)
+        
+        # Extend x-axis to make room for labels
+        ax.set_xlim(0, max(all_co2) * 1.2)
+        
+        # Add value labels - black text with white background
+        for i, co2 in enumerate(all_co2):
+            x_pos = co2 + max(all_co2) * 0.01
+            ax.text(x_pos, i, f'{co2:.0f} mg',
+                   va='center', ha='left',
+                   fontsize=10, fontweight='bold',
+                   color='black',
+                   bbox=dict(boxstyle='round,pad=0.3', 
+                            facecolor='white', 
+                            edgecolor='gray',
+                            linewidth=0.5,
+                            alpha=0.9))
+        
+        # Add paradigm + task labels on the left side
+        for paradigm, position in paradigm_positions.items():
+            task_name = paradigm_tasks.get(paradigm, 'N/A')
+            ax.text(-max(all_co2)*0.12, position, 
+                   f'{paradigm}\n[{task_name}]',
+                   va='center', ha='right', fontsize=9, fontweight='bold',
+                   color=paradigm_colors.get(paradigm, '#000'),
+                   bbox=dict(boxstyle='round,pad=0.4', facecolor='white', 
+                            edgecolor=paradigm_colors.get(paradigm, '#000'), 
+                            linewidth=1.5, alpha=0.9))
+        
+        # Calculate statistics
+        avg_co2 = sum(all_co2) / len(all_co2)
+        min_co2 = min(all_co2)
+        max_co2_val = max(all_co2)
+        
+        # Add statistics
+        stats_line = f'Statistics: {len(all_langs)} languages across {len(paradigm_positions)} paradigms | Avg: {avg_co2:.1f} mg | Range: {min_co2:.0f} - {max_co2_val:.0f} mg'
+        fig.text(0.5, 0.94, stats_line,
+                ha='center', fontsize=11, style='italic', color='#555555',
+                bbox=dict(boxstyle='round,pad=0.5', facecolor='#f0f0f0', 
+                         edgecolor='#cccccc', alpha=0.8))
+        
+        # Add methodology note
+        fig.text(0.5, 0.01, 
+                'Methodology: Each paradigm uses ONE common task where ALL its languages succeeded. '
+                'Task selected based on most balanced emissions.',
+                ha='center', fontsize=10, style='italic', color='#555555',
+                bbox=dict(boxstyle='round,pad=0.5', facecolor='#f0f0f1', 
+                         edgecolor='#cccccc', alpha=0.8))
+        
+        plt.tight_layout(rect=[0, 0.03, 1, 0.92])
+        
+        if save:
+            output_path = self.output_dir / 'paradigm_energy_consumption.png'
+            plt.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='white')
+            print(f"✅ Saved: {output_path}")
+        
+        plt.show()
+    
     def generate_all_plots(self):
         """Generate all available charts"""
         print("📊 Generating all CLAP charts...\n")
@@ -956,7 +1263,13 @@ class CLAPVisualizer:
         print("\n8 - Efficiency Rankings...")
         self.plot_efficiency_rankings()
         
-        print(f"\n✅ COMPLETE! All 8 charts saved in: {self.output_dir}")
+        print("\n9 - Energy Consumption per Run...")
+        self.plot_energy_consumption_per_run()
+        
+        print("\n10 - Paradigm Energy Consumption...")
+        self.plot_paradigm_energy_consumption()
+        
+        print(f"\n✅ COMPLETE! All 10 charts saved in: {self.output_dir}")
         print(f"Directory: {self.output_dir.absolute()}")
 
 
@@ -966,7 +1279,7 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='Visualize CLAP results')
-    parser.add_argument('--all', action='store_true', help='Generate all charts (7 total)')
+    parser.add_argument('--all', action='store_true', help='Generate all charts (10 total)')
     parser.add_argument('--ranking', action='store_true', help='Energy ranking chart')
     parser.add_argument('--scatter', action='store_true', help='CO2 vs Time scatter chart')
     parser.add_argument('--tasks', action='store_true', help='Tasks comparison chart')
@@ -974,7 +1287,9 @@ def main():
     parser.add_argument('--success-rates', action='store_true', help='Language success rates chart')
     parser.add_argument('--success-breakdown', action='store_true', help='Success breakdown chart')
     parser.add_argument('--heatmap', action='store_true', help='Task × Language heatmap')
-    parser.add_argument('--efficiency', action='store_true', help='Efficiency rankings chart (NEW!)')
+    parser.add_argument('--efficiency', action='store_true', help='Efficiency rankings chart')
+    parser.add_argument('--energy-per-run', action='store_true', help='Energy consumption per run')
+    parser.add_argument('--paradigm-energy', action='store_true', help='Paradigm energy consumption (NEW!)')
     parser.add_argument('--mode', choices=['FAST', 'TOP10', 'COMPLETE'], default=None,
                        help='Benchmark mode (FAST/TOP10/COMPLETE). If not specified, uses default paths.')
     
@@ -984,7 +1299,8 @@ def main():
     
     # If no specific chart selected, generate all
     if args.all or not any([args.ranking, args.scatter, args.tasks, args.boxplot, 
-                            args.success_rates, args.success_breakdown, args.heatmap, args.efficiency]):
+                            args.success_rates, args.success_breakdown, args.heatmap, 
+                            args.efficiency, args.energy_per_run, args.paradigm_energy]):
         viz.generate_all_plots()
     else:
         if args.ranking:
@@ -1003,6 +1319,10 @@ def main():
             viz.plot_task_language_heatmap()
         if args.efficiency:
             viz.plot_efficiency_rankings()
+        if args.energy_per_run:
+            viz.plot_energy_consumption_per_run()
+        if args.paradigm_energy:
+            viz.plot_paradigm_energy_consumption()
 
 
 if __name__ == '__main__':
